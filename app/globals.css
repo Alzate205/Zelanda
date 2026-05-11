@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-fondo: #fbf7f0;
+  --color-texto: #142c1a;
+  --color-borde: #ede0c8;
+}
+
+html, body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+body {
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: theme('fontFamily.serif');
+  letter-spacing: -0.01em;
+}
