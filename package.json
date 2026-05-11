@@ -13,19 +13,23 @@
     "db:pull": "prisma db pull",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "crear-jefe": "node --env-file=.env.local --env-file=.env scripts/crear-primer-jefe.mjs"
+    "crear-jefe": "node --env-file=.env.local --env-file=.env scripts/crear-primer-jefe.mjs",
+    "seed:fase2": "node --env-file=.env --env-file=.env.local scripts/seed-fase2.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
     "next": "15.5.18",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

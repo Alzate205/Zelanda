@@ -1,0 +1,145 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ChevronLeft, MapPin } from "lucide-react";
+import { requerirUsuario } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { formatearFechaCorta } from "@/lib/utils";
+
+function parsearId(raw: string): bigint | null {
+  if (!/^\d+$/.test(raw)) return null;
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const loteId = parsearId(id);
+  if (!loteId) return { title: "Lote no encontrado" };
+
+  const lote = await prisma.lotes.findUnique({
+    where: { id: loteId },
+    select: { nombre: true },
+  });
+  return { title: lote?.nombre ? `Lote ${lote.nombre}` : "Lote no encontrado" };
+}
+
+export default async function DetalleLote({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requerirUsuario("JEFE");
+  const { id } = await params;
+
+  const loteId = parsearId(id);
+  if (!loteId) notFound();
+
+  const lote = await prisma.lotes.findUnique({
+    where: { id: loteId },
+    select: {
+      id: true,
+      nombre: true,
+      total_arboles: true,
+      hectareas: true,
+      fecha_siembra: true,
+      notas: true,
+      deleted_at: true,
+    },
+  });
+
+  if (!lote || lote.deleted_at) notFound();
+
+  return (
+    <div className="space-y-5">
+      <Link
+        href="/jefe/lotes"
+        className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Lotes
+      </Link>
+
+      <header>
+        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+          Lote
+        </p>
+        <h1 className="mt-1 font-serif text-3xl text-zelanda-verde-900">
+          {lote.nombre}
+        </h1>
+      </header>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Información
+        </h2>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Árboles
+            </dt>
+            <dd className="mt-0.5 font-medium text-zelanda-verde-900">
+              {lote.total_arboles.toLocaleString("es-CO")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Hectáreas
+            </dt>
+            <dd className="mt-0.5 font-medium text-zelanda-verde-900">
+              {lote.hectareas ? Number(lote.hectareas) : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Siembra
+            </dt>
+            <dd className="mt-0.5 font-medium text-zelanda-verde-900">
+              {lote.fecha_siembra ? formatearFechaCorta(lote.fecha_siembra) : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Polígono
+            </dt>
+            <dd className="mt-0.5 inline-flex items-center gap-1 font-medium text-zelanda-verde-900">
+              <MapPin className="h-3.5 w-3.5 text-zelanda-ocre-500" />
+              Pendiente
+            </dd>
+          </div>
+        </dl>
+        {lote.notas ? (
+          <p className="mt-4 border-t border-zelanda-beige-200 pt-4 text-sm leading-relaxed text-zelanda-verde-700">
+            {lote.notas}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Tareas
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-zelanda-verde-700">
+          Las asignaciones a este lote aparecerán aquí en la Fase 3.
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Árboles
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-zelanda-verde-700">
+          Los árboles del lote se cargarán junto con el polígono cuando se
+          capturen las coordenadas en campo.
+        </p>
+      </section>
+    </div>
+  );
+}
