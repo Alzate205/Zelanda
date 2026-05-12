@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 import { crearClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import type { RolUsuario } from "@/types";
+import type { RolUsuario, TipoVinculacion, TipoPeriodoPago } from "@/types";
 
 export type EstadoFormulario = {
   error: string | null;
@@ -18,76 +18,145 @@ function esRolValido(v: string): v is RolUsuario {
   return v === "JEFE" || v === "BODEGA" || v === "ALMACEN" || v === "TRABAJADOR";
 }
 
+function esTipoVinculacionValido(v: string): v is TipoVinculacion {
+  return v === "FIJO" || v === "JORNALERO" || v === "CONTRATISTA" || v === "FAMILIAR";
+}
+
+function esPeriodoPagoValido(v: string): v is TipoPeriodoPago {
+  return v === "MENSUAL" || v === "QUINCENAL" || v === "SEMANAL";
+}
+
 export async function crearMiembro(
   _prev: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
   await requerirUsuario("JEFE");
 
+  // --- Datos persona ---
   const nombre_completo = String(formData.get("nombre_completo") ?? "").trim();
   const cedula = String(formData.get("cedula") ?? "").trim() || null;
   const telefono = String(formData.get("telefono") ?? "").trim() || null;
-  const rol_finca = String(formData.get("rol_finca") ?? "").trim();
-  const es_apicultor = formData.get("es_apicultor") === "on";
   const notas = String(formData.get("notas") ?? "").trim() || null;
 
+  // --- Datos vinculación ---
+  const tipoVinculacionRaw = String(formData.get("tipo_vinculacion") ?? "");
+  const rol_finca = String(formData.get("rol_finca") ?? "").trim();
+  const salarioRaw = String(formData.get("salario_base") ?? "").trim();
+  const periodoPagoRaw = String(formData.get("periodo_pago") ?? "");
+  const tarifaJornalRaw = String(formData.get("tarifa_jornal") ?? "").trim();
+
+  // --- Acceso ---
   const crear_acceso = formData.get("crear_acceso") === "on";
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const rol_app_raw = String(formData.get("rol_app") ?? "");
+  const rolAppRaw = String(formData.get("rol_app") ?? "");
 
-  if (!nombre_completo) return { ...ESTADO_INICIAL, error: "El nombre completo es obligatorio." };
-  if (!rol_finca) return { ...ESTADO_INICIAL, error: "El rol en la finca es obligatorio." };
+  // --- Validaciones persona ---
+  if (!nombre_completo) {
+    return { ...ESTADO_INICIAL, error: "El nombre completo es obligatorio." };
+  }
+  if (!esTipoVinculacionValido(tipoVinculacionRaw)) {
+    return { ...ESTADO_INICIAL, error: "Selecciona un tipo de vinculación válido." };
+  }
+  const tipo = tipoVinculacionRaw;
 
+  // --- Validaciones vinculación según tipo ---
+  let salario_base: number | null = null;
+  let periodo_pago: TipoPeriodoPago | null = null;
+  let tarifa_jornal: number | null = null;
+
+  if (tipo === "FIJO") {
+    if (!salarioRaw) {
+      return { ...ESTADO_INICIAL, error: "Salario base obligatorio para tipo FIJO." };
+    }
+    const s = Number(salarioRaw);
+    if (!Number.isFinite(s) || s <= 0) {
+      return { ...ESTADO_INICIAL, error: "Salario base debe ser un número positivo." };
+    }
+    salario_base = s;
+    if (!esPeriodoPagoValido(periodoPagoRaw)) {
+      return { ...ESTADO_INICIAL, error: "Selecciona un período de pago válido para tipo FIJO." };
+    }
+    periodo_pago = periodoPagoRaw;
+  } else if (tipo === "JORNALERO") {
+    if (!tarifaJornalRaw) {
+      return { ...ESTADO_INICIAL, error: "Tarifa por jornal obligatoria para tipo JORNALERO." };
+    }
+    const t = Number(tarifaJornalRaw);
+    if (!Number.isFinite(t) || t <= 0) {
+      return { ...ESTADO_INICIAL, error: "Tarifa por jornal debe ser un número positivo." };
+    }
+    tarifa_jornal = t;
+  }
+
+  // --- Validaciones acceso ---
   let rol_app: RolUsuario | null = null;
   if (crear_acceso) {
     if (!email || !email.includes("@")) {
       return { ...ESTADO_INICIAL, error: "Email inválido para crear acceso." };
     }
     if (!password || password.length < 8) {
-      return {
-        ...ESTADO_INICIAL,
-        error: "La contraseña debe tener al menos 8 caracteres.",
-      };
+      return { ...ESTADO_INICIAL, error: "La contraseña debe tener al menos 8 caracteres." };
     }
-    if (!esRolValido(rol_app_raw)) {
-      return {
-        ...ESTADO_INICIAL,
-        error: "Selecciona un rol válido para el acceso (JEFE/BODEGA/ALMACEN/TRABAJADOR).",
-      };
+    if (!esRolValido(rolAppRaw)) {
+      return { ...ESTADO_INICIAL, error: "Selecciona un rol válido para el acceso." };
     }
-    rol_app = rol_app_raw;
+    rol_app = rolAppRaw;
   }
 
-  // 1) Crear el trabajador SIEMPRE. La creación de acceso opcional se hace después.
-  let trabajadorIdCreado: bigint;
+  // --- 1. Crear persona (id manual, BIGINT sin autoincrement post-migración) ---
+  const filas = await prisma.$queryRaw<{ next_id: bigint }[]>`
+    SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM personas
+  `;
+  const nextId = filas[0].next_id;
+  let personaId: bigint;
   try {
-    const t = await prisma.trabajadores.create({
+    const p = await prisma.personas.create({
       data: {
+        id: nextId,
         nombre_completo,
         cedula,
         telefono,
-        rol_finca,
-        es_apicultor,
         notas,
         activo: true,
       },
     });
-    trabajadorIdCreado = t.id;
+    personaId = p.id;
   } catch (e) {
     const msg = (e as Error)?.message ?? "Error desconocido";
     if (/unique constraint.*cedula/i.test(msg)) {
-      return { ...ESTADO_INICIAL, error: "Ya existe un trabajador con esa cédula." };
+      return { ...ESTADO_INICIAL, error: "Ya existe una persona con esa cédula." };
     }
-    return { ...ESTADO_INICIAL, error: `No se pudo crear el trabajador: ${msg}` };
+    return { ...ESTADO_INICIAL, error: `No se pudo crear la persona: ${msg}` };
   }
 
+  // --- 2. Crear vinculación ---
+  try {
+    await prisma.vinculaciones.create({
+      data: {
+        persona_id: personaId,
+        tipo,
+        rol_finca: rol_finca || null,
+        salario_base,
+        periodo_pago,
+        tarifa_jornal,
+      },
+    });
+  } catch (e) {
+    // Rollback persona
+    await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
+    return {
+      ...ESTADO_INICIAL,
+      error: `No se pudo crear la vinculación: ${(e as Error)?.message ?? "desconocido"}.`,
+    };
+  }
+
+  // --- 3. Acceso al sistema (opcional) ---
   if (!crear_acceso) {
     revalidatePath("/jefe/equipo");
     redirect("/jefe/equipo");
   }
 
-  // 2) Crear el usuario en Supabase Auth.
   const supabaseAdmin = crearClienteSupabaseAdmin();
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -97,8 +166,9 @@ export async function crearMiembro(
   });
 
   if (authError || !authData?.user) {
-    // Rollback: borrar el trabajador para no dejar huérfanos.
-    await prisma.trabajadores.delete({ where: { id: trabajadorIdCreado } }).catch(() => {});
+    // Rollback: vinculación + persona
+    await prisma.vinculaciones.deleteMany({ where: { persona_id: personaId } }).catch(() => {});
+    await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     const yaRegistrado = /already registered|already exists/i.test(authError?.message ?? "");
     return {
       ...ESTADO_INICIAL,
@@ -108,7 +178,6 @@ export async function crearMiembro(
     };
   }
 
-  // 3) Insertar fila en `usuarios` enlazando al trabajador.
   try {
     await prisma.usuarios.create({
       data: {
@@ -116,17 +185,18 @@ export async function crearMiembro(
         email,
         nombre_completo,
         rol: rol_app!,
-        trabajador_id: trabajadorIdCreado,
+        persona_id: personaId,
         activo: true,
       },
     });
   } catch (e) {
-    // Rollback: borrar auth user y trabajador.
+    // Rollback completo
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id).catch(() => {});
-    await prisma.trabajadores.delete({ where: { id: trabajadorIdCreado } }).catch(() => {});
+    await prisma.vinculaciones.deleteMany({ where: { persona_id: personaId } }).catch(() => {});
+    await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     return {
       ...ESTADO_INICIAL,
-      error: `No se pudo enlazar el acceso: ${(e as Error)?.message ?? "error desconocido"}.`,
+      error: `No se pudo enlazar el acceso: ${(e as Error)?.message ?? "desconocido"}.`,
     };
   }
 
@@ -143,14 +213,13 @@ export async function cambiarEstadoMiembro(formData: FormData) {
   if (!/^\d+$/.test(idRaw)) return;
   const id = BigInt(idRaw);
 
-  await prisma.trabajadores.update({
+  await prisma.personas.update({
     where: { id },
     data: { activo: activar },
   });
 
-  // Si tiene usuario asociado, marcarlo igual.
   await prisma.usuarios.updateMany({
-    where: { trabajador_id: id },
+    where: { persona_id: id },
     data: { activo: activar },
   });
 
