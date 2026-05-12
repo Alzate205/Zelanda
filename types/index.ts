@@ -36,6 +36,20 @@ export type TipoMovimiento =
   | "AJUSTE"
   | "INGRESO";
 
+export type TipoVinculacion =
+  | "FIJO"
+  | "JORNALERO"
+  | "CONTRATISTA"
+  | "FAMILIAR";
+
+export type TipoPeriodoPago = "MENSUAL" | "QUINCENAL" | "SEMANAL";
+
+export type EsquemaPagoDestajo =
+  | "NUNCA"
+  | "ADICIONAL"
+  | "REEMPLAZA_DIA"
+  | "SOLO_DESTAJO";
+
 export type RespuestaApi<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
