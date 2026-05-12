@@ -1,30 +1,36 @@
 import Link from "next/link";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, UserPlus, ChevronRight } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
 import { BadgeRol, BadgeBase } from "@/components/shared/BadgeRol";
+import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
 import { cambiarEstadoMiembro } from "./acciones";
-import type { RolUsuario } from "@/types";
+import type { RolUsuario, TipoVinculacion } from "@/types";
 
 export const metadata = { title: "Equipo" };
 
 export default async function PaginaEquipo() {
   await requerirUsuario("JEFE");
 
-  const trabajadores = await prisma.trabajadores.findMany({
+  const personas = await prisma.personas.findMany({
     where: { deleted_at: null },
     include: {
       usuarios: {
         select: { id: true, email: true, rol: true, activo: true },
       },
+      vinculaciones: {
+        where: { fecha_fin: null },
+        orderBy: { fecha_inicio: "desc" },
+        take: 1,
+        select: { tipo: true, rol_finca: true },
+      },
     },
     orderBy: [{ activo: "desc" }, { nombre_completo: "asc" }],
   });
 
-  const totalActivos = trabajadores.filter((t) => t.activo).length;
-  const totalConAcceso = trabajadores.filter((t) => t.usuarios.length > 0).length;
-  const totalApicultores = trabajadores.filter((t) => t.es_apicultor && t.activo).length;
+  const totalActivos = personas.filter((p) => p.activo).length;
+  const totalConAcceso = personas.filter((p) => p.usuarios.length > 0).length;
 
   return (
     <div className="space-y-6">
@@ -37,7 +43,7 @@ export default async function PaginaEquipo() {
             Equipo
           </h1>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            {totalActivos} activos · {totalConAcceso} con acceso · {totalApicultores} apicultores
+            {totalActivos} activos · {totalConAcceso} con acceso
           </p>
         </div>
         <Link
@@ -49,14 +55,14 @@ export default async function PaginaEquipo() {
         </Link>
       </header>
 
-      {trabajadores.length === 0 ? (
+      {personas.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center">
           <UserPlus className="mx-auto h-8 w-8 text-zelanda-verde-700/60" />
           <p className="mt-3 font-serif text-base text-zelanda-verde-900">
             Aún no hay miembros del equipo
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Empieza creando a Diego, Rocío y los trabajadores de campo.
+            Empieza creando a los trabajadores fijos y jornaleros.
           </p>
           <Link
             href="/jefe/equipo/nuevo"
@@ -68,44 +74,57 @@ export default async function PaginaEquipo() {
         </div>
       ) : (
         <ul className="space-y-2">
-          {trabajadores.map((t) => {
-            const usuario = t.usuarios[0];
-            const idStr = String(t.id);
+          {personas.map((p) => {
+            const usuario = p.usuarios[0];
+            const vinc = p.vinculaciones[0];
+            const idStr = String(p.id);
             return (
               <li
                 key={idStr}
                 className="flex items-center gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave"
               >
-                <AvatarIniciales id={idStr} nombre={t.nombre_completo} tamano="md" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-zelanda-verde-900">
-                    {t.nombre_completo}
-                  </p>
-                  <p className="truncate text-xs text-zelanda-verde-700">
-                    {t.rol_finca}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    {usuario ? (
-                      <BadgeRol rol={usuario.rol as RolUsuario} />
-                    ) : (
-                      <BadgeBase tono="neutro">Sin acceso</BadgeBase>
-                    )}
-                    {t.es_apicultor ? <BadgeBase tono="info">Apicultor</BadgeBase> : null}
-                    {!t.activo ? <BadgeBase tono="alerta">Inactivo</BadgeBase> : null}
+                <Link
+                  href={`/jefe/equipo/${idStr}`}
+                  className="flex flex-1 items-center gap-3 min-w-0"
+                >
+                  <AvatarIniciales id={idStr} nombre={p.nombre_completo} tamano="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-zelanda-verde-900">
+                      {p.nombre_completo}
+                    </p>
+                    <p className="truncate text-xs text-zelanda-verde-700">
+                      {vinc?.rol_finca ?? "Sin rol"}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {vinc ? (
+                        <BadgeBase tono="info">
+                          {ETIQUETA_TIPO_VINCULACION[vinc.tipo as TipoVinculacion]}
+                        </BadgeBase>
+                      ) : (
+                        <BadgeBase tono="alerta">Sin vinculación</BadgeBase>
+                      )}
+                      {usuario ? (
+                        <BadgeRol rol={usuario.rol as RolUsuario} />
+                      ) : (
+                        <BadgeBase tono="neutro">Sin acceso</BadgeBase>
+                      )}
+                      {!p.activo ? <BadgeBase tono="alerta">Inactivo</BadgeBase> : null}
+                    </div>
                   </div>
-                </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-zelanda-verde-700/40" />
+                </Link>
                 <form action={cambiarEstadoMiembro}>
                   <input type="hidden" name="id" value={idStr} />
                   <input
                     type="hidden"
                     name="activar"
-                    value={t.activo ? "false" : "true"}
+                    value={p.activo ? "false" : "true"}
                   />
                   <button
                     type="submit"
                     className="min-h-touch rounded-lg px-2.5 py-1.5 text-xs font-medium text-zelanda-verde-700 transition hover:bg-zelanda-beige-100 hover:text-zelanda-verde-900"
                   >
-                    {t.activo ? "Desactivar" : "Reactivar"}
+                    {p.activo ? "Desactivar" : "Reactivar"}
                   </button>
                 </form>
               </li>
