@@ -7,8 +7,9 @@
  *     <email> <password> "<Nombre Completo>"
  *
  * - Crea el auth.user en Supabase (email_confirm=true).
- * - Crea fila en `trabajadores` con rol_finca="Jefe de finca".
- * - Crea fila en `usuarios` enlazando auth.users.id ↔ trabajadores.id.
+ * - Crea fila en `personas` (id manual, no autoincrement).
+ * - Crea vinculación inicial tipo `FAMILIAR` con rol_finca="Jefe de finca".
+ * - Crea fila en `usuarios` enlazando auth.users.id ↔ personas.id.
  * - Si ya existe un usuario con ese email, no falla: solo lo deja como está.
  */
 
@@ -81,26 +82,45 @@ try {
     console.log("✓  Auth user creado:", userId);
   }
 
-  // 2) Asegurar fila en `trabajadores` (por cedula si la tuvieran, o por nombre).
-  //    Como no tenemos cédula aún, usamos upsert por (nombre_completo, rol_finca='Jefe de finca').
-  let trabajador = await prisma.trabajadores.findFirst({
-    where: { nombre_completo: nombre, rol_finca: "Jefe de finca" },
+  // 2) Asegurar fila en `personas`. El id es BIGINT manual (no autoincrement)
+  //    porque post-migración los IDs se manejan así. Usamos MAX(id)+1.
+  let persona = await prisma.personas.findFirst({
+    where: { nombre_completo: nombre },
   });
-  if (!trabajador) {
-    trabajador = await prisma.trabajadores.create({
+  if (!persona) {
+    const filas = await prisma.$queryRaw`SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM personas`;
+    const nextId = filas[0].next_id;
+    persona = await prisma.personas.create({
       data: {
+        id: nextId,
         nombre_completo: nombre,
-        rol_finca: "Jefe de finca",
-        es_apicultor: false,
         activo: true,
       },
     });
-    console.log("✓  Trabajador creado: id =", Number(trabajador.id));
+    console.log("✓  Persona creada: id =", Number(persona.id));
   } else {
-    console.log("·  Trabajador ya existía: id =", Number(trabajador.id));
+    console.log("·  Persona ya existía: id =", Number(persona.id));
   }
 
-  // 3) Upsert fila en `usuarios`.
+  // 3) Asegurar vinculación FAMILIAR activa.
+  const vinculacionActiva = await prisma.vinculaciones.findFirst({
+    where: { persona_id: persona.id, fecha_fin: null },
+  });
+  if (!vinculacionActiva) {
+    await prisma.vinculaciones.create({
+      data: {
+        persona_id: persona.id,
+        tipo: "FAMILIAR",
+        rol_finca: "Jefe de finca",
+        notas: "Alta inicial del primer jefe.",
+      },
+    });
+    console.log("✓  Vinculación FAMILIAR creada para la persona.");
+  } else {
+    console.log("·  Persona ya tiene vinculación activa, no se crea nueva.");
+  }
+
+  // 4) Upsert fila en `usuarios`.
   const usuarioExistente = await prisma.usuarios.findUnique({ where: { id: userId } });
   if (usuarioExistente) {
     await prisma.usuarios.update({
@@ -109,7 +129,7 @@ try {
         email,
         nombre_completo: nombre,
         rol: "JEFE",
-        trabajador_id: trabajador.id,
+        persona_id: persona.id,
         activo: true,
       },
     });
@@ -121,7 +141,7 @@ try {
         email,
         nombre_completo: nombre,
         rol: "JEFE",
-        trabajador_id: trabajador.id,
+        persona_id: persona.id,
         activo: true,
       },
     });
