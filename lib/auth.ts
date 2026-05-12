@@ -9,7 +9,7 @@ export type UsuarioActual = {
   email: string;
   nombre_completo: string;
   rol: RolUsuario;
-  trabajador_id: number | null;
+  persona_id: number | null;
   activo: boolean;
 };
 
@@ -22,7 +22,7 @@ export async function obtenerUsuarioActual(): Promise<UsuarioActual | null> {
 
   const { data, error } = await supabase
     .from("usuarios")
-    .select("id, email, nombre_completo, rol, trabajador_id, activo")
+    .select("id, email, nombre_completo, rol, persona_id, activo")
     .eq("id", user.id)
     .single();
 
