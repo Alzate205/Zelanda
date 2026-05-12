@@ -95,7 +95,8 @@ Hay **4 roles** con interfaces diferenciadas (mismo proyecto, vistas distintas s
 - Ve qué tiene prestado de bodega
 - Registra avance (tramo continuo / árboles sueltos / novedad)
 - Adjunta fotos opcionales
-- **Sub-rol APICULTOR**: trabajador con flag `es_apicultor=true`. Solo a estos se les asignan tareas de apicultura y se les despacha equipo apícola.
+
+> **Sobre apicultura:** Las tareas de apicultura (visita al apiario, cosecha de miel) se asignan a cualquier trabajador disponible. No hay sub-rol "apicultor" — el conocimiento se reparte en el equipo y el despacho de equipo apícola va a quien tenga la asignación.
 
 ---
 
@@ -152,11 +153,24 @@ Tipos de tarea predefinidos (configurables por el jefe):
 
 ### 5.5 Apicultura
 - 2 apiarios visibles en mapa
-- Tareas específicas asignables solo a apicultores
+- Tareas específicas (visita al apiario, cosecha de miel) asignables a **cualquier trabajador disponible**. No requiere rol designado.
 - Equipo específico en bodega (trajes, ahumador, etc.)
 
-### 5.6 Equipo / Trabajadores
-Datos: nombre, cédula, teléfono, rol, es_apicultor, salario_base, fecha_ingreso, activo, notas.
+### 5.6 Personas y Vínculos
+La operación de la finca involucra 4 perfiles, modelados como **`personas`** (identidad invariante) + **`vinculaciones`** (cada relación con la finca en el tiempo, con histórico):
+
+- **FIJO**: empleado con sueldo periódico (mensual/quincenal/semanal).
+- **JORNALERO**: contratado por días, con tarifa por jornal.
+- **CONTRATISTA**: contratado por servicios puntuales (puente, cortar madera, cerca). Cobra por servicio.
+- **FAMILIAR**: familia / propietarios, sin compensación vía app.
+
+Una persona puede transitar entre vínculos en el tiempo (jornalero → fijo, fijo que sale y vuelve como contratista). Cada cambio cierra la vinculación anterior y abre una nueva, preservando histórico.
+
+Datos por **persona**: nombre completo, cédula, teléfono, fecha de nacimiento, foto, notas, activo.
+
+Datos por **vinculación**: tipo, rol_finca (texto libre), fecha_inicio, fecha_fin, salario_base + periodo_pago (solo FIJO), tarifa_jornal (solo JORNALERO), esquema_pago_destajo (solo FIJO/JORNALERO).
+
+La capa financiera (cálculo de saldos, pagos, tarifas configurables, servicios contratados con pagos parciales, jornales, ausencias) está diseñada como **Fase 2 futura** — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`.
 
 ### 5.7 Alertas
 - Tarea vencida
@@ -169,23 +183,17 @@ Datos: nombre, cédula, teléfono, rol, es_apicultor, salario_base, fecha_ingres
 
 ## 6. Esquema de base de datos
 
-Ver archivo **`esquema.sql`** en la raíz del repositorio. Es el SQL ejecutable directamente en Supabase. Contiene:
-
-- 15 tablas + 2 vistas + 1 tabla de movimientos
-- Enums tipados
-- Constraints CHECK donde aplica
-- Índices en columnas críticas
-- Triggers de `updated_at`
-- Trigger de actualización de `arboles.estado` ante novedades
+El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculaciones` (que reemplaza `trabajadores`) está en **`supabase/migracion-nucleo-personas.sql`**. Las RLS están en **`supabase/policies.sql`**. Estado actual: 18 tablas + 2 vistas (`v_insumos_stock`, `v_stock_almacen`), incluyendo `personas` y `vinculaciones`. La capa financiera (5 tablas adicionales: pagos, tarifas_tarea, servicios_contratados, jornales, ausencias) es **diseño futuro** — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`.
 
 ### Decisiones de diseño clave
 
 | Decisión | Razón |
 |---|---|
+| `personas` + `vinculaciones` reemplazan `trabajadores` | La realidad operacional tiene 4 perfiles (fijos, jornaleros, contratistas, familia) y una persona puede transitar entre ellos. Histórico preservado. |
 | `novedades.arbol_id` con FK estricta a `arboles.id` | La numeración se repite entre lotes, por eso no sirve `(lote_id, numero_placa)` solo |
 | Stock cosecha como **vista** | Evita desincronización |
 | Stock insumos con `stock_actual` + `stock_reservado` | Soporta reserva + consumo real |
-| Soft-delete solo en `trabajadores`, `lotes`, `arboles` | Mantiene historia donde importa; en eventos (cosecha, asignación, etc.) no se borra nunca |
+| Soft-delete solo en `personas`, `lotes`, `arboles` | Mantiene historia donde importa; en eventos (cosecha, asignación, etc.) no se borra nunca |
 | `tipos_tarea`, `herramientas`, `insumos` usan flag `activo` en vez de soft-delete | Son catálogos |
 | Triggers mínimos | Solo para invariantes; lógica compleja en API |
 
