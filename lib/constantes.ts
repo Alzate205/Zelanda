@@ -1,4 +1,4 @@
-import type { RolUsuario } from "@/types";
+import type { RolUsuario, TipoVinculacion } from "@/types";
 
 export const NOMBRE_APP = "La Zelanda";
 
@@ -32,4 +32,11 @@ export const ETIQUETA_ROL: Record<RolUsuario, string> = {
   BODEGA: "Bodega",
   ALMACEN: "Almacén",
   TRABAJADOR: "Trabajador",
+};
+
+export const ETIQUETA_TIPO_VINCULACION: Record<TipoVinculacion, string> = {
+  FIJO: "Fijo",
+  JORNALERO: "Jornalero",
+  CONTRATISTA: "Contratista",
+  FAMILIAR: "Familia",
 };
