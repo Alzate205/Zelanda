@@ -17,14 +17,15 @@ const ROLES_FINCA_SUGERIDOS = [
   "Bodeguero",
   "Almacenista",
   "Recolector",
-  "Apicultor",
   "Trabajador de campo",
 ];
 
 export function FormularioNuevoMiembro() {
   const [estado, accion, pendiente] = useActionState(crearMiembro, ESTADO_INICIAL);
+  const [tipoVinculacion, setTipoVinculacion] = useState<
+    "FIJO" | "JORNALERO" | "CONTRATISTA" | "FAMILIAR"
+  >("FIJO");
   const [crearAcceso, setCrearAcceso] = useState(true);
-  const [esApicultor, setEsApicultor] = useState(false);
 
   return (
     <form action={accion} className="space-y-6" noValidate>
@@ -95,45 +96,6 @@ export function FormularioNuevoMiembro() {
         </div>
 
         <div>
-          <label htmlFor="rol_finca" className={labelBase}>
-            Rol en la finca <span className="text-estado-vencida">*</span>
-          </label>
-          <input
-            id="rol_finca"
-            name="rol_finca"
-            type="text"
-            list="roles-finca-sugeridos"
-            required
-            placeholder="Ej. Recolector, Bodeguero, Apicultor"
-            className={inputBase}
-          />
-          <datalist id="roles-finca-sugeridos">
-            {ROLES_FINCA_SUGERIDOS.map((r) => (
-              <option key={r} value={r} />
-            ))}
-          </datalist>
-          <p className="mt-1.5 text-xs text-zelanda-verde-700">
-            Texto libre que aparece en el perfil. Distinto al rol del sistema.
-          </p>
-        </div>
-
-        <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
-          <input
-            type="checkbox"
-            name="es_apicultor"
-            checked={esApicultor}
-            onChange={(e) => setEsApicultor(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-zelanda-beige-300 text-zelanda-verde-700 focus:ring-zelanda-verde-600/20"
-          />
-          <span className="text-sm">
-            <span className="font-medium text-zelanda-verde-900">Es apicultor</span>
-            <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-              Solo a quienes lo sean se les asignan tareas y equipo de apicultura.
-            </span>
-          </span>
-        </label>
-
-        <div>
           <label htmlFor="notas" className={labelBase}>
             Notas
           </label>
@@ -147,7 +109,119 @@ export function FormularioNuevoMiembro() {
         </div>
       </section>
 
-      {/* Sección 2: Acceso al sistema */}
+      {/* Sección 2: Vinculación con la finca */}
+      <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Vinculación con la finca
+        </h2>
+
+        <div>
+          <label htmlFor="tipo_vinculacion" className={labelBase}>
+            Tipo <span className="text-estado-vencida">*</span>
+          </label>
+          <select
+            id="tipo_vinculacion"
+            name="tipo_vinculacion"
+            required
+            value={tipoVinculacion}
+            onChange={(e) =>
+              setTipoVinculacion(
+                e.target.value as "FIJO" | "JORNALERO" | "CONTRATISTA" | "FAMILIAR",
+              )
+            }
+            className={inputBase}
+          >
+            <option value="FIJO">Fijo (sueldo periódico)</option>
+            <option value="JORNALERO">Jornalero (por días)</option>
+            <option value="CONTRATISTA">Contratista (por servicio)</option>
+            <option value="FAMILIAR">Familia / propietario</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="rol_finca" className={labelBase}>
+            Rol en la finca
+          </label>
+          <input
+            id="rol_finca"
+            name="rol_finca"
+            type="text"
+            list="roles-finca-sugeridos"
+            placeholder="Ej. Recolector, Bodeguero, Apicultor"
+            className={inputBase}
+          />
+          <datalist id="roles-finca-sugeridos">
+            {ROLES_FINCA_SUGERIDOS.map((r) => (
+              <option key={r} value={r} />
+            ))}
+          </datalist>
+          <p className="mt-1.5 text-xs text-zelanda-verde-700">
+            Texto libre; distinto al rol del sistema.
+          </p>
+        </div>
+
+        {tipoVinculacion === "FIJO" ? (
+          <div className="grid grid-cols-1 gap-4 border-t border-zelanda-beige-200 pt-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="salario_base" className={labelBase}>
+                Salario base <span className="text-estado-vencida">*</span>
+              </label>
+              <input
+                id="salario_base"
+                name="salario_base"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1000"
+                required
+                placeholder="Ej. 1300000"
+                className={inputBase}
+              />
+            </div>
+            <div>
+              <label htmlFor="periodo_pago" className={labelBase}>
+                Período <span className="text-estado-vencida">*</span>
+              </label>
+              <select
+                id="periodo_pago"
+                name="periodo_pago"
+                required
+                defaultValue="QUINCENAL"
+                className={inputBase}
+              >
+                <option value="MENSUAL">Mensual</option>
+                <option value="QUINCENAL">Quincenal</option>
+                <option value="SEMANAL">Semanal</option>
+              </select>
+            </div>
+          </div>
+        ) : null}
+
+        {tipoVinculacion === "JORNALERO" ? (
+          <div className="border-t border-zelanda-beige-200 pt-4">
+            <label htmlFor="tarifa_jornal" className={labelBase}>
+              Tarifa por jornal <span className="text-estado-vencida">*</span>
+            </label>
+            <input
+              id="tarifa_jornal"
+              name="tarifa_jornal"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              step="1000"
+              required
+              placeholder="Ej. 50000"
+              className={inputBase}
+            />
+            <p className="mt-1.5 text-xs text-zelanda-verde-700">
+              Tarifa default que cobra por día. Se puede ajustar por jornada
+              cuando se implemente la capa financiera.
+            </p>
+          </div>
+        ) : null}
+      </section>
+
+      {/* Sección 3: Acceso al sistema */}
       <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Acceso al sistema
@@ -163,11 +237,11 @@ export function FormularioNuevoMiembro() {
           />
           <span className="text-sm">
             <span className="font-medium text-zelanda-verde-900">
-              Crear cuenta para que pueda entrar a la app
+              Crear cuenta para entrar a la app
             </span>
             <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-              Si la persona no usará la app (ej. trabajador ocasional), déjalo sin
-              marcar.
+              Si la persona no usará la app (contratista de un servicio puntual,
+              jornalero ocasional, familia que ya tiene acceso), déjalo sin marcar.
             </span>
           </span>
         </label>
@@ -202,7 +276,7 @@ export function FormularioNuevoMiembro() {
                 className={inputBase}
               />
               <p className="mt-1.5 text-xs text-zelanda-verde-700">
-                Mínimo 8 caracteres. Compártela con la persona por un canal seguro.
+                Mínimo 8 caracteres. Compártela por canal seguro.
               </p>
             </div>
 
@@ -217,10 +291,10 @@ export function FormularioNuevoMiembro() {
                 defaultValue="TRABAJADOR"
                 className={inputBase}
               >
-                <option value="TRABAJADOR">Trabajador (registra avance de tareas)</option>
-                <option value="BODEGA">Bodega (despacha herramientas e insumos)</option>
-                <option value="ALMACEN">Almacén (recibe cosecha)</option>
-                <option value="JEFE">Jefe (administración completa)</option>
+                <option value="TRABAJADOR">Trabajador</option>
+                <option value="BODEGA">Bodega</option>
+                <option value="ALMACEN">Almacén</option>
+                <option value="JEFE">Jefe</option>
               </select>
             </div>
           </div>
