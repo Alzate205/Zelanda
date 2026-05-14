@@ -14,6 +14,8 @@ const inputBase =
 
 const labelBase = "block text-sm font-medium text-zelanda-verde-800";
 
+type ModoVinculacion = "dejar" | "cambiar" | "cerrar";
+
 type Persona = {
   id: string;
   nombre_completo: string;
@@ -38,12 +40,13 @@ export function FormularioEditarMiembro({
     actualizarPersonaYVinculacion,
     ESTADO_INICIAL,
   );
-  const [cambiarVinc, setCambiarVinc] = useState(false);
+  const [modo, setModo] = useState<ModoVinculacion>("dejar");
   const [nuevoTipo, setNuevoTipo] = useState<TipoVinculacion>("FIJO");
 
   return (
     <form action={accion} className="space-y-6" noValidate>
       <input type="hidden" name="persona_id" value={persona.id} />
+      <input type="hidden" name="modo_vinculacion" value={modo} />
 
       <Link
         href={`/jefe/equipo/${persona.id}`}
@@ -114,7 +117,7 @@ export function FormularioEditarMiembro({
         </div>
       </section>
 
-      {/* Cambiar vinculación */}
+      {/* Vinculación */}
       <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Vinculación
@@ -129,26 +132,72 @@ export function FormularioEditarMiembro({
           </span>
         </p>
 
-        <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
-          <input
-            type="checkbox"
-            name="cambiar_vinculacion"
-            checked={cambiarVinc}
-            onChange={(e) => setCambiarVinc(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-zelanda-beige-300 text-zelanda-verde-700"
-          />
-          <span className="text-sm">
-            <span className="font-medium text-zelanda-verde-900">
-              Cambiar tipo de vinculación
-            </span>
-            <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-              Cierra la vinculación activa actual (con la fecha de hoy) y crea
-              una nueva. El histórico queda preservado.
-            </span>
-          </span>
-        </label>
+        <fieldset className="space-y-2">
+          <legend className="sr-only">¿Qué hacer con la vinculación?</legend>
 
-        {cambiarVinc ? (
+          <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+            <input
+              type="radio"
+              name="modo_visible"
+              value="dejar"
+              checked={modo === "dejar"}
+              onChange={() => setModo("dejar")}
+              className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-zelanda-verde-900">
+                Dejarla como está
+              </span>
+              <span className="mt-0.5 block text-xs text-zelanda-verde-700">
+                Solo edito los datos personales.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+            <input
+              type="radio"
+              name="modo_visible"
+              value="cambiar"
+              checked={modo === "cambiar"}
+              onChange={() => setModo("cambiar")}
+              disabled={!vincActiva}
+              className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-zelanda-verde-900">
+                Cambiar a otro tipo
+              </span>
+              <span className="mt-0.5 block text-xs text-zelanda-verde-700">
+                Cierra la vinculación activa con la fecha de hoy y abre una
+                nueva. El histórico queda preservado.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+            <input
+              type="radio"
+              name="modo_visible"
+              value="cerrar"
+              checked={modo === "cerrar"}
+              onChange={() => setModo("cerrar")}
+              disabled={!vincActiva}
+              className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-zelanda-verde-900">
+                Cerrarla (sin abrir nueva)
+              </span>
+              <span className="mt-0.5 block text-xs text-zelanda-verde-700">
+                Esta persona quedará sin vinculación activa. Útil cuando se va
+                y no se sabe si vuelve.
+              </span>
+            </span>
+          </label>
+        </fieldset>
+
+        {modo === "cambiar" ? (
           <div className="space-y-4 border-t border-zelanda-beige-200 pt-4">
             <div>
               <label htmlFor="nueva_tipo_vinculacion" className={labelBase}>
@@ -229,6 +278,14 @@ export function FormularioEditarMiembro({
               </div>
             ) : null}
           </div>
+        ) : null}
+
+        {modo === "cerrar" ? (
+          <p className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
+            Al guardar, la vinculación activa quedará cerrada con la fecha de
+            hoy y la persona aparecerá como &ldquo;Sin vinculación&rdquo; hasta que se
+            le asigne una nueva.
+          </p>
         ) : null}
       </section>
 
