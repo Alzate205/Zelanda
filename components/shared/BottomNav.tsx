@@ -28,6 +28,7 @@ const ITEMS_POR_ROL: Record<RolUsuario, ItemNav[]> = {
   JEFE: [
     { href: "/jefe", etiqueta: "Inicio", icono: Home },
     { href: "/jefe/lotes", etiqueta: "Lotes", icono: Map },
+    { href: "/jefe/asignaciones", etiqueta: "Tareas", icono: ListChecks },
     { href: "/jefe/equipo", etiqueta: "Equipo", icono: Users },
     { href: "/jefe/alertas", etiqueta: "Alertas", icono: Bell },
   ],
