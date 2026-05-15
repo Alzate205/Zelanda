@@ -215,10 +215,12 @@ CREATE TABLE despachos (
   estado                      estado_despacho NOT NULL DEFAULT 'ABIERTO',
   fecha                       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   fecha_devolucion            TIMESTAMPTZ,
-  notas                       TEXT
+  notas                       TEXT,
+  asignacion_id               BIGINT REFERENCES asignaciones(id)
 );
 
 CREATE INDEX idx_despachos_trabajador_estado ON despachos(trabajador_id, estado);
+CREATE INDEX idx_despachos_asignacion ON despachos(asignacion_id);
 
 CREATE TABLE despacho_items (
   id              BIGSERIAL PRIMARY KEY,

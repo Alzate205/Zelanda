@@ -550,6 +550,7 @@ model asignaciones {
   persona                personas           @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   registros_avance       registros_avance[]
+  despachos              despachos[]
 
   @@index([lote_id, tipo_tarea_id], map: "idx_asign_lote_tarea")
   @@index([persona_id, estado], map: "idx_asign_persona_estado")
@@ -607,11 +608,14 @@ model despachos {
   fecha                     DateTime         @default(now()) @db.Timestamptz(6)
   fecha_devolucion          DateTime?        @db.Timestamptz(6)
   notas                     String?
+  asignacion_id             BigInt?
   despacho_items            despacho_items[]
   usuarios                  usuarios         @relation(fields: [despachado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                   personas         @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asignacion                asignaciones?    @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([persona_id, estado], map: "idx_despachos_persona_estado")
+  @@index([asignacion_id], map: "idx_despachos_asignacion")
   @@schema("public")
 }
 
