@@ -5,6 +5,13 @@ import { ChevronLeft, Pencil, Hexagon, MapPin } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BadgeBase } from "@/components/shared/BadgeRol";
+import { calcularResumen, formatearDias, etiquetaEstado } from "@/lib/fechas-tarea";
+
+function tonoBadge(estado: "aldia" | "proxima" | "vencida" | "sin_historial"): "neutro" | "alerta" | "info" {
+  if (estado === "aldia") return "info";
+  if (estado === "vencida" || estado === "sin_historial") return "alerta";
+  return "neutro";
+}
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -50,6 +57,31 @@ export default async function DetalleApiario({
   if (!apiario) notFound();
 
   const idStr = String(apiario.id);
+
+  const [tiposApicultura, completadas] = await Promise.all([
+    prisma.tipos_tarea.findMany({
+      where: { area: "APICULTURA", activo: true },
+      orderBy: { nombre: "asc" },
+      select: { id: true, nombre: true, frecuencia_dias_default: true },
+    }),
+    prisma.asignaciones.findMany({
+      where: { apiario_id: idBig, estado: "COMPLETADA" },
+      orderBy: { fecha_completada: "desc" },
+      select: { tipo_tarea_id: true, fecha_completada: true },
+    }),
+  ]);
+
+  const mapaUltima = new Map<string, Date | null>();
+  for (const c of completadas) {
+    const key = String(c.tipo_tarea_id);
+    if (!mapaUltima.has(key)) mapaUltima.set(key, c.fecha_completada);
+  }
+
+  const filasTarea = tiposApicultura.map((t) => {
+    const ultima = mapaUltima.get(String(t.id)) ?? null;
+    const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
+    return { id: String(t.id), nombre: t.nombre, ...resumen };
+  });
 
   return (
     <div className="space-y-5">
@@ -103,12 +135,33 @@ export default async function DetalleApiario({
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         <h2 className="font-serif text-base text-zelanda-verde-900">
-          Visitas y cosechas de miel
+          Tareas y estado
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-zelanda-verde-700">
-          Las tareas de visita al apiario y las cosechas de miel aparecerán
-          aquí en la Fase 3.
-        </p>
+        <ul className="mt-3 divide-y divide-zelanda-beige-200">
+          {filasTarea.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-zelanda-verde-900">{f.nombre}</p>
+                <p className="text-xs text-zelanda-verde-700">
+                  {f.ultima
+                    ? `Última: ${f.ultima.toLocaleDateString("es-CO", { day: "2-digit", month: "short" })} · próxima ${formatearDias(f.dias_para_proxima)}`
+                    : "Sin historial"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <BadgeBase tono={tonoBadge(f.estado)}>
+                  {etiquetaEstado(f.estado)}
+                </BadgeBase>
+                <Link
+                  href={`/jefe/asignaciones/nueva?apiario_id=${idStr}&tipo_tarea_id=${f.id}`}
+                  className="text-xs font-medium text-zelanda-verde-700 hover:text-zelanda-verde-900"
+                >
+                  Asignar
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
