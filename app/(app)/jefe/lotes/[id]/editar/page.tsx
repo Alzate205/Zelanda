@@ -33,6 +33,7 @@ export default async function PaginaEditarLote({
       nombre: true,
       hectareas: true,
       fecha_siembra: true,
+      total_arboles: true,
       notas: true,
       deleted_at: true,
     },
@@ -47,6 +48,7 @@ export default async function PaginaEditarLote({
         nombre: lote.nombre,
         hectareas: lote.hectareas !== null ? String(lote.hectareas) : null,
         fecha_siembra: formatearISO(lote.fecha_siembra),
+        total_arboles: lote.total_arboles ?? 0,
         notas: lote.notas,
       }}
     />

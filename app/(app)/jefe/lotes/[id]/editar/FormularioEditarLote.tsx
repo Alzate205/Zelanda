@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { actualizarLote, type EstadoEdicionLote } from "../acciones";
 
-const ESTADO_INICIAL: EstadoEdicionLote = { error: null };
+const ESTADO_INICIAL: EstadoEdicionLote = { error: null, aviso: null };
 
 const inputBase =
   "mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20";
@@ -17,6 +17,7 @@ type Lote = {
   nombre: string;
   hectareas: string | null;
   fecha_siembra: string | null;
+  total_arboles: number;
   notas: string | null;
 };
 
@@ -87,6 +88,26 @@ export function FormularioEditarLote({ lote }: { lote: Lote }) {
         </div>
 
         <div>
+          <label htmlFor="total_arboles" className={labelBase}>
+            Total de árboles
+          </label>
+          <input
+            id="total_arboles"
+            name="total_arboles"
+            type="number"
+            min="0"
+            step="1"
+            required
+            defaultValue={lote.total_arboles}
+            className={inputBase}
+          />
+          <p className="mt-1 text-xs text-zelanda-verde-700">
+            Si aumentas este número, se generarán los árboles faltantes
+            (numerados 1..N) automáticamente.
+          </p>
+        </div>
+
+        <div>
           <label htmlFor="notas" className={labelBase}>Notas</label>
           <textarea
             id="notas"
@@ -97,6 +118,15 @@ export function FormularioEditarLote({ lote }: { lote: Lote }) {
           />
         </div>
       </section>
+
+      {estado.aviso ? (
+        <p
+          role="status"
+          className="rounded-md border border-zelanda-ocre-200 bg-zelanda-ocre-50 px-3 py-2 text-sm text-zelanda-verde-800"
+        >
+          {estado.aviso}
+        </p>
+      ) : null}
 
       {estado.error ? (
         <p
