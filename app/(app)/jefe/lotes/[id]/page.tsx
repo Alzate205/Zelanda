@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, MapPin, Pencil } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatearFechaCorta } from "@/lib/utils";
@@ -56,6 +56,11 @@ export default async function DetalleLote({
   });
 
   if (!lote || lote.deleted_at) notFound();
+
+  const idBig = loteId;
+  const arbolesGenerados = await prisma.arboles.count({
+    where: { lote_id: idBig, deleted_at: null },
+  });
 
   return (
     <div className="space-y-5">
@@ -116,11 +121,15 @@ export default async function DetalleLote({
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Polígono
+              Árboles cargados
             </dt>
-            <dd className="mt-0.5 inline-flex items-center gap-1 font-medium text-zelanda-verde-900">
-              <MapPin className="h-3.5 w-3.5 text-zelanda-ocre-500" />
-              Pendiente
+            <dd className="mt-0.5 font-medium text-zelanda-verde-900">
+              {arbolesGenerados.toLocaleString("es-CO")} / {lote.total_arboles.toLocaleString("es-CO")}
+              {arbolesGenerados < lote.total_arboles ? (
+                <span className="ml-2 text-xs text-zelanda-ocre-600">
+                  (faltan {(lote.total_arboles - arbolesGenerados).toLocaleString("es-CO")})
+                </span>
+              ) : null}
             </dd>
           </div>
         </dl>
