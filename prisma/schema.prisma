@@ -504,6 +504,7 @@ model apiarios {
   coordenadas           Unsupported("geography")?
   total_colmenas        Int                       @default(0)
   activo                Boolean                   @default(true)
+  asignaciones          asignaciones[]
 
   @@index([coordenadas], map: "idx_apiarios_coord", type: Gist)
   @@schema("public")
@@ -532,7 +533,7 @@ model arboles {
 model asignaciones {
   id                     BigInt             @id @default(autoincrement())
   persona_id             BigInt
-  lote_id                BigInt
+  lote_id                BigInt?
   tipo_tarea_id          BigInt
   fecha_inicio           DateTime           @default(dbgenerated("CURRENT_DATE")) @db.Date
   fecha_completada       DateTime?          @db.Timestamptz(6)
@@ -542,14 +543,17 @@ model asignaciones {
   creado_por_usuario_id  String             @db.Uuid
   created_at             DateTime           @default(now()) @db.Timestamptz(6)
   updated_at             DateTime           @default(now()) @db.Timestamptz(6)
+  apiario_id             BigInt?
+  apiarios               apiarios?          @relation(fields: [apiario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuarios               usuarios           @relation(fields: [creado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lotes                  lotes              @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lotes                  lotes?             @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                personas           @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   registros_avance       registros_avance[]
 
   @@index([lote_id, tipo_tarea_id], map: "idx_asign_lote_tarea")
   @@index([persona_id, estado], map: "idx_asign_persona_estado")
+  @@index([apiario_id], map: "idx_asign_apiario")
   @@schema("public")
 }
 
@@ -567,8 +571,8 @@ model cosechas {
   fecha                   DateTime        @default(now()) @db.Timestamptz(6)
   notas                   String?
   lotes                   lotes           @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuarios                usuarios        @relation(fields: [recibido_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                 personas        @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                usuarios        @relation(fields: [recibido_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fecha], map: "idx_cosechas_fecha")
   @@index([lote_id, fecha], map: "idx_cosechas_lote_fecha")
@@ -777,25 +781,24 @@ model tipos_tarea {
 }
 
 model personas {
-  id               BigInt    @id
+  id               BigInt             @id
   nombre_completo  String
-  cedula           String?   @unique
+  cedula           String?            @unique
   telefono         String?
-  fecha_nacimiento DateTime? @db.Date
+  fecha_nacimiento DateTime?          @db.Date
   foto_path        String?
   notas            String?
-  activo           Boolean   @default(true)
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
-
+  activo           Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  asignaciones     asignaciones[]
+  cosechas         cosechas[]
+  despachos        despachos[]
+  novedades        novedades[]
+  registros_avance registros_avance[]
   usuarios         usuarios[]
   vinculaciones    vinculaciones[]
-  asignaciones     asignaciones[]
-  registros_avance registros_avance[]
-  novedades        novedades[]
-  despachos        despachos[]
-  cosechas         cosechas[]
 
   @@schema("public")
 }
@@ -814,8 +817,7 @@ model vinculaciones {
   notas                String?
   created_at           DateTime            @default(now()) @db.Timestamptz(6)
   updated_at           DateTime            @default(now()) @db.Timestamptz(6)
-
-  persona personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona              personas            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([persona_id], map: "idx_vinculaciones_persona")
   @@schema("public")
@@ -998,6 +1000,7 @@ enum tipo_novedad {
 enum tipo_registro {
   TRAMO
   SUELTOS
+  VISITA
 
   @@schema("public")
 }
