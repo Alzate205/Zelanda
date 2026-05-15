@@ -151,12 +151,14 @@ Las RLS de `asignaciones`, `registros_avance`, `novedades` ya están definidas e
 | Rol | Items actuales | Items finales |
 |---|---|---|
 | JEFE | Inicio, Lotes, Equipo | Inicio (dashboard), Lotes, Tareas (asignaciones), Equipo |
-| TRABAJADOR | Inicio (mis tareas) | Inicio (mis tareas), Reportar novedad (FAB o ítem) |
+| TRABAJADOR | Inicio (mis tareas) | Inicio (mis tareas), Reportar novedad (botón sticky inferior en la home, no FAB ni nav item — más discoverable y no requiere agregar ítem al nav) |
 | BODEGA, ALMACEN | sin cambios |
 
 ---
 
 ## 5. Componentes y datos
+
+> **Nota sobre los mockups:** los emojis (🟢 🟡 🔴 ⚠ ⏰ 🔍 🐝 🪲 💧 🌳) que aparecen en los wireframes de esta sección son **solo ilustrativos**. La UI real usa íconos lucide-react + badges con la paleta `estado.{aldia,proxima,vencida,neutro}` de Tailwind, sin emojis (regla del proyecto, CLAUDE.md §8).
 
 ### 5.1 Catálogo de tipos de tarea
 
