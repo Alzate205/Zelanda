@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Pencil, BarChart3 } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatearFechaCorta } from "@/lib/utils";
@@ -125,13 +125,22 @@ export default async function DetalleLote({
             {lote.nombre}
           </h1>
         </div>
-        <Link
-          href={`/jefe/lotes/${lote.id}/editar`}
-          className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
-        >
-          <Pencil className="h-4 w-4" />
-          Editar
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/jefe/lotes/${lote.id}/reporte`}
+            className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Reporte
+          </Link>
+          <Link
+            href={`/jefe/lotes/${lote.id}/editar`}
+            className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+          >
+            <Pencil className="h-4 w-4" />
+            Editar
+          </Link>
+        </div>
       </header>
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
