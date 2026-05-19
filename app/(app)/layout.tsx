@@ -1,6 +1,7 @@
 import { requerirUsuario } from "@/lib/auth";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { BottomNav } from "@/components/shared/BottomNav";
+import { PushPrompt } from "@/components/shared/PushPrompt";
 
 export default async function LayoutApp({
   children,
@@ -16,6 +17,7 @@ export default async function LayoutApp({
         {children}
       </main>
       <BottomNav rol={usuario.rol} />
+      <PushPrompt />
     </div>
   );
 }
