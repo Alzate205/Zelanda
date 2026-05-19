@@ -53,6 +53,18 @@ CREATE TABLE usuarios (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Suscripciones push (Fase 5)
+CREATE TABLE push_subscriptions (
+  id          BIGSERIAL PRIMARY KEY,
+  usuario_id  UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  endpoint    TEXT NOT NULL UNIQUE,
+  p256dh      TEXT NOT NULL,
+  auth        TEXT NOT NULL,
+  user_agent  TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_push_usuario ON push_subscriptions(usuario_id);
+
 -- ============================================================
 -- GEOGRAFÍA / CULTIVO
 -- ============================================================
