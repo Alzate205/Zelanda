@@ -14,7 +14,7 @@ self.addEventListener("push", (event) => {
   let payload = {};
   try {
     payload = event.data.json();
-  } catch (e) {
+  } catch {
     payload = { titulo: "La Zelanda", cuerpo: event.data.text() };
   }
   const titulo = payload.titulo || "La Zelanda";
