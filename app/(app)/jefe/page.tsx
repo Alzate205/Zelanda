@@ -88,16 +88,27 @@ export default async function PaginaInicioJefe() {
     .sort((a, b) => (a.dias_para_proxima ?? 0) - (b.dias_para_proxima ?? 0))
     .slice(0, 10);
 
-  const novedadesPendientes = await prisma.novedades.findMany({
-    where: { resuelta: false },
-    orderBy: { fecha: "desc" },
-    take: 5,
-    include: {
-      arboles: {
-        select: { numero_placa: true, lotes: { select: { nombre: true } } },
-      },
-    },
-  });
+  const [novedadesPendientes, stockBajoRows, despachosAbiertos, stockAlmacenRows] =
+    await Promise.all([
+      prisma.novedades.findMany({
+        where: { resuelta: false },
+        orderBy: { fecha: "desc" },
+        take: 5,
+        include: {
+          arboles: {
+            select: { numero_placa: true, lotes: { select: { nombre: true } } },
+          },
+        },
+      }),
+      prisma.$queryRaw<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count FROM v_insumos_stock
+        WHERE activo = TRUE AND por_debajo_minimo = TRUE
+      `,
+      prisma.despachos.count({ where: { estado: "ABIERTO" } }),
+      prisma.$queryRaw<{ stock_kg: string }[]>`
+        SELECT stock_kg::text FROM v_stock_almacen
+      `,
+    ]);
 
   return (
     <div className="space-y-6">
@@ -199,6 +210,51 @@ export default async function PaginaInicioJefe() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+          Operación
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link
+            href="/jefe/inventario"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Stock bajo
+            </p>
+            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
+              {stockBajoRows[0]?.count ?? 0}
+            </p>
+          </Link>
+          <Link
+            href="/bodega/despachos"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Despachos abiertos
+            </p>
+            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
+              {despachosAbiertos}
+            </p>
+          </Link>
+          <Link
+            href="/jefe/almacen-vista"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Almacén
+            </p>
+            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
+              {Number(stockAlmacenRows[0]?.stock_kg ?? 0).toLocaleString(
+                "es-CO",
+                { maximumFractionDigits: 0 },
+              )}{" "}
+              kg
+            </p>
+          </Link>
+        </div>
       </section>
     </div>
   );
