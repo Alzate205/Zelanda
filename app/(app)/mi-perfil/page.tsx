@@ -7,6 +7,7 @@ import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
 import type { TipoVinculacion } from "@/types";
 import { FormularioMisDatos } from "./FormularioMisDatos";
 import { FormularioCambiarContrasena } from "./FormularioCambiarContrasena";
+import { PushToggle } from "@/components/shared/PushToggle";
 
 export const metadata: Metadata = { title: "Mi perfil" };
 
@@ -87,6 +88,19 @@ export default async function PaginaMiPerfil() {
               vinculadoAPersona: persona !== null,
             }}
           />
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Notificaciones
+        </h2>
+        <p className="mt-1 text-xs text-zelanda-verde-700">
+          Recibí avisos de asignaciones, novedades y vencidas en este
+          dispositivo.
+        </p>
+        <div className="mt-3">
+          <PushToggle />
         </div>
       </section>
 
