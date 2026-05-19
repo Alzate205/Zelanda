@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import {
+  notificarStockBajoSiCorresponde,
+  snapshotDisponiblesAntes,
+} from "@/lib/push/stock-bajo";
 
 export type EstadoEdicion = { error: string | null };
 
@@ -86,6 +90,12 @@ export async function crearDespacho(
     }
   }
 
+  // Snapshot pre-transacción para detectar cruces de mínimo
+  const insumoIdsPush = items
+    .filter((it) => it.tipo === "INSUMO")
+    .map((it) => BigInt(it.ref_id));
+  const disponiblesAntes = await snapshotDisponiblesAntes(insumoIdsPush);
+
   // Transacción
   try {
     await prisma.$transaction(async (tx) => {
@@ -135,6 +145,12 @@ export async function crearDespacho(
     };
   }
 
+  try {
+    await notificarStockBajoSiCorresponde(insumoIdsPush, disponiblesAntes);
+  } catch (e) {
+    console.warn("Push stock bajo falló:", e);
+  }
+
   revalidatePath("/bodega/despachos");
   redirect("/bodega/despachos");
 }
@@ -157,6 +173,11 @@ export async function cerrarDespacho(
   if (despacho.estado !== "ABIERTO") {
     return { error: "Este despacho ya está cerrado." };
   }
+
+  const insumoIdsPush: bigint[] = despacho.despacho_items
+    .filter((it) => it.tipo_item === "INSUMO" && it.insumo_id !== null)
+    .map((it) => it.insumo_id as bigint);
+  const disponiblesAntes = await snapshotDisponiblesAntes(insumoIdsPush);
 
   type Actualizacion = {
     itemId: bigint;
@@ -256,6 +277,12 @@ export async function cerrarDespacho(
     });
   } catch (e) {
     return { error: `Error al cerrar: ${(e as Error)?.message ?? "desconocido"}` };
+  }
+
+  try {
+    await notificarStockBajoSiCorresponde(insumoIdsPush, disponiblesAntes);
+  } catch (e) {
+    console.warn("Push stock bajo falló:", e);
   }
 
   revalidatePath("/bodega/despachos");
