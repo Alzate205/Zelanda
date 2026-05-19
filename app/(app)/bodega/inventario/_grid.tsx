@@ -11,7 +11,11 @@ import {
 } from "lucide-react";
 
 type Categoria = "CULTIVO" | "COSECHA" | "APICULTURA";
-type Filtro = "TODOS" | Categoria;
+type Filtro =
+  | "TODOS"
+  | "HERRAMIENTAS"
+  | "INSUMOS"
+  | Categoria;
 
 export type ItemInventario =
   | {
@@ -36,8 +40,16 @@ export type ItemInventario =
       por_debajo_minimo: boolean;
     };
 
-const ETIQUETA_CAT: Record<Filtro, string> = {
+const ETIQUETA_FILTRO: Record<Filtro, string> = {
   TODOS: "Todos",
+  HERRAMIENTAS: "Herramientas",
+  INSUMOS: "Insumos",
+  CULTIVO: "Cultivo",
+  COSECHA: "Cosecha",
+  APICULTURA: "Apicultura",
+};
+
+const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   CULTIVO: "Cultivo",
   COSECHA: "Cosecha",
   APICULTURA: "Apicultura",
@@ -50,7 +62,14 @@ export function GridInventario({ items }: { items: ItemInventario[] }) {
   const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
-      if (cat !== "TODOS" && i.categoria !== cat) return false;
+      if (cat === "HERRAMIENTAS" && i.tipo !== "HERRAMIENTA") return false;
+      if (cat === "INSUMOS" && i.tipo !== "INSUMO") return false;
+      if (
+        (cat === "CULTIVO" || cat === "COSECHA" || cat === "APICULTURA") &&
+        i.categoria !== cat
+      ) {
+        return false;
+      }
       if (q !== "" && !i.nombre.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -85,7 +104,16 @@ export function GridInventario({ items }: { items: ItemInventario[] }) {
       </div>
 
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {(["TODOS", "CULTIVO", "COSECHA", "APICULTURA"] as const).map((c) => (
+        {(
+          [
+            "TODOS",
+            "HERRAMIENTAS",
+            "INSUMOS",
+            "CULTIVO",
+            "COSECHA",
+            "APICULTURA",
+          ] as const
+        ).map((c) => (
           <button
             key={c}
             type="button"
@@ -96,7 +124,7 @@ export function GridInventario({ items }: { items: ItemInventario[] }) {
                 : "border border-zelanda-beige-300 text-zelanda-verde-700"
             }`}
           >
-            {ETIQUETA_CAT[c]}
+            {ETIQUETA_FILTRO[c]}
           </button>
         ))}
       </div>
@@ -136,7 +164,7 @@ function CardItem({ item }: { item: ItemInventario }) {
       >
         <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zelanda-verde-700/60">
           <Wrench className="h-3 w-3" />
-          {ETIQUETA_CAT[item.categoria]}
+          {ETIQUETA_CATEGORIA[item.categoria]}
         </p>
 
         <p
@@ -179,7 +207,7 @@ function CardItem({ item }: { item: ItemInventario }) {
     >
       <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zelanda-verde-700/60">
         <FlaskConical className="h-3 w-3" />
-        {ETIQUETA_CAT[item.categoria]}
+        {ETIQUETA_CATEGORIA[item.categoria]}
       </p>
 
       <p
