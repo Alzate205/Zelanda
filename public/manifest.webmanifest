@@ -1,0 +1,14 @@
+{
+  "name": "Hacienda La Zelanda",
+  "short_name": "La Zelanda",
+  "description": "Sistema de gestión de la finca",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F1E8",
+  "theme_color": "#3D5C42",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
