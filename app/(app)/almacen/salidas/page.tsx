@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parseRangoFechas, whereFecha, aIso } from "@/lib/rango-fechas";
 
 export const metadata = { title: "Salidas" };
 
@@ -12,13 +13,42 @@ const TONO_TIPO: Record<string, string> = {
   OTRO: "bg-zelanda-beige-200 text-zelanda-verde-700",
 };
 
-export default async function PaginaSalidas() {
+const TIPOS = ["VENTA", "CONSUMO", "PERDIDA", "OTRO"] as const;
+type TipoSalida = (typeof TIPOS)[number];
+
+function esTipoValido(v: string): v is TipoSalida {
+  return (TIPOS as readonly string[]).includes(v);
+}
+
+export default async function PaginaSalidas({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requerirUsuario("ALMACEN");
 
-  const salidas = await prisma.salidas_cosecha.findMany({
-    take: 50,
-    orderBy: { fecha: "desc" },
-  });
+  const sp = await searchParams;
+  const rango = parseRangoFechas(sp);
+  const tipoRaw = typeof sp.tipo === "string" ? sp.tipo : "";
+  const filtroTipo = esTipoValido(tipoRaw) ? { tipo: tipoRaw } : {};
+
+  const where = {
+    ...whereFecha("fecha", rango),
+    ...filtroTipo,
+  };
+
+  const [salidas, totales] = await Promise.all([
+    prisma.salidas_cosecha.findMany({
+      where,
+      take: 100,
+      orderBy: { fecha: "desc" },
+    }),
+    prisma.salidas_cosecha.aggregate({
+      where,
+      _count: { _all: true },
+      _sum: { cantidad_kg: true, precio_total: true },
+    }),
+  ]);
 
   const fmt = (d: Date) =>
     d.toLocaleString("es-CO", {
@@ -27,6 +57,9 @@ export default async function PaginaSalidas() {
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const hayFiltros =
+    rango.desde !== null || rango.hasta !== null || tipoRaw !== "";
 
   return (
     <div className="space-y-6">
@@ -47,10 +80,85 @@ export default async function PaginaSalidas() {
         </Link>
       </header>
 
+      <form
+        method="get"
+        className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+      >
+        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+              Desde
+            </label>
+            <input
+              type="date"
+              name="desde"
+              defaultValue={aIso(rango.desde)}
+              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+              Hasta
+            </label>
+            <input
+              type="date"
+              name="hasta"
+              defaultValue={aIso(rango.hasta)}
+              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+              Tipo
+            </label>
+            <select
+              name="tipo"
+              defaultValue={tipoRaw}
+              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+            >
+              <option value="">Todos</option>
+              {TIPOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end gap-2">
+            <button
+              type="submit"
+              className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 text-sm text-white"
+            >
+              Aplicar
+            </button>
+            {hayFiltros && (
+              <Link
+                href="/almacen/salidas"
+                className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm text-zelanda-verde-700"
+              >
+                Limpiar
+              </Link>
+            )}
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-zelanda-verde-700/70">
+          {totales._count._all} salida{totales._count._all === 1 ? "" : "s"} ·{" "}
+          {Number(totales._sum.cantidad_kg ?? 0).toLocaleString("es-CO", {
+            maximumFractionDigits: 2,
+          })}{" "}
+          kg
+          {tipoRaw === "VENTA" && totales._sum.precio_total
+            ? ` · $${Number(totales._sum.precio_total).toLocaleString("es-CO", { maximumFractionDigits: 0 })}`
+            : ""}
+        </p>
+      </form>
+
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         {salidas.length === 0 ? (
           <p className="text-sm text-zelanda-verde-700/70">
-            Aún no hay salidas registradas.
+            {hayFiltros
+              ? "No hay salidas que coincidan con los filtros."
+              : "Aún no hay salidas registradas."}
           </p>
         ) : (
           <ul className="divide-y divide-zelanda-beige-200">
