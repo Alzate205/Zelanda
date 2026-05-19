@@ -59,8 +59,9 @@ export async function crearAsignacion(
     fecha_inicio = f;
   }
 
+  let nuevaId: bigint;
   try {
-    await prisma.asignaciones.create({
+    const creada = await prisma.asignaciones.create({
       data: {
         persona_id: personaId,
         lote_id: loteId,
@@ -71,8 +72,46 @@ export async function crearAsignacion(
         creado_por_usuario_id: usuario.id,
       },
     });
+    nuevaId = creada.id;
   } catch (e) {
     return { error: `No se pudo crear: ${(e as Error)?.message ?? "desconocido"}.` };
+  }
+
+  try {
+    const destinatario = await prisma.usuarios.findFirst({
+      where: { persona_id: personaId, activo: true },
+      select: { id: true },
+    });
+    if (destinatario) {
+      const [tipoTarea, lote, apiario] = await Promise.all([
+        prisma.tipos_tarea.findUnique({
+          where: { id: tipoTareaId },
+          select: { nombre: true },
+        }),
+        loteId
+          ? prisma.lotes.findUnique({
+              where: { id: loteId },
+              select: { nombre: true },
+            })
+          : Promise.resolve(null),
+        apiarioId
+          ? prisma.apiarios.findUnique({
+              where: { id: apiarioId },
+              select: { nombre: true },
+            })
+          : Promise.resolve(null),
+      ]);
+      const ubicacion = lote?.nombre ?? apiario?.nombre ?? "—";
+      const { enviarPushAUsuarios } = await import("@/lib/push/enviar");
+      await enviarPushAUsuarios([destinatario.id], {
+        titulo: "Nueva tarea asignada",
+        cuerpo: `${tipoTarea?.nombre ?? "Tarea"} · ${ubicacion}`,
+        url: `/trabajador/avance/${nuevaId}`,
+        tag: `asignacion-${nuevaId}`,
+      });
+    }
+  } catch (e) {
+    console.warn("Push asignación falló:", e);
   }
 
   revalidatePath("/jefe/asignaciones");
