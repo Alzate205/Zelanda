@@ -248,6 +248,12 @@ function CardItem({ item }: { item: ItemInventario }) {
       >
         <PackagePlus className="h-3 w-3" /> Ingresar
       </Link>
+      <Link
+        href={`/bodega/inventario/insumos/${item.id}/historial`}
+        className="mt-1 self-start text-[11px] text-zelanda-verde-700 underline"
+      >
+        Ver historial
+      </Link>
     </article>
   );
 }

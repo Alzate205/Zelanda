@@ -311,3 +311,63 @@ export async function ingresarStock(
   revalidatePath("/bodega/inventario");
   redirect("/bodega/inventario");
 }
+
+export async function ajustarStock(
+  _prev: EstadoEdicion,
+  formData: FormData,
+): Promise<EstadoEdicion> {
+  const usuario = await requerirUsuario("BODEGA");
+
+  const idRaw = String(formData.get("insumo_id") ?? "");
+  if (!/^\d+$/.test(idRaw)) return { error: "Insumo inválido." };
+  const insumoId = BigInt(idRaw);
+
+  const cantidadRaw = String(formData.get("cantidad") ?? "").trim();
+  const cantidad = Number(cantidadRaw);
+  if (!Number.isFinite(cantidad) || cantidad === 0) {
+    return { error: "Cantidad debe ser distinta de cero (negativa para restar)." };
+  }
+
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  if (!motivo) {
+    return { error: "Motivo obligatorio (ej: rotura, pérdida, conteo)." };
+  }
+
+  if (cantidad < 0) {
+    const insumo = await prisma.insumos.findUnique({
+      where: { id: insumoId },
+      select: { stock_actual: true, nombre: true, unidad: true },
+    });
+    if (!insumo) return { error: "Insumo no encontrado." };
+    const stockResultante = Number(insumo.stock_actual) + cantidad;
+    if (stockResultante < 0) {
+      return {
+        error: `Stock quedaría negativo (${stockResultante.toFixed(3)} ${insumo.unidad}).`,
+      };
+    }
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.insumos.update({
+        where: { id: insumoId },
+        data: { stock_actual: { increment: cantidad } },
+      }),
+      prisma.movimientos_insumo.create({
+        data: {
+          insumo_id: insumoId,
+          tipo: "AJUSTE",
+          cantidad,
+          usuario_id: usuario.id,
+          notas: motivo,
+        },
+      }),
+    ]);
+  } catch (e) {
+    return { error: `Error al ajustar: ${(e as Error)?.message ?? "desconocido"}` };
+  }
+
+  revalidatePath("/bodega/inventario");
+  revalidatePath(`/bodega/inventario/insumos/${idRaw}/historial`);
+  redirect(`/bodega/inventario/insumos/${idRaw}/historial`);
+}
