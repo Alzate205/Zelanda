@@ -59,8 +59,9 @@ export async function crearNovedad(
     }
   }
 
+  let novedadId: bigint;
   try {
-    await prisma.novedades.create({
+    const creada = await prisma.novedades.create({
       data: {
         arbol_id: arbol.id,
         persona_id: BigInt(usuario.persona_id),
@@ -70,8 +71,44 @@ export async function crearNovedad(
         resuelta: false,
       },
     });
+    novedadId = creada.id;
   } catch (e) {
     return { error: `No se pudo guardar: ${(e as Error)?.message ?? "desconocido"}.` };
+  }
+
+  try {
+    const ETIQUETA_NOV: Record<string, string> = {
+      PLAGA: "Plaga",
+      DANO_FISICO: "Daño físico",
+      ENFERMEDAD: "Enfermedad",
+      OBSERVACION: "Observación",
+      OTRO: "Otro",
+    };
+    const arbolDetalle = await prisma.arboles.findUnique({
+      where: { id: arbol.id },
+      select: {
+        numero_placa: true,
+        lotes: { select: { nombre: true } },
+      },
+    });
+    const jefes = await prisma.usuarios.findMany({
+      where: { rol: "JEFE", activo: true },
+      select: { id: true },
+    });
+    if (arbolDetalle && jefes.length > 0) {
+      const { enviarPushAUsuarios } = await import("@/lib/push/enviar");
+      await enviarPushAUsuarios(
+        jefes.map((j) => j.id),
+        {
+          titulo: `Novedad: ${ETIQUETA_NOV[tipoRaw] ?? tipoRaw}`,
+          cuerpo: `Árbol ${arbolDetalle.numero_placa} · Lote ${arbolDetalle.lotes.nombre}`,
+          url: `/jefe/novedades/${novedadId}`,
+          tag: `novedad-${novedadId}`,
+        },
+      );
+    }
+  } catch (e) {
+    console.warn("Push novedad falló:", e);
   }
 
   revalidatePath("/trabajador");
