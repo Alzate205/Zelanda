@@ -325,6 +325,29 @@ CREATE TABLE apiarios (
 CREATE INDEX idx_apiarios_coord ON apiarios USING GIST(coordenadas);
 
 -- ============================================================
+-- MAPA: instalaciones (puntos) y borde de la finca (polígono)
+-- ============================================================
+CREATE TYPE tipo_instalacion AS ENUM ('CASA','BODEGA','ALMACEN','OTRO');
+
+CREATE TABLE instalaciones (
+  id          BIGSERIAL PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  tipo        tipo_instalacion NOT NULL,
+  coordenadas GEOGRAPHY(POINT, 4326),
+  notas       TEXT,
+  activo      BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_instalaciones_coord ON instalaciones USING GIST(coordenadas);
+
+CREATE TABLE finca (
+  id         BIGSERIAL PRIMARY KEY,
+  nombre     TEXT NOT NULL,
+  poligono   GEOGRAPHY(POLYGON, 4326),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
 -- TRIGGER: estado de árbol según novedades activas
 -- ============================================================
 CREATE OR REPLACE FUNCTION actualizar_estado_arbol()
