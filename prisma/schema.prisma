@@ -733,6 +733,7 @@ model novedades {
   resuelta         Boolean      @default(false)
   fecha_resolucion DateTime?    @db.Timestamptz(6)
   fecha            DateTime     @default(now()) @db.Timestamptz(6)
+  id_local         String?      @unique @db.Uuid
   arboles          arboles      @relation(fields: [arbol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona          personas     @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -754,6 +755,7 @@ model registros_avance {
   observaciones    String?
   foto_path        String?
   fecha_registro   DateTime      @default(now()) @db.Timestamptz(6)
+  id_local         String?       @unique @db.Uuid
   asignaciones     asignaciones  @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona          personas      @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
