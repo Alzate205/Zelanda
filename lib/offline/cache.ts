@@ -3,6 +3,9 @@ import type {
   AsignacionCacheada,
   LoteCacheado,
   SnapshotTrabajador,
+  SnapshotBodega,
+  SnapshotAlmacen,
+  SnapshotJefe,
 } from "./tipos";
 
 const TTL_CACHE_MS = 5 * 60 * 1000; // 5 minutos
@@ -52,4 +55,57 @@ export async function tsSnapshot(): Promise<number | null> {
   const db = await abrirDb();
   const meta = await db.get("cache_meta", "snapshot_ts");
   return typeof meta?.value === "number" ? meta.value : null;
+}
+
+// === Snapshots por rol (bodega / almacen / jefe) ===
+
+export async function guardarSnapshotBodega(s: SnapshotBodega): Promise<void> {
+  const db = await abrirDb();
+  await db.put("cache_bodega", { key: "snapshot", data: s, ts_cache: Date.now() });
+}
+
+export async function leerSnapshotBodega(): Promise<SnapshotBodega | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_bodega", "snapshot");
+  return r?.data ?? null;
+}
+
+export async function tsBodega(): Promise<number | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_bodega", "snapshot");
+  return r?.ts_cache ?? null;
+}
+
+export async function guardarSnapshotAlmacen(s: SnapshotAlmacen): Promise<void> {
+  const db = await abrirDb();
+  await db.put("cache_almacen", { key: "snapshot", data: s, ts_cache: Date.now() });
+}
+
+export async function leerSnapshotAlmacen(): Promise<SnapshotAlmacen | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_almacen", "snapshot");
+  return r?.data ?? null;
+}
+
+export async function tsAlmacen(): Promise<number | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_almacen", "snapshot");
+  return r?.ts_cache ?? null;
+}
+
+export async function guardarSnapshotJefe(s: SnapshotJefe): Promise<void> {
+  const db = await abrirDb();
+  await db.put("cache_jefe", { key: "snapshot", data: s, ts_cache: Date.now() });
+}
+
+export async function leerSnapshotJefe(): Promise<SnapshotJefe | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_jefe", "snapshot");
+  return r?.data ?? null;
+}
+
+export async function tsJefe(): Promise<number | null> {
+  const db = await abrirDb();
+  const r = await db.get("cache_jefe", "snapshot");
+  return r?.ts_cache ?? null;
 }

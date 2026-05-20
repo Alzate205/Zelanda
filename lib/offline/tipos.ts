@@ -65,3 +65,182 @@ export type SnapshotTrabajador = {
   lotes: LoteCacheado[];
   ts: string;
 };
+
+// === Bodega ===
+
+export type HerramientaCacheada = {
+  id: string;
+  nombre: string;
+  categoria: string;
+  unidad: string;
+  total: number;
+  prestadas: number;
+  disponibles: number;
+};
+
+export type InsumoCacheado = {
+  id: string;
+  nombre: string;
+  categoria: string;
+  unidad: string;
+  stock_actual: number;
+  stock_reservado: number;
+  stock_minimo: number;
+  stock_disponible: number;
+};
+
+export type PersonaCacheada = {
+  id: string;
+  nombre: string;
+};
+
+export type AsignacionResumenCacheada = {
+  id: string;
+  persona_id: string;
+  etiqueta: string;
+};
+
+export type DespachoAbiertoItem = {
+  id: string;
+  tipo: "HERRAMIENTA" | "INSUMO";
+  nombre: string;
+  unidad: string;
+  cantidad: number;
+};
+
+export type DespachoAbiertoCacheado = {
+  id: string;
+  persona_nombre: string;
+  fecha_despacho: string;
+  items: DespachoAbiertoItem[];
+};
+
+export type SnapshotBodega = {
+  herramientas: HerramientaCacheada[];
+  insumos: InsumoCacheado[];
+  personas: PersonaCacheada[];
+  asignaciones: AsignacionResumenCacheada[];
+  despachos_abiertos: DespachoAbiertoCacheado[];
+  ts: string;
+};
+
+// === Almacén ===
+
+export type LoteParaCosecha = {
+  id: string;
+  nombre: string;
+  total_arboles: number;
+};
+
+export type SnapshotAlmacen = {
+  lotes: LoteParaCosecha[];
+  personas: PersonaCacheada[];
+  stock_almacen_kg: number;
+  ts: string;
+};
+
+// === Jefe ===
+
+export type LoteJefe = {
+  id: string;
+  nombre: string;
+  total_arboles: number;
+  tareas_proximas: number;
+  tareas_vencidas: number;
+  novedades_abiertas: number;
+};
+
+export type AsignacionJefe = {
+  id: string;
+  tipo_tarea_nombre: string;
+  persona_nombre: string;
+  lote_nombre: string | null;
+  apiario_nombre: string | null;
+  estado: string;
+  fecha_inicio: string;
+  arboles_completados: number;
+  total_arboles: number | null;
+};
+
+export type NovedadJefe = {
+  id: string;
+  tipo: string;
+  descripcion: string;
+  fecha: string;
+  arbol_numero: number;
+  lote_nombre: string;
+  persona_nombre: string;
+  resuelta: boolean;
+};
+
+export type AlertaJefe = {
+  tipo: "TAREA_VENCIDA" | "TAREA_PROXIMA" | "STOCK_BAJO" | "DESPACHO_ABIERTO" | "NOVEDAD_CRITICA";
+  texto: string;
+  url: string;
+  fecha: string;
+};
+
+export type SnapshotJefe = {
+  lotes: LoteJefe[];
+  asignaciones: AsignacionJefe[];
+  novedades: NovedadJefe[];
+  alertas: AlertaJefe[];
+  ts: string;
+};
+
+// === Items de cola nuevos ===
+
+export type ItemColaDespachoCrear = {
+  id_local: string;
+  persona_id: string;
+  asignacion_id: string | null;
+  items: Array<{ tipo: "HERRAMIENTA" | "INSUMO"; ref_id: string; cantidad: number }>;
+  notas: string | null;
+  estado: EstadoCola;
+  intentos: number;
+  ultimo_error: string | null;
+  creado_en: number;
+};
+
+export type ItemColaDespachoCerrar = {
+  id_local: string;
+  despacho_id: string;
+  items: Array<{
+    despacho_item_id: string;
+    tipo: "HERRAMIENTA" | "INSUMO";
+    devuelto?: boolean;
+    consumido?: number;
+  }>;
+  estado: EstadoCola;
+  intentos: number;
+  ultimo_error: string | null;
+  creado_en: number;
+};
+
+export type ItemColaCosecha = {
+  id_local: string;
+  persona_id: string;
+  lote_id: string;
+  metodo: "CANASTA" | "BASCULA";
+  cantidad_canastas: number | null;
+  capacidad_canasta_kg: number | null;
+  peso_kg: number;
+  notas: string | null;
+  estado: EstadoCola;
+  intentos: number;
+  ultimo_error: string | null;
+  creado_en: number;
+};
+
+export type ItemColaSalida = {
+  id_local: string;
+  tipo: "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
+  cantidad_kg: number;
+  cliente_detalle: string | null;
+  precio_total: number | null;
+  notas: string | null;
+  estado: EstadoCola;
+  intentos: number;
+  ultimo_error: string | null;
+  creado_en: number;
+};
