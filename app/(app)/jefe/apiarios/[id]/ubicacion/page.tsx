@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FormularioUbicacionApiario } from "./_formulario";
+import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
 
 export const metadata = { title: "Ubicación apiario" };
 
@@ -21,9 +22,12 @@ export default async function Page({
   });
   if (!ap) notFound();
 
-  const rows = await prisma.$queryRaw<{ pto: string | null }[]>`
-    SELECT ST_AsGeoJSON(coordenadas)::text AS pto FROM apiarios WHERE id = ${BigInt(id)}
-  `;
+  const [rows, referencias] = await Promise.all([
+    prisma.$queryRaw<{ pto: string | null }[]>`
+      SELECT ST_AsGeoJSON(coordenadas)::text AS pto FROM apiarios WHERE id = ${BigInt(id)}
+    `,
+    cargarReferenciasMapa({ excluirApiarioId: BigInt(id) }),
+  ]);
   let inicial: [number, number] | null = null;
   if (rows[0]?.pto) {
     try {
@@ -55,7 +59,11 @@ export default async function Page({
           Tocá en el mapa donde está el apiario.
         </p>
       </header>
-      <FormularioUbicacionApiario apiarioId={ap.id.toString()} inicial={inicial} />
+      <FormularioUbicacionApiario
+        apiarioId={ap.id.toString()}
+        inicial={inicial}
+        referencias={referencias}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FormularioUbicacionInstalacion } from "./_formulario";
+import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
 
 export const metadata = { title: "Ubicación" };
 
@@ -21,9 +22,12 @@ export default async function Page({
   });
   if (!inst) notFound();
 
-  const rows = await prisma.$queryRaw<{ pto: string | null }[]>`
-    SELECT ST_AsGeoJSON(coordenadas)::text AS pto FROM instalaciones WHERE id = ${BigInt(id)}
-  `;
+  const [rows, referencias] = await Promise.all([
+    prisma.$queryRaw<{ pto: string | null }[]>`
+      SELECT ST_AsGeoJSON(coordenadas)::text AS pto FROM instalaciones WHERE id = ${BigInt(id)}
+    `,
+    cargarReferenciasMapa({ excluirInstalacionId: BigInt(id) }),
+  ]);
   let inicial: [number, number] | null = null;
   if (rows[0]?.pto) {
     try {
@@ -59,6 +63,7 @@ export default async function Page({
       <FormularioUbicacionInstalacion
         instalacionId={inst.id.toString()}
         inicial={inicial}
+        referencias={referencias}
       />
     </div>
   );

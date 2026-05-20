@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReferenciasMapa } from "@/lib/referencias-mapa";
 
 const EditorBorde = dynamic(() => import("./_editor-cliente"), {
   ssr: false,
@@ -11,6 +12,9 @@ const EditorBorde = dynamic(() => import("./_editor-cliente"), {
   ),
 });
 
-export function EditorBordeCargador(props: { geojsonInicial: string | null }) {
+export function EditorBordeCargador(props: {
+  geojsonInicial: string | null;
+  referencias?: ReferenciasMapa;
+}) {
   return <EditorBorde {...props} />;
 }

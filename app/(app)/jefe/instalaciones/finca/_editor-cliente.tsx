@@ -6,16 +6,49 @@ import {
   CircleMarker,
   Polyline,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { useActionState, useState, useMemo } from "react";
+import L from "leaflet";
+import { useActionState, useState, useMemo, useEffect } from "react";
 import { Undo2, Trash2 } from "lucide-react";
 import { guardarBordeFinca, type EstadoEdicion } from "@/lib/acciones-mapa";
+import { CapaReferencias } from "@/components/mapa/CapaReferencias";
+import type { ReferenciasMapa } from "@/lib/referencias-mapa";
 
 type LngLat = [number, number];
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
 const CENTRO_QUINDIO: [number, number] = [4.535, -75.681];
+
+function AjustarVistaReferencias({
+  lotes,
+  vacio,
+}: {
+  lotes: ReferenciasMapa["lotes"];
+  vacio: boolean;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!vacio) return;
+    if (lotes.length === 0) return;
+    try {
+      const featureCollection = {
+        type: "FeatureCollection" as const,
+        features: lotes.map((l) => ({
+          type: "Feature" as const,
+          properties: {},
+          geometry: l.geojson,
+        })),
+      };
+      const layer = L.geoJSON(featureCollection);
+      map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+    } catch {
+      /* noop */
+    }
+  }, [lotes, vacio, map]);
+  return null;
+}
 
 function Capturador({
   onClick,
@@ -50,8 +83,10 @@ function parseGeojsonInicial(geojson: string | null): LngLat[] {
 
 export default function EditorBorde({
   geojsonInicial,
+  referencias,
 }: {
   geojsonInicial: string | null;
+  referencias?: ReferenciasMapa;
 }) {
   const iniciales = useMemo(
     () => parseGeojsonInicial(geojsonInicial),
@@ -88,6 +123,20 @@ export default function EditorBorde({
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             maxZoom={19}
           />
+          {referencias && (
+            <>
+              <AjustarVistaReferencias
+                lotes={referencias.lotes}
+                vacio={iniciales.length === 0}
+              />
+              <CapaReferencias
+                borde={referencias.borde}
+                lotes={referencias.lotes}
+                apiarios={referencias.apiarios}
+                instalaciones={referencias.instalaciones}
+              />
+            </>
+          )}
           <Capturador
             onClick={(lng, lat) =>
               setVertices((p) => [...p, [lng, lat] as LngLat])

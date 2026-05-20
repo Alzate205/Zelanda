@@ -6,15 +6,18 @@ import {
   guardarCoordsApiario,
   type EstadoEdicion,
 } from "@/lib/acciones-mapa";
+import type { ReferenciasMapa } from "@/lib/referencias-mapa";
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
 
 export function FormularioUbicacionApiario({
   apiarioId,
   inicial,
+  referencias,
 }: {
   apiarioId: string;
   inicial: [number, number] | null;
+  referencias?: ReferenciasMapa;
 }) {
   const [estado, formAction, pending] = useActionState(
     guardarCoordsApiario,
@@ -23,7 +26,11 @@ export function FormularioUbicacionApiario({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="apiario_id" value={apiarioId} />
-      <EditorPuntoCargador inicial={inicial} hiddenName="punto" />
+      <EditorPuntoCargador
+        inicial={inicial}
+        hiddenName="punto"
+        referencias={referencias}
+      />
       {estado.error && (
         <p className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
           {estado.error}

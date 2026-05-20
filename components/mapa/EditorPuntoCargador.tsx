@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import type { ReferenciasMapa } from "@/lib/referencias-mapa";
 
 const EditorPunto = dynamic(() => import("./EditorPunto"), {
   ssr: false,
@@ -17,14 +18,16 @@ type LngLat = [number, number];
 export function EditorPuntoCargador({
   inicial,
   hiddenName,
+  referencias,
 }: {
   inicial: LngLat | null;
   hiddenName: string;
+  referencias?: ReferenciasMapa;
 }) {
   const [punto, setPunto] = useState<LngLat | null>(inicial);
   return (
     <>
-      <EditorPunto inicial={inicial} onChange={setPunto} />
+      <EditorPunto inicial={inicial} onChange={setPunto} referencias={referencias} />
       <input
         type="hidden"
         name={hiddenName}

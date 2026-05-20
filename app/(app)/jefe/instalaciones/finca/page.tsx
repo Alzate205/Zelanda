@@ -3,14 +3,18 @@ import { ArrowLeft } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { EditorBordeCargador } from "./_editor";
+import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
 
 export const metadata = { title: "Borde de la finca" };
 
 export default async function Page() {
   await requerirUsuario("JEFE");
-  const rows = await prisma.$queryRaw<{ geojson: string | null }[]>`
-    SELECT ST_AsGeoJSON(poligono)::text AS geojson FROM finca LIMIT 1
-  `;
+  const [rows, referencias] = await Promise.all([
+    prisma.$queryRaw<{ geojson: string | null }[]>`
+      SELECT ST_AsGeoJSON(poligono)::text AS geojson FROM finca LIMIT 1
+    `,
+    cargarReferenciasMapa({ incluirBorde: false }),
+  ]);
   const geojson = rows[0]?.geojson ?? null;
   return (
     <div className="space-y-4">
@@ -32,7 +36,7 @@ export default async function Page() {
           &ldquo;Cerrar y guardar&rdquo;.
         </p>
       </header>
-      <EditorBordeCargador geojsonInicial={geojson} />
+      <EditorBordeCargador geojsonInicial={geojson} referencias={referencias} />
     </div>
   );
 }

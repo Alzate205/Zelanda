@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { EditorPoligonoCargador } from "./_editor";
+import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
 
 export const metadata = { title: "Polígono del lote" };
 
@@ -22,10 +23,13 @@ export default async function PaginaEditorPoligono({
   });
   if (!lote) notFound();
 
-  const rows = await prisma.$queryRaw<{ poligono_geojson: string | null }[]>`
-    SELECT ST_AsGeoJSON(poligono)::text AS poligono_geojson
-    FROM lotes WHERE id = ${BigInt(id)}
-  `;
+  const [rows, referencias] = await Promise.all([
+    prisma.$queryRaw<{ poligono_geojson: string | null }[]>`
+      SELECT ST_AsGeoJSON(poligono)::text AS poligono_geojson
+      FROM lotes WHERE id = ${BigInt(id)}
+    `,
+    cargarReferenciasMapa({ excluirLoteId: BigInt(id) }),
+  ]);
   const geojson = rows[0]?.poligono_geojson ?? null;
 
   return (
@@ -51,6 +55,7 @@ export default async function PaginaEditorPoligono({
       <EditorPoligonoCargador
         loteId={lote.id.toString()}
         geojsonInicial={geojson}
+        referencias={referencias}
       />
     </div>
   );

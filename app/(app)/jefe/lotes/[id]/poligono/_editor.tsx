@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReferenciasMapa } from "@/lib/referencias-mapa";
 
 const EditorPoligono = dynamic(() => import("./_editor-cliente"), {
   ssr: false,
@@ -14,6 +15,7 @@ const EditorPoligono = dynamic(() => import("./_editor-cliente"), {
 export function EditorPoligonoCargador(props: {
   loteId: string;
   geojsonInicial: string | null;
+  referencias?: ReferenciasMapa;
 }) {
   return <EditorPoligono {...props} />;
 }
