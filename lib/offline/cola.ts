@@ -1,7 +1,6 @@
 import { abrirDb } from "./db";
 import { emitirCambio } from "./eventos";
 import type {
-  EstadoCola,
   ItemColaAvance,
   ItemColaNovedad,
 } from "./tipos";

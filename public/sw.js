@@ -76,7 +76,7 @@ async function cacheFirst(req, cacheName) {
     const res = await fetch(req);
     if (res.ok) cache.put(req, res.clone());
     return res;
-  } catch (e) {
+  } catch {
     return Response.error();
   }
 }
@@ -87,7 +87,7 @@ async function networkFirst(req, cacheName) {
     const res = await fetch(req);
     if (res.ok) cache.put(req, res.clone());
     return res;
-  } catch (e) {
+  } catch {
     const hit = await cache.match(req);
     if (hit) return hit;
     return new Response(JSON.stringify({ error: "offline" }), {
