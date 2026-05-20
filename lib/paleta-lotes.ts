@@ -1,16 +1,16 @@
 const PALETA = [
-  "#5a8264", // verde bosque
-  "#c89045", // ocre
-  "#7a9d6e", // verde claro
-  "#a87858", // terracota suave
-  "#6b8e5a", // verde oliva
-  "#d4a866", // ámbar tierra
-  "#8ca984", // verde grisáceo
-  "#b58866", // cobre
-  "#3d7050", // verde oscuro
-  "#c0a060", // mostaza
-  "#7c9070", // verde musgo
-  "#9c7548", // madera
+  "#3b6e8f", // azul acero
+  "#c87439", // naranja terracota
+  "#5a8a4f", // verde oliva
+  "#9c5a8a", // púrpura suave
+  "#d4a04a", // dorado
+  "#3d7050", // verde profundo
+  "#a85048", // ladrillo
+  "#6b6e9e", // azul lavanda
+  "#8a6a3a", // marrón cálido
+  "#4e8090", // teal apagado
+  "#9a8845", // mostaza tierra
+  "#7a5a8e", // ciruela
 ];
 
 export function colorDeLote(loteId: number | bigint | string): string {
