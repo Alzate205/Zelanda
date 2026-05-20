@@ -317,10 +317,12 @@ Pasos:
 - Reportes básicos
 
 ### Fase 5 — Apicultura y refinamientos
-- Módulo de apiarios
-- Tareas de apicultura
-- Modo offline completo (PWA + IndexedDB + sync)
-- Notificaciones push
+- Módulo de apiarios (pendiente)
+- Tareas de apicultura (pendiente)
+- Notificaciones push ✅ (sub-fase 5.1)
+- Modo offline trabajador ✅ (sub-fase 5.2a — ver tareas, registrar avance/novedad, sync con backoff, pantalla `/trabajador/pendientes`)
+- Modo offline bodega/almacén/jefe (sub-fase 5.2b, pendiente)
+- Fotos offline con re-escalado a 1280px (sub-fase 5.2c, pendiente)
 
 ### Fase 6 — Futuro (no hacer aún)
 Productividad detallada, costos, pagos, clima, compras, ventas, reportes avanzados, códigos QR en placas.
