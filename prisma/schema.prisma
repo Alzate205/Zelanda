@@ -593,6 +593,7 @@ model cosechas {
   peso_kg                 Decimal         @db.Decimal(10, 2)
   fecha                   DateTime        @default(now()) @db.Timestamptz(6)
   notas                   String?
+  id_local                String?         @unique @db.Uuid
   lotes                   lotes           @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                 personas        @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuarios                usuarios        @relation(fields: [recibido_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -631,6 +632,7 @@ model despachos {
   fecha_devolucion          DateTime?        @db.Timestamptz(6)
   notas                     String?
   asignacion_id             BigInt?
+  id_local                  String?          @unique @db.Uuid
   despacho_items            despacho_items[]
   usuarios                  usuarios         @relation(fields: [despachado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                   personas         @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -774,6 +776,7 @@ model salidas_cosecha {
   registrado_por_usuario_id String      @db.Uuid
   fecha                     DateTime    @default(now()) @db.Timestamptz(6)
   notas                     String?
+  id_local                  String?     @unique @db.Uuid
   usuarios                  usuarios    @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fecha], map: "idx_salidas_fecha")
