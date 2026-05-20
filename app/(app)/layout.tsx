@@ -2,6 +2,8 @@ import { requerirUsuario } from "@/lib/auth";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { BottomNav } from "@/components/shared/BottomNav";
 import { PushPrompt } from "@/components/shared/PushPrompt";
+import { SyncEngineInit } from "@/components/shared/SyncEngineInit";
+import { BannerOffline } from "@/components/shared/BannerOffline";
 
 export default async function LayoutApp({
   children,
@@ -18,6 +20,8 @@ export default async function LayoutApp({
       </main>
       <BottomNav rol={usuario.rol} />
       <PushPrompt />
+      <SyncEngineInit />
+      <BannerOffline />
     </div>
   );
 }
