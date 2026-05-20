@@ -5,10 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { FormAvance } from "./FormAvance";
 
 export const metadata: Metadata = { title: "Registrar avance" };
+export const dynamic = "force-dynamic";
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
-  try { return BigInt(raw); } catch { return null; }
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
 }
 
 export default async function PaginaAvance({

@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { registrarAvance, type EstadoAvance } from "./acciones";
-
-const ESTADO_INICIAL: EstadoAvance = { error: null };
+import { useRouter } from "next/navigation";
+import { ChevronLeft, CloudOff } from "lucide-react";
+import { enviarAvance } from "@/lib/offline/api-cliente";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 const inputBase =
   "mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20";
@@ -24,15 +24,114 @@ type Asignacion = {
   totalColmenas: number | null;
 };
 
+function parsearListaNumeros(raw: string): number[] | null {
+  const tokens = raw.split(/[\s,;]+/).filter(Boolean);
+  const nums: number[] = [];
+  for (const t of tokens) {
+    if (!/^\d+$/.test(t)) return null;
+    const n = parseInt(t, 10);
+    if (n <= 0) return null;
+    nums.push(n);
+  }
+  return nums;
+}
+
 export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
-  const [estado, accion, pendiente] = useActionState(registrarAvance, ESTADO_INICIAL);
+  const router = useRouter();
+  const online = useOnlineStatus();
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, startTransition] = useTransition();
   const esCultivo = asignacion.area === "CULTIVO";
   const [tipo, setTipo] = useState<"TRAMO" | "SUELTOS">("TRAMO");
 
-  return (
-    <form action={accion} className="space-y-6" noValidate>
-      <input type="hidden" name="asignacion_id" value={asignacion.id} />
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
 
+    if (!esCultivo) {
+      startTransition(async () => {
+        const r = await enviarAvance({
+          asignacion_id: asignacion.id,
+          tipo_registro: "VISITA",
+          arbol_desde: null,
+          arbol_hasta: null,
+          arboles_lista: [],
+          observaciones,
+        });
+        if (!r.ok) {
+          setError(r.error);
+          return;
+        }
+        router.push("/trabajador");
+      });
+      return;
+    }
+
+    if (tipo === "TRAMO") {
+      const d = parseInt(String(formData.get("desde") ?? ""), 10);
+      const h = parseInt(String(formData.get("hasta") ?? ""), 10);
+      if (!Number.isInteger(d) || !Number.isInteger(h) || d < 1 || h < 1) {
+        setError("Desde y hasta deben ser enteros positivos.");
+        return;
+      }
+      if (asignacion.totalArboles && (d > asignacion.totalArboles || h > asignacion.totalArboles)) {
+        setError(`Los números deben estar entre 1 y ${asignacion.totalArboles}.`);
+        return;
+      }
+      if (d > h) {
+        setError("Desde no puede ser mayor que Hasta.");
+        return;
+      }
+      startTransition(async () => {
+        const r = await enviarAvance({
+          asignacion_id: asignacion.id,
+          tipo_registro: "TRAMO",
+          arbol_desde: d,
+          arbol_hasta: h,
+          arboles_lista: [],
+          observaciones,
+        });
+        if (!r.ok) {
+          setError(r.error);
+          return;
+        }
+        router.push("/trabajador");
+      });
+    } else {
+      const lista = parsearListaNumeros(String(formData.get("lista") ?? ""));
+      if (!lista || lista.length === 0) {
+        setError("Lista de números inválida o vacía.");
+        return;
+      }
+      if (asignacion.totalArboles) {
+        const fuera = lista.filter((n) => n > asignacion.totalArboles!);
+        if (fuera.length > 0) {
+          setError(`Algunos números superan el total (${asignacion.totalArboles}).`);
+          return;
+        }
+      }
+      startTransition(async () => {
+        const r = await enviarAvance({
+          asignacion_id: asignacion.id,
+          tipo_registro: "SUELTOS",
+          arbol_desde: null,
+          arbol_hasta: null,
+          arboles_lista: lista,
+          observaciones,
+        });
+        if (!r.ok) {
+          setError(r.error);
+          return;
+        }
+        router.push("/trabajador");
+      });
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-6" noValidate>
       <Link
         href="/trabajador"
         className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
@@ -45,9 +144,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
           {esCultivo ? `Lote ${asignacion.loteNombre}` : `Apiario ${asignacion.apiarioNombre}`}
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          {asignacion.tipoTarea}
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{asignacion.tipoTarea}</h1>
         {esCultivo && asignacion.totalArboles !== null ? (
           <p className="mt-1 text-sm text-zelanda-verde-700">
             Progreso: {asignacion.arbolesCompletados} / {asignacion.totalArboles} árboles
@@ -60,7 +157,6 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
 
       {esCultivo ? (
         <>
-          <input type="hidden" name="tipo_registro" value={tipo} />
           <div className="flex gap-2">
             <button
               type="button"
@@ -126,36 +222,43 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           </section>
         </>
       ) : (
-        <>
-          <input type="hidden" name="tipo_registro" value="VISITA" />
-          <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-            {asignacion.totalColmenas !== null ? (
-              <p className="text-sm text-zelanda-verde-700">
-                {asignacion.totalColmenas} colmenas registradas.
-              </p>
-            ) : null}
-            <div>
-              <label htmlFor="observaciones" className={labelBase}>
-                Observaciones (qué se hizo, hallazgos, kg de miel, etc.)
-              </label>
-              <textarea
-                id="observaciones"
-                name="observaciones"
-                rows={4}
-                required
-                className={`${inputBase} min-h-[100px] resize-y`}
-              />
-            </div>
-            <p className="text-xs text-zelanda-verde-700">
-              Al registrar, la asignación queda completada.
+        <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          {asignacion.totalColmenas !== null ? (
+            <p className="text-sm text-zelanda-verde-700">
+              {asignacion.totalColmenas} colmenas registradas.
             </p>
-          </section>
-        </>
+          ) : null}
+          <div>
+            <label htmlFor="observaciones" className={labelBase}>
+              Observaciones (qué se hizo, hallazgos, kg de miel, etc.)
+            </label>
+            <textarea
+              id="observaciones"
+              name="observaciones"
+              rows={4}
+              required
+              className={`${inputBase} min-h-[100px] resize-y`}
+            />
+          </div>
+          <p className="text-xs text-zelanda-verde-700">
+            Al registrar, la asignación queda completada.
+          </p>
+        </section>
       )}
 
-      {estado.error ? (
-        <p role="alert" className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
-          {estado.error}
+      {!online ? (
+        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
+          <CloudOff className="h-3.5 w-3.5" />
+          Sin señal — el avance se guardará y subirá al volver la conexión.
+        </p>
+      ) : null}
+
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+        >
+          {error}
         </p>
       ) : null}
 
