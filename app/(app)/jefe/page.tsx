@@ -216,7 +216,7 @@ export default async function PaginaInicioJefe() {
         <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
           Operación
         </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/jefe/inventario"
             className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
@@ -252,6 +252,17 @@ export default async function PaginaInicioJefe() {
                 { maximumFractionDigits: 0 },
               )}{" "}
               kg
+            </p>
+          </Link>
+          <Link
+            href="/jefe/instalaciones"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Mapa
+            </p>
+            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
+              Capturar
             </p>
           </Link>
         </div>
