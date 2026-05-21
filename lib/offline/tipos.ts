@@ -34,6 +34,8 @@ export type LoteCacheado = {
 
 export type MetaCache = { key: string; value: unknown };
 
+export type EstadoApiario = "BIEN" | "CON_PROBLEMAS" | "CRITICO";
+
 export type ItemColaAvance = {
   id_local: string;
   asignacion_id: string;
@@ -42,6 +44,7 @@ export type ItemColaAvance = {
   arbol_hasta: number | null;
   arboles_lista: number[];
   observaciones: string | null;
+  estado_apiario: EstadoApiario | null;
   estado: EstadoCola;
   intentos: number;
   ultimo_error: string | null;

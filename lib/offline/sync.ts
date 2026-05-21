@@ -35,6 +35,7 @@ function payloadAvance(i: ItemColaAvance) {
     arbol_hasta: i.arbol_hasta,
     arboles_lista: i.arboles_lista,
     observaciones: i.observaciones,
+    estado_apiario: i.estado_apiario,
   };
 }
 

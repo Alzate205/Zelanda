@@ -10,6 +10,7 @@ type Body = {
   arbol_hasta: number | null;
   arboles_lista: number[];
   observaciones: string | null;
+  estado_apiario?: "BIEN" | "CON_PROBLEMAS" | "CRITICO" | null;
 };
 
 function esUuid(s: unknown): s is string {
@@ -64,6 +65,12 @@ export async function POST(req: Request) {
     if (asignacion.apiario_id === null) {
       return NextResponse.json({ error: "VISITA solo aplica a apiario" }, { status: 400 });
     }
+    const estadoApiario =
+      body.estado_apiario === "BIEN" ||
+      body.estado_apiario === "CON_PROBLEMAS" ||
+      body.estado_apiario === "CRITICO"
+        ? body.estado_apiario
+        : null;
     const creado = await prisma.$transaction(async (tx) => {
       const r = await tx.registros_avance.create({
         data: {
@@ -74,6 +81,7 @@ export async function POST(req: Request) {
           cantidad_arboles: 0,
           arboles_lista: [],
           observaciones,
+          estado_apiario: estadoApiario,
         },
       });
       await tx.asignaciones.update({
@@ -82,6 +90,35 @@ export async function POST(req: Request) {
       });
       return r;
     });
+
+    // Push best-effort si estado crítico
+    if (estadoApiario === "CRITICO") {
+      try {
+        const apiario = await prisma.apiarios.findUnique({
+          where: { id: asignacion.apiario_id },
+          select: { nombre: true },
+        });
+        const jefes = await prisma.usuarios.findMany({
+          where: { rol: "JEFE", activo: true },
+          select: { id: true },
+        });
+        if (apiario && jefes.length > 0) {
+          const { enviarPushAUsuarios } = await import("@/lib/push/enviar");
+          await enviarPushAUsuarios(
+            jefes.map((j) => j.id),
+            {
+              titulo: `Apiario crítico: ${apiario.nombre}`,
+              cuerpo: observaciones ?? "Visita registrada en estado crítico",
+              url: `/jefe/apiarios/${asignacion.apiario_id.toString()}`,
+              tag: `apiario-critico-${asignacion.apiario_id}`,
+            },
+          );
+        }
+      } catch (e) {
+        console.warn("Push apiario crítico falló:", e);
+      }
+    }
+
     return NextResponse.json({ ok: true, id: String(creado.id) });
   }
 

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, CloudOff } from "lucide-react";
 import { enviarAvance } from "@/lib/offline/api-cliente";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import type { EstadoApiario } from "@/lib/offline/tipos";
 
 const inputBase =
   "mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20";
@@ -36,13 +37,27 @@ function parsearListaNumeros(raw: string): number[] | null {
   return nums;
 }
 
+const ESTADOS_APIARIO: Array<{
+  value: EstadoApiario;
+  etiqueta: string;
+  color: string;
+}> = [
+  { value: "BIEN", etiqueta: "Bien", color: "bg-estado-aldia text-white border-estado-aldia" },
+  { value: "CON_PROBLEMAS", etiqueta: "Con problemas", color: "bg-estado-proxima text-white border-estado-proxima" },
+  { value: "CRITICO", etiqueta: "Crítico", color: "bg-estado-vencida text-white border-estado-vencida" },
+];
+
 export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const esCultivo = asignacion.area === "CULTIVO";
+  const esCosechaMiel =
+    !esCultivo && /miel/i.test(asignacion.tipoTarea);
+  const esVisitaApiario = !esCultivo && !esCosechaMiel;
   const [tipo, setTipo] = useState<"TRAMO" | "SUELTOS">("TRAMO");
+  const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,7 +65,37 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
     const formData = new FormData(e.currentTarget);
     const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
 
-    if (!esCultivo) {
+    if (esCosechaMiel) {
+      const kg = Number(String(formData.get("kg") ?? "").trim());
+      if (!Number.isFinite(kg) || kg <= 0) {
+        setError("Los kilos cosechados deben ser positivos.");
+        return;
+      }
+      startTransition(async () => {
+        const res = await fetch("/api/trabajador/cosecha-miel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            asignacion_id: asignacion.id,
+            kg,
+            notas: observaciones,
+          }),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          setError(j.error ?? `Error ${res.status}`);
+          return;
+        }
+        router.push("/trabajador");
+      });
+      return;
+    }
+
+    if (esVisitaApiario) {
+      if (!estadoApiario) {
+        setError("Indicá el estado general del apiario.");
+        return;
+      }
       startTransition(async () => {
         const r = await enviarAvance({
           asignacion_id: asignacion.id,
@@ -59,6 +104,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           arbol_hasta: null,
           arboles_lista: [],
           observaciones,
+          estado_apiario: estadoApiario,
         });
         if (!r.ok) {
           setError(r.error);
@@ -92,6 +138,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           arbol_hasta: h,
           arboles_lista: [],
           observaciones,
+          estado_apiario: null,
         });
         if (!r.ok) {
           setError(r.error);
@@ -120,6 +167,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           arbol_hasta: null,
           arboles_lista: lista,
           observaciones,
+          estado_apiario: null,
         });
         if (!r.ok) {
           setError(r.error);
@@ -221,22 +269,78 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
             </div>
           </section>
         </>
+      ) : esCosechaMiel ? (
+        <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          {asignacion.totalColmenas !== null ? (
+            <p className="text-sm text-zelanda-verde-700">
+              {asignacion.totalColmenas} colmenas en el apiario.
+            </p>
+          ) : null}
+          <div>
+            <label htmlFor="kg" className={labelBase}>
+              Kg de miel cosechados
+            </label>
+            <input
+              id="kg"
+              name="kg"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              className={inputBase}
+            />
+          </div>
+          <div>
+            <label htmlFor="observaciones" className={labelBase}>
+              Notas (opcional)
+            </label>
+            <textarea
+              id="observaciones"
+              name="observaciones"
+              rows={3}
+              className={`${inputBase} min-h-[80px] resize-y`}
+            />
+          </div>
+          <p className="text-xs text-zelanda-verde-700">
+            Al registrar, la asignación queda completada.
+          </p>
+        </section>
       ) : (
         <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
           {asignacion.totalColmenas !== null ? (
             <p className="text-sm text-zelanda-verde-700">
-              {asignacion.totalColmenas} colmenas registradas.
+              {asignacion.totalColmenas} colmenas en el apiario.
             </p>
           ) : null}
+
+          <div>
+            <p className={labelBase}>Estado general del apiario</p>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {ESTADOS_APIARIO.map((e) => (
+                <button
+                  key={e.value}
+                  type="button"
+                  onClick={() => setEstadoApiario(e.value)}
+                  className={`min-h-touch rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                    estadoApiario === e.value
+                      ? e.color
+                      : "border-zelanda-beige-300 bg-white text-zelanda-verde-800"
+                  }`}
+                >
+                  {e.etiqueta}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label htmlFor="observaciones" className={labelBase}>
-              Observaciones (qué se hizo, hallazgos, kg de miel, etc.)
+              Observaciones (qué se hizo, hallazgos)
             </label>
             <textarea
               id="observaciones"
               name="observaciones"
               rows={4}
-              required
               className={`${inputBase} min-h-[100px] resize-y`}
             />
           </div>
@@ -246,10 +350,17 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         </section>
       )}
 
-      {!online ? (
+      {!online && !esCosechaMiel ? (
         <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
           <CloudOff className="h-3.5 w-3.5" />
           Sin señal — el avance se guardará y subirá al volver la conexión.
+        </p>
+      ) : null}
+
+      {!online && esCosechaMiel ? (
+        <p className="flex items-center gap-2 rounded-md border border-estado-vencida/40 bg-estado-vencida/10 px-3 py-2 text-xs text-estado-vencida">
+          <CloudOff className="h-3.5 w-3.5" />
+          Sin señal — la cosecha de miel requiere conexión, conectate antes de registrar.
         </p>
       ) : null}
 
@@ -271,7 +382,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         </Link>
         <button
           type="submit"
-          disabled={pendiente}
+          disabled={pendiente || (esCosechaMiel && !online)}
           className="flex-1 rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pendiente ? "Registrando…" : "Registrar"}
