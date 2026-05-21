@@ -76,13 +76,27 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     .filter((f) => f.estado === "vencida" || f.estado === "sin_historial")
     .sort((a, b) => a.ord - b.ord)
     .slice(0, 10)
-    .map(({ ord: _ord, ...rest }) => rest);
+    .map((f) => ({
+      lote_nombre: f.lote_nombre,
+      lote_id: f.lote_id,
+      tipo_nombre: f.tipo_nombre,
+      tipo_id: f.tipo_id,
+      dias_para_proxima: f.dias_para_proxima,
+      estado: f.estado,
+    }));
 
   const proximas: AlertaTareaJefe[] = filas
     .filter((f) => f.estado === "proxima")
     .sort((a, b) => (a.dias_para_proxima ?? 0) - (b.dias_para_proxima ?? 0))
     .slice(0, 10)
-    .map(({ ord: _ord, ...rest }) => rest);
+    .map((f) => ({
+      lote_nombre: f.lote_nombre,
+      lote_id: f.lote_id,
+      tipo_nombre: f.tipo_nombre,
+      tipo_id: f.tipo_id,
+      dias_para_proxima: f.dias_para_proxima,
+      estado: f.estado,
+    }));
 
   const [
     novedadesPendientesRaw,
