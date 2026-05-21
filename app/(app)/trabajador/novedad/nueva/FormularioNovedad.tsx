@@ -14,12 +14,20 @@ const labelBase = "block text-sm font-medium text-zelanda-verde-800";
 
 type Lote = { id: string; nombre: string; totalArboles: number };
 
-export function FormularioNovedad({ lotes }: { lotes: Lote[] }) {
+export function FormularioNovedad({
+  lotes,
+  loteInicial,
+  numeroInicial,
+}: {
+  lotes: Lote[];
+  loteInicial?: string | null;
+  numeroInicial?: string | null;
+}) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
-  const [loteId, setLoteId] = useState<string>("");
+  const [loteId, setLoteId] = useState<string>(loteInicial ?? "");
   const loteSeleccionado = lotes.find((l) => l.id === loteId);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -129,7 +137,17 @@ export function FormularioNovedad({ lotes }: { lotes: Lote[] }) {
         </div>
 
         <div>
-          <label htmlFor="numero_placa" className={labelBase}>Número de árbol</label>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="numero_placa" className={labelBase}>Número de árbol</label>
+            {loteSeleccionado && numeroInicial ? (
+              <Link
+                href={`/trabajador/arbol/${loteSeleccionado.id}/${numeroInicial}`}
+                className="text-xs text-zelanda-verde-700 underline hover:text-zelanda-verde-900"
+              >
+                Ver historial →
+              </Link>
+            ) : null}
+          </div>
           <input
             id="numero_placa"
             name="numero_placa"
@@ -138,6 +156,7 @@ export function FormularioNovedad({ lotes }: { lotes: Lote[] }) {
             max={loteSeleccionado?.totalArboles ?? undefined}
             required
             disabled={!loteSeleccionado}
+            defaultValue={numeroInicial ?? ""}
             className={inputBase}
             placeholder={loteSeleccionado ? `1 a ${loteSeleccionado.totalArboles}` : "Elige lote primero"}
           />

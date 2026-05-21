@@ -16,7 +16,6 @@ import { prisma } from "@/lib/prisma";
 import { urlFotoFirmada } from "@/lib/supabase/storage";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { formatearFechaCorta } from "@/lib/utils";
-import { EditorArbol } from "./_editor";
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
   PLAGA: "Plaga",
@@ -71,14 +70,14 @@ function aniosDesde(fecha: Date): string {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string; numero: string }>;
+  params: Promise<{ lote_id: string; numero: string }>;
 }): Promise<Metadata> {
-  const { id, numero } = await params;
-  const loteId = parsearId(id);
+  const { lote_id, numero } = await params;
+  const id = parsearId(lote_id);
   const num = parsearNumero(numero);
-  if (!loteId || !num) return { title: "Árbol no encontrado" };
+  if (!id || !num) return { title: "Árbol no encontrado" };
   const lote = await prisma.lotes.findUnique({
-    where: { id: loteId },
+    where: { id },
     select: { nombre: true },
   });
   return { title: `Árbol ${num} · Lote ${lote?.nombre ?? "?"}` };
@@ -93,15 +92,15 @@ type RegistroArbol = {
   persona_nombre: string;
 };
 
-export default async function FichaArbol({
+export default async function FichaArbolTrabajador({
   params,
 }: {
-  params: Promise<{ id: string; numero: string }>;
+  params: Promise<{ lote_id: string; numero: string }>;
 }) {
-  await requerirUsuario("JEFE");
-  const { id, numero } = await params;
+  await requerirUsuario("TRABAJADOR");
+  const { lote_id, numero } = await params;
 
-  const loteId = parsearId(id);
+  const loteId = parsearId(lote_id);
   const num = parsearNumero(numero);
   if (!loteId || !num) notFound();
 
@@ -190,23 +189,23 @@ export default async function FichaArbol({
   return (
     <div className="space-y-5">
       <Link
-        href={`/jefe/lotes/${arbol.lote_id}`}
+        href="/trabajador"
         className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
       >
         <ChevronLeft className="h-4 w-4" />
-        Lote {arbol.lotes.nombre}
+        Mis tareas
       </Link>
 
       <header>
         <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Árbol
+          Ficha de árbol
         </p>
         <h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-zelanda-verde-900">
           <Sprout className="h-7 w-7 shrink-0 text-zelanda-verde-600" />
           Nº {arbol.numero_placa}
         </h1>
         <p className="mt-1 text-sm text-zelanda-verde-700">
-          Lote {arbol.lotes.nombre} · de {arbol.lotes.total_arboles.toLocaleString("es-CO")} árboles
+          Lote {arbol.lotes.nombre}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <BadgeBase tono={tonoActual}>{ETIQUETA_ESTADO[arbol.estado] ?? arbol.estado}</BadgeBase>
@@ -219,14 +218,7 @@ export default async function FichaArbol({
       </header>
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-base text-zelanda-verde-900">Información</h2>
-          <EditorArbol
-            arbolId={String(arbol.id)}
-            estadoInicial={arbol.estado}
-            notasIniciales={arbol.notas}
-          />
-        </div>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Información</h2>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <div>
             <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
@@ -335,10 +327,7 @@ export default async function FichaArbol({
           <ul className="mt-3 space-y-2">
             {novedades.map((n) => (
               <li key={String(n.id)}>
-                <Link
-                  href={`/jefe/novedades/${n.id}`}
-                  className="block rounded-lg border border-zelanda-beige-200 px-3 py-2 transition hover:bg-zelanda-beige-50"
-                >
+                <div className="rounded-lg border border-zelanda-beige-200 px-3 py-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <BadgeBase tono={n.resuelta ? "neutro" : "alerta"}>
                       {ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo}
@@ -354,7 +343,7 @@ export default async function FichaArbol({
                   <p className="mt-0.5 text-xs text-zelanda-verde-700">
                     Reportado por {n.persona.nombre_completo}
                   </p>
-                </Link>
+                </div>
               </li>
             ))}
           </ul>
@@ -370,20 +359,19 @@ export default async function FichaArbol({
           </h2>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {fotosValidas.map((f) => (
-              <Link
+              <div
                 key={f.id}
-                href={`/jefe/novedades/${f.id}`}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-zelanda-beige-200"
+                className="relative aspect-square overflow-hidden rounded-lg border border-zelanda-beige-200"
               >
                 <Image
                   src={f.url}
                   alt={`Foto ${ETIQUETA_NOVEDAD[f.tipo] ?? f.tipo}`}
                   fill
                   sizes="(max-width: 640px) 50vw, 33vw"
-                  className="object-cover transition group-hover:opacity-90"
+                  className="object-cover"
                   unoptimized
                 />
-              </Link>
+              </div>
             ))}
           </div>
         </section>
