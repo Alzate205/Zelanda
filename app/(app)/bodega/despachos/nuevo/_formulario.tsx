@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState, useMemo } from "react";
-import { Trash2, Wrench, FlaskConical } from "lucide-react";
-import { crearDespacho, type EstadoEdicion } from "../acciones";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { CloudOff, FlaskConical, Trash2, Wrench } from "lucide-react";
+import { enviarDespachoCrear } from "@/lib/offline/api-cliente";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 type Persona = { id: string; nombre: string };
 type Herramienta = { id: string; nombre: string; total: number };
@@ -16,8 +18,6 @@ type ItemRow = {
   cantidad: string;
 };
 
-const ESTADO_INICIAL: EstadoEdicion = { error: null };
-
 export function FormularioDespacho({
   personas,
   herramientas,
@@ -29,11 +29,13 @@ export function FormularioDespacho({
   insumos: Insumo[];
   asignaciones: Asignacion[];
 }) {
-  const [estado, formAction, pending] = useActionState(
-    crearDespacho,
-    ESTADO_INICIAL,
-  );
+  const router = useRouter();
+  const online = useOnlineStatus();
+  const [pendiente, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [personaId, setPersonaId] = useState("");
+  const [asignacionId, setAsignacionId] = useState("");
+  const [notas, setNotas] = useState("");
   const [items, setItems] = useState<ItemRow[]>([]);
 
   const asignacionesFiltradas = useMemo(
@@ -61,8 +63,51 @@ export function FormularioDespacho({
     setItems((prev) => prev.filter((i) => i.uid !== uid));
   };
 
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    if (!personaId) {
+      setError("Selecciona un trabajador.");
+      return;
+    }
+    if (items.length === 0) {
+      setError("Agrega al menos un item al despacho.");
+      return;
+    }
+    for (const it of items) {
+      if (!/^\d+$/.test(it.ref_id)) {
+        setError("Selecciona un item válido en cada fila.");
+        return;
+      }
+      const c = Number(it.cantidad);
+      if (!Number.isFinite(c) || c <= 0) {
+        setError("Cantidad inválida en uno de los items.");
+        return;
+      }
+    }
+
+    startTransition(async () => {
+      const r = await enviarDespachoCrear({
+        persona_id: personaId,
+        asignacion_id: asignacionId || null,
+        items: items.map((i) => ({
+          tipo: i.tipo,
+          ref_id: i.ref_id,
+          cantidad: Number(i.cantidad),
+        })),
+        notas: notas.trim() || null,
+      });
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      router.push("/bodega/despachos");
+    });
+  }
+
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
         <label className="block text-sm font-medium text-zelanda-verde-900">
           Trabajador
@@ -71,7 +116,10 @@ export function FormularioDespacho({
           name="persona_id"
           required
           value={personaId}
-          onChange={(e) => setPersonaId(e.target.value)}
+          onChange={(e) => {
+            setPersonaId(e.target.value);
+            setAsignacionId("");
+          }}
           className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
         >
           <option value="">Selecciona...</option>
@@ -90,7 +138,8 @@ export function FormularioDespacho({
           </label>
           <select
             name="asignacion_id"
-            defaultValue=""
+            value={asignacionId}
+            onChange={(e) => setAsignacionId(e.target.value)}
             className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
           >
             <option value="">Sin asignación</option>
@@ -191,8 +240,6 @@ export function FormularioDespacho({
         )}
       </section>
 
-      <input type="hidden" name="items" value={JSON.stringify(items)} />
-
       <div>
         <label className="block text-sm font-medium text-zelanda-verde-900">
           Notas (opcional)
@@ -200,22 +247,34 @@ export function FormularioDespacho({
         <textarea
           name="notas"
           rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
           className="mt-1 block w-full rounded-lg border border-zelanda-beige-300 px-3 py-2"
         />
       </div>
 
-      {estado.error && (
-        <p className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
-          {estado.error}
+      {!online ? (
+        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
+          <CloudOff className="h-3.5 w-3.5" />
+          Sin señal — el despacho se guardará y subirá al volver la conexión.
+        </p>
+      ) : null}
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+        >
+          {error}
         </p>
       )}
 
       <button
         type="submit"
-        disabled={pending || items.length === 0 || !personaId}
+        disabled={pendiente || items.length === 0 || !personaId}
         className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-white disabled:opacity-60"
       >
-        {pending ? "Despachando..." : "Despachar"}
+        {pendiente ? "Despachando..." : "Despachar"}
       </button>
     </form>
   );
