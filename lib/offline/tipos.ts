@@ -141,50 +141,32 @@ export type SnapshotAlmacen = {
 
 // === Jefe ===
 
-export type LoteJefe = {
-  id: string;
-  nombre: string;
-  total_arboles: number;
-  tareas_proximas: number;
-  tareas_vencidas: number;
-  novedades_abiertas: number;
+export type AlertaTareaJefe = {
+  lote_nombre: string;
+  lote_id: string;
+  tipo_nombre: string;
+  tipo_id: string;
+  dias_para_proxima: number | null;
+  estado: "vencida" | "sin_historial" | "proxima";
 };
 
-export type AsignacionJefe = {
-  id: string;
-  tipo_tarea_nombre: string;
-  persona_nombre: string;
-  lote_nombre: string | null;
-  apiario_nombre: string | null;
-  estado: string;
-  fecha_inicio: string;
-  arboles_completados: number;
-  total_arboles: number | null;
-};
-
-export type NovedadJefe = {
+export type NovedadJefeResumen = {
   id: string;
   tipo: string;
-  descripcion: string;
-  fecha: string;
   arbol_numero: number;
   lote_nombre: string;
-  persona_nombre: string;
-  resuelta: boolean;
-};
-
-export type AlertaJefe = {
-  tipo: "TAREA_VENCIDA" | "TAREA_PROXIMA" | "STOCK_BAJO" | "DESPACHO_ABIERTO" | "NOVEDAD_CRITICA";
-  texto: string;
-  url: string;
   fecha: string;
 };
 
 export type SnapshotJefe = {
-  lotes: LoteJefe[];
-  asignaciones: AsignacionJefe[];
-  novedades: NovedadJefe[];
-  alertas: AlertaJefe[];
+  vencidas: AlertaTareaJefe[];
+  proximas: AlertaTareaJefe[];
+  novedades_pendientes: NovedadJefeResumen[];
+  contadores: {
+    stock_bajo: number;
+    despachos_abiertos: number;
+    stock_almacen_kg: number;
+  };
   ts: string;
 };
 
