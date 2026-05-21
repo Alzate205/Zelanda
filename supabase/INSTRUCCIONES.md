@@ -20,3 +20,9 @@ Después: `npm run db:generate`.
 Aplicar `migracion-despacho-condicion.sql` en SQL Editor. Idempotente.
 Agrega columna `despacho_items.condicion_devolucion` (texto) para registrar si la herramienta
 volvió dañada, sucia, etc.
+
+## Login con username
+
+Aplicar `migracion-username.sql` en SQL Editor. Idempotente.
+Agrega columna `usuarios.username` (texto opcional, único). Cada usuario lo setea desde
+`/mi-perfil`. Después puede iniciar sesión con username o con email.

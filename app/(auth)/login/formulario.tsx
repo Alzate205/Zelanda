@@ -19,18 +19,19 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
 
       <div>
         <label
-          htmlFor="email"
+          htmlFor="identificador"
           className="block text-sm font-medium text-zelanda-verde-800"
         >
-          Correo electrónico
+          Usuario o correo
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="identificador"
+          name="identificador"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="off"
+          spellCheck={false}
           required
-          inputMode="email"
           className="mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20"
         />
       </div>

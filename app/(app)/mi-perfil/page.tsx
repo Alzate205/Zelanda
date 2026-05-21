@@ -7,6 +7,7 @@ import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
 import type { TipoVinculacion } from "@/types";
 import { FormularioMisDatos } from "./FormularioMisDatos";
 import { FormularioCambiarContrasena } from "./FormularioCambiarContrasena";
+import { FormularioUsername } from "./FormularioUsername";
 import { PushToggle } from "@/components/shared/PushToggle";
 
 export const metadata: Metadata = { title: "Mi perfil" };
@@ -14,18 +15,24 @@ export const metadata: Metadata = { title: "Mi perfil" };
 export default async function PaginaMiPerfil() {
   const usuario = await requerirUsuario();
 
-  const persona = usuario.persona_id
-    ? await prisma.personas.findUnique({
-        where: { id: BigInt(usuario.persona_id) },
-        include: {
-          vinculaciones: {
-            where: { fecha_fin: null },
-            take: 1,
-            select: { tipo: true, rol_finca: true },
+  const [persona, miUsuario] = await Promise.all([
+    usuario.persona_id
+      ? prisma.personas.findUnique({
+          where: { id: BigInt(usuario.persona_id) },
+          include: {
+            vinculaciones: {
+              where: { fecha_fin: null },
+              take: 1,
+              select: { tipo: true, rol_finca: true },
+            },
           },
-        },
-      })
-    : null;
+        })
+      : Promise.resolve(null),
+    prisma.usuarios.findUnique({
+      where: { id: usuario.id },
+      select: { username: true },
+    }),
+  ]);
 
   const vincActiva = persona?.vinculaciones[0] ?? null;
 
@@ -65,10 +72,21 @@ export default async function PaginaMiPerfil() {
             <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Correo</dt>
             <dd className="mt-0.5 text-zelanda-verde-900">{usuario.email}</dd>
           </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Usuario
+            </dt>
+            <dd className="mt-0.5 text-zelanda-verde-900">
+              {miUsuario?.username ?? <span className="text-zelanda-verde-700/60">—</span>}
+            </dd>
+          </div>
         </dl>
         <p className="mt-3 text-xs text-zelanda-verde-700">
           Si necesitas cambiar tu correo o tu rol, pídele al jefe.
         </p>
+        <div className="mt-4 border-t border-zelanda-beige-200 pt-4">
+          <FormularioUsername usernameInicial={miUsuario?.username ?? null} />
+        </div>
       </section>
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">

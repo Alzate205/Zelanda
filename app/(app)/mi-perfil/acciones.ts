@@ -54,6 +54,63 @@ export async function actualizarMisDatos(
   return { error: null, exito: "Datos guardados." };
 }
 
+export async function actualizarMiUsername(
+  _prev: EstadoPerfil,
+  formData: FormData,
+): Promise<EstadoPerfil> {
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario) return { ...ESTADO_INICIAL, error: "Sesión no válida." };
+
+  const raw = String(formData.get("username") ?? "").trim().toLowerCase();
+  const username = raw || null;
+
+  if (username !== null) {
+    if (username.length < 3) {
+      return {
+        ...ESTADO_INICIAL,
+        error: "El usuario debe tener al menos 3 caracteres.",
+      };
+    }
+    if (username.length > 30) {
+      return {
+        ...ESTADO_INICIAL,
+        error: "El usuario no puede tener más de 30 caracteres.",
+      };
+    }
+    if (!/^[a-z0-9_.-]+$/.test(username)) {
+      return {
+        ...ESTADO_INICIAL,
+        error:
+          "Solo letras minúsculas, números y los símbolos _ . - (sin espacios ni @).",
+      };
+    }
+  }
+
+  try {
+    await prisma.usuarios.update({
+      where: { id: usuario.id },
+      data: { username },
+    });
+  } catch (e) {
+    const msg = (e as Error)?.message ?? "desconocido";
+    if (/unique/i.test(msg)) {
+      return {
+        ...ESTADO_INICIAL,
+        error: "Ese nombre de usuario ya está en uso. Probá otro.",
+      };
+    }
+    return { ...ESTADO_INICIAL, error: `No se pudo guardar: ${msg}` };
+  }
+
+  revalidatePath("/mi-perfil");
+  return {
+    error: null,
+    exito: username
+      ? `Ahora podés entrar con el usuario "${username}".`
+      : "Usuario eliminado. Solo podrás entrar con tu correo.",
+  };
+}
+
 export async function cambiarMiContrasena(
   _prev: EstadoPerfil,
   formData: FormData,

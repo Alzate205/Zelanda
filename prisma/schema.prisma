@@ -881,6 +881,7 @@ model vinculaciones {
 model usuarios {
   id                 String               @id @db.Uuid
   email              String               @unique
+  username           String?              @unique
   nombre_completo    String
   rol                rol_usuario
   persona_id         BigInt?
