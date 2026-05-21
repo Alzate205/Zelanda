@@ -11,6 +11,7 @@ type ItemBody = {
   tipo: "HERRAMIENTA" | "INSUMO";
   devuelto?: boolean;
   consumido?: number;
+  condicion_devolucion?: string | null;
 };
 
 type Body = {
@@ -100,6 +101,7 @@ export async function POST(req: Request) {
     cantidadOriginal: number;
     devuelto?: boolean;
     consumido?: number;
+    condicion?: string | null;
   };
   const actualizaciones: Actualizacion[] = [];
 
@@ -119,12 +121,17 @@ export async function POST(req: Request) {
     }
 
     if (item.tipo_item === "HERRAMIENTA") {
+      const cond =
+        typeof recibido.condicion_devolucion === "string"
+          ? recibido.condicion_devolucion.trim() || null
+          : null;
       actualizaciones.push({
         itemId: item.id,
         tipo: "HERRAMIENTA",
         insumoId: null,
         cantidadOriginal: Number(item.cantidad),
         devuelto: recibido.devuelto === true,
+        condicion: cond,
       });
     } else {
       const consumido = Number(recibido.consumido ?? 0);
@@ -165,7 +172,10 @@ export async function POST(req: Request) {
         if (a.tipo === "HERRAMIENTA") {
           await tx.despacho_items.update({
             where: { id: a.itemId },
-            data: { devuelto: a.devuelto ?? false },
+            data: {
+              devuelto: a.devuelto ?? false,
+              condicion_devolucion: a.condicion ?? null,
+            },
           });
         } else {
           if (a.insumoId === null) continue;

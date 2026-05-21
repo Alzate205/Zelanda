@@ -14,3 +14,9 @@ Después: `npm run db:generate` para refrescar el cliente Prisma.
 Aplicar `migracion-apicultura.sql` en SQL Editor. Idempotente.
 Crea enum `estado_apiario`, columna `registros_avance.estado_apiario`, tabla `cosechas_miel` con RLS.
 Después: `npm run db:generate`.
+
+## Condición de devolución de herramientas
+
+Aplicar `migracion-despacho-condicion.sql` en SQL Editor. Idempotente.
+Agrega columna `despacho_items.condicion_devolucion` (texto) para registrar si la herramienta
+volvió dañada, sucia, etc.

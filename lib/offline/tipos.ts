@@ -195,6 +195,7 @@ export type ItemColaDespachoCerrar = {
     tipo: "HERRAMIENTA" | "INSUMO";
     devuelto?: boolean;
     consumido?: number;
+    condicion_devolucion?: string | null;
   }>;
   estado: EstadoCola;
   intentos: number;

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff } from "lucide-react";
+import { CloudOff, Wrench } from "lucide-react";
 import { enviarDespachoCerrar } from "@/lib/offline/api-cliente";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
@@ -13,6 +13,21 @@ type ItemRow = {
   unidad: string;
   cantidad: string;
 };
+
+type EstadoHerramienta = {
+  danada: boolean;
+  sucia: boolean;
+  notas: string;
+};
+
+function construirCondicion(e: EstadoHerramienta): string | null {
+  const partes: string[] = [];
+  if (e.danada) partes.push("dañada");
+  if (e.sucia) partes.push("sucia");
+  const notas = e.notas.trim();
+  if (notas) partes.push(notas);
+  return partes.length > 0 ? partes.join(" · ") : null;
+}
 
 export function FormularioCierreDespacho({
   despachoId,
@@ -25,6 +40,21 @@ export function FormularioCierreDespacho({
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [estadosHerr, setEstadosHerr] = useState<Record<string, EstadoHerramienta>>(
+    () => {
+      const o: Record<string, EstadoHerramienta> = {};
+      for (const it of items) {
+        if (it.tipo === "HERRAMIENTA") {
+          o[it.id] = { danada: false, sucia: false, notas: "" };
+        }
+      }
+      return o;
+    },
+  );
+
+  function actualizarEstadoHerr(id: string, patch: Partial<EstadoHerramienta>) {
+    setEstadosHerr((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +66,7 @@ export function FormularioCierreDespacho({
       tipo: "HERRAMIENTA" | "INSUMO";
       devuelto?: boolean;
       consumido?: number;
+      condicion_devolucion?: string | null;
     }> = [];
 
     for (const it of items) {
@@ -43,7 +74,8 @@ export function FormularioCierreDespacho({
         payload.push({
           despacho_item_id: it.id,
           tipo: "HERRAMIENTA",
-          devuelto: formData.get(`devuelto_${it.id}`) === "on",
+          devuelto: true,
+          condicion_devolucion: construirCondicion(estadosHerr[it.id]),
         });
       } else {
         const raw = String(formData.get(`consumido_${it.id}`) ?? "").trim();
@@ -82,30 +114,87 @@ export function FormularioCierreDespacho({
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         <h3 className="font-serif text-lg text-zelanda-verde-900">Devoluciones</h3>
-        <ul className="mt-3 space-y-3">
-          {items.map((it) => (
-            <li
-              key={it.id}
-              className="rounded-lg border border-zelanda-beige-200 p-3"
-            >
-              <p className="text-sm font-medium text-zelanda-verde-900">
-                {it.nombre}
-              </p>
-              <p className="text-xs text-zelanda-verde-700/70">
-                Despachado: {it.cantidad}{" "}
-                {it.tipo === "INSUMO" ? it.unidad : "unidades"}
-              </p>
-              {it.tipo === "HERRAMIENTA" ? (
-                <label className="mt-2 flex items-center gap-2 text-sm">
+        <p className="mt-1 text-xs text-zelanda-verde-700">
+          Al cerrar el despacho, todas las herramientas quedan registradas como
+          devueltas. Marcá si alguna llegó dañada o sucia.
+        </p>
+        <ul className="mt-4 space-y-3">
+          {items.map((it) => {
+            if (it.tipo === "HERRAMIENTA") {
+              const e = estadosHerr[it.id];
+              return (
+                <li
+                  key={it.id}
+                  className="rounded-lg border border-zelanda-beige-200 p-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 shrink-0 text-zelanda-verde-700" />
+                    <p className="text-sm font-medium text-zelanda-verde-900">
+                      {it.nombre}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-zelanda-verde-700/70">
+                    {it.cantidad} {Number(it.cantidad) === 1 ? "unidad" : "unidades"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <label
+                      className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                        e?.danada
+                          ? "border-estado-vencida bg-estado-vencida/10 text-estado-vencida"
+                          : "border-zelanda-beige-300 text-zelanda-verde-700"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={e?.danada ?? false}
+                        onChange={(ev) =>
+                          actualizarEstadoHerr(it.id, { danada: ev.target.checked })
+                        }
+                        className="sr-only"
+                      />
+                      Dañada
+                    </label>
+                    <label
+                      className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                        e?.sucia
+                          ? "border-zelanda-ocre-500 bg-zelanda-ocre-50 text-zelanda-ocre-700"
+                          : "border-zelanda-beige-300 text-zelanda-verde-700"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={e?.sucia ?? false}
+                        onChange={(ev) =>
+                          actualizarEstadoHerr(it.id, { sucia: ev.target.checked })
+                        }
+                        className="sr-only"
+                      />
+                      Sucia
+                    </label>
+                  </div>
                   <input
-                    type="checkbox"
-                    name={`devuelto_${it.id}`}
-                    defaultChecked
-                    className="h-5 w-5"
+                    type="text"
+                    placeholder="Otras observaciones (opcional)"
+                    value={e?.notas ?? ""}
+                    onChange={(ev) =>
+                      actualizarEstadoHerr(it.id, { notas: ev.target.value })
+                    }
+                    className="mt-2 block w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2 text-sm"
                   />
-                  Devuelta
-                </label>
-              ) : (
+                </li>
+              );
+            }
+            return (
+              <li
+                key={it.id}
+                className="rounded-lg border border-zelanda-beige-200 p-3"
+              >
+                <p className="text-sm font-medium text-zelanda-verde-900">
+                  {it.nombre}
+                </p>
+                <p className="text-xs text-zelanda-verde-700/70">
+                  Despachado: {it.cantidad} {it.unidad}
+                </p>
                 <div className="mt-2">
                   <label className="block text-xs text-zelanda-verde-700">
                     Cantidad consumida ({it.unidad})
@@ -121,9 +210,9 @@ export function FormularioCierreDespacho({
                     className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
                   />
                 </div>
-              )}
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
