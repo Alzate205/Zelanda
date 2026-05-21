@@ -8,3 +8,9 @@ Después: `npm run db:pull` para refrescar el cliente Prisma (o usar `db:generat
 
 Aplicar `migracion-fase5-offline-bodega-almacen.sql` en SQL Editor. Idempotente.
 Después: `npm run db:generate` para refrescar el cliente Prisma.
+
+## Módulo apicultura
+
+Aplicar `migracion-apicultura.sql` en SQL Editor. Idempotente.
+Crea enum `estado_apiario`, columna `registros_avance.estado_apiario`, tabla `cosechas_miel` con RLS.
+Después: `npm run db:generate`.

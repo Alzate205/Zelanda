@@ -505,6 +505,7 @@ model apiarios {
   total_colmenas        Int                       @default(0)
   activo                Boolean                   @default(true)
   asignaciones          asignaciones[]
+  cosechas_miel         cosechas_miel[]
 
   @@index([coordenadas], map: "idx_apiarios_coord", type: Gist)
   @@schema("public")
@@ -573,6 +574,7 @@ model asignaciones {
   tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   registros_avance       registros_avance[]
   despachos              despachos[]
+  cosechas_miel          cosechas_miel[]
 
   @@index([lote_id, tipo_tarea_id], map: "idx_asign_lote_tarea")
   @@index([persona_id, estado], map: "idx_asign_persona_estado")
@@ -746,7 +748,7 @@ model novedades {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model registros_avance {
-  id               BigInt        @id @default(autoincrement())
+  id               BigInt           @id @default(autoincrement())
   asignacion_id    BigInt
   persona_id       BigInt
   tipo_registro    tipo_registro
@@ -756,12 +758,31 @@ model registros_avance {
   cantidad_arboles Int
   observaciones    String?
   foto_path        String?
-  fecha_registro   DateTime      @default(now()) @db.Timestamptz(6)
-  id_local         String?       @unique @db.Uuid
-  asignaciones     asignaciones  @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  persona          personas      @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fecha_registro   DateTime         @default(now()) @db.Timestamptz(6)
+  id_local         String?          @unique @db.Uuid
+  estado_apiario   estado_apiario?
+  asignaciones     asignaciones     @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona          personas         @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([asignacion_id], map: "idx_registros_asignacion")
+  @@schema("public")
+}
+
+model cosechas_miel {
+  id                        BigInt        @id @default(autoincrement())
+  apiario_id                BigInt
+  persona_id                BigInt
+  asignacion_id             BigInt?
+  kg                        Decimal       @db.Decimal(8, 2)
+  fecha                     DateTime      @default(now()) @db.Timestamptz(6)
+  notas                     String?
+  registrado_por_usuario_id String        @db.Uuid
+  apiario                   apiarios      @relation(fields: [apiario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona                   personas      @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asignacion                asignaciones? @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                  usuarios      @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([apiario_id, fecha(sort: Desc)], map: "ix_cosechas_miel_apiario_fecha")
   @@schema("public")
 }
 
@@ -825,6 +846,7 @@ model personas {
   deleted_at       DateTime?          @db.Timestamptz(6)
   asignaciones     asignaciones[]
   cosechas         cosechas[]
+  cosechas_miel    cosechas_miel[]
   despachos        despachos[]
   novedades        novedades[]
   registros_avance registros_avance[]
@@ -866,6 +888,7 @@ model usuarios {
   updated_at         DateTime             @default(now()) @db.Timestamptz(6)
   asignaciones       asignaciones[]
   cosechas           cosechas[]
+  cosechas_miel      cosechas_miel[]
   despachos          despachos[]
   movimientos_insumo movimientos_insumo[]
   salidas_cosecha    salidas_cosecha[]
@@ -996,6 +1019,14 @@ enum estado_asignacion {
 enum estado_despacho {
   ABIERTO
   CERRADO
+
+  @@schema("public")
+}
+
+enum estado_apiario {
+  BIEN
+  CON_PROBLEMAS
+  CRITICO
 
   @@schema("public")
 }
