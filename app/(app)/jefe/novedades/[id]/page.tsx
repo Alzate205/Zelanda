@@ -41,6 +41,7 @@ export default async function DetalleNovedad({
       arboles: {
         select: {
           numero_placa: true,
+          lote_id: true,
           lotes: { select: { id: true, nombre: true } },
         },
       },
@@ -78,6 +79,12 @@ export default async function DetalleNovedad({
         <p className="mt-1 text-sm text-zelanda-verde-700">
           Reportada por {n.persona.nombre_completo}
         </p>
+        <Link
+          href={`/jefe/lotes/${n.arboles.lote_id}/arbol/${n.arboles.numero_placa}`}
+          className="mt-2 inline-flex items-center gap-1 rounded-md border border-zelanda-beige-300 px-2.5 py-1 text-xs text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+        >
+          Ver historial del árbol →
+        </Link>
       </header>
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">

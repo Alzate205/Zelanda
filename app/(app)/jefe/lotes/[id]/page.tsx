@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { formatearFechaCorta } from "@/lib/utils";
 import { calcularResumen, formatearDias, etiquetaEstado, tonoEstado } from "@/lib/fechas-tarea";
 import { BadgeBase } from "@/components/shared/BadgeRol";
+import { BuscadorArbol } from "./_buscador-arbol";
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -199,6 +200,13 @@ export default async function DetalleLote({
           </p>
         ) : null}
       </section>
+
+      {arbolesGenerados > 0 ? (
+        <BuscadorArbol
+          loteId={String(lote.id)}
+          totalArboles={arbolesGenerados}
+        />
+      ) : null}
 
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
         <div className="flex items-center justify-between">
