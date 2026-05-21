@@ -1,21 +1,72 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { crearSalida, type EstadoEdicion } from "../acciones";
-
-const ESTADO_INICIAL: EstadoEdicion = { error: null };
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { CloudOff } from "lucide-react";
+import { enviarSalida } from "@/lib/offline/api-cliente";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 type Tipo = "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
 
 export function FormularioSalida({ stockMax }: { stockMax: number }) {
-  const [estado, formAction, pending] = useActionState(
-    crearSalida,
-    ESTADO_INICIAL,
-  );
+  const router = useRouter();
+  const online = useOnlineStatus();
+  const [pendiente, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [tipo, setTipo] = useState<Tipo>("VENTA");
+  const [cantidad, setCantidad] = useState("");
+  const [cliente, setCliente] = useState("");
+  const [precio, setPrecio] = useState("");
+  const [notas, setNotas] = useState("");
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const c = Number(cantidad);
+    if (!Number.isFinite(c) || c <= 0) {
+      setError("Cantidad debe ser positiva.");
+      return;
+    }
+    if (c > stockMax) {
+      setError(`Stock insuficiente. Disponible: ${stockMax.toFixed(2)} kg`);
+      return;
+    }
+
+    const clienteFinal = cliente.trim() || null;
+    if (tipo === "VENTA" && !clienteFinal) {
+      setError("Para ventas, indica el cliente.");
+      return;
+    }
+
+    let precioFinal: number | null = null;
+    if (tipo === "VENTA" && precio.trim()) {
+      const p = Number(precio);
+      if (!Number.isFinite(p) || p <= 0) {
+        setError("Precio total debe ser positivo.");
+        return;
+      }
+      precioFinal = p;
+    }
+
+    startTransition(async () => {
+      const r = await enviarSalida({
+        tipo,
+        cantidad_kg: c,
+        cliente_detalle: clienteFinal,
+        precio_total: precioFinal,
+        notas: notas.trim() || null,
+      });
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      router.push("/almacen/salidas");
+    });
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
         <p className="block text-sm font-medium text-zelanda-verde-900">Tipo</p>
         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -53,12 +104,13 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
           Cantidad (kg)
         </label>
         <input
-          name="cantidad_kg"
           type="number"
           min="0.01"
           max={stockMax}
           step="0.01"
           required
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
           className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
         />
       </div>
@@ -70,8 +122,9 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
               Cliente
             </label>
             <input
-              name="cliente_detalle"
               required
+              value={cliente}
+              onChange={(e) => setCliente(e.target.value)}
               placeholder="Nombre exportador / comprador"
               className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
             />
@@ -81,10 +134,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
               Precio total (COP, opcional)
             </label>
             <input
-              name="precio_total"
               type="number"
               min="1"
               step="1"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
               className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
             />
           </div>
@@ -97,7 +151,8 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
             Detalle (opcional)
           </label>
           <input
-            name="cliente_detalle"
+            value={cliente}
+            onChange={(e) => setCliente(e.target.value)}
             placeholder="ej: consumo casa principal"
             className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
           />
@@ -109,24 +164,35 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
           Notas (opcional)
         </label>
         <textarea
-          name="notas"
           rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
           className="mt-1 block w-full rounded-lg border border-zelanda-beige-300 px-3 py-2"
         />
       </div>
 
-      {estado.error && (
-        <p className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
-          {estado.error}
+      {!online ? (
+        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
+          <CloudOff className="h-3.5 w-3.5" />
+          Sin señal — la salida se guardará y subirá al volver la conexión.
+        </p>
+      ) : null}
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+        >
+          {error}
         </p>
       )}
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pendiente}
         className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-white disabled:opacity-60"
       >
-        {pending ? "Registrando..." : "Registrar salida"}
+        {pendiente ? "Registrando..." : "Registrar salida"}
       </button>
     </form>
   );
