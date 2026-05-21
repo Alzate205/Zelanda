@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FormularioEditarLote } from "./FormularioEditarLote";
+import { FormSiembra } from "./_form-siembra";
 
 export const metadata: Metadata = { title: "Editar lote" };
 
@@ -42,15 +43,21 @@ export default async function PaginaEditarLote({
   if (!lote || lote.deleted_at) notFound();
 
   return (
-    <FormularioEditarLote
-      lote={{
-        id: String(lote.id),
-        nombre: lote.nombre,
-        hectareas: lote.hectareas !== null ? String(lote.hectareas) : null,
-        fecha_siembra: formatearISO(lote.fecha_siembra),
-        total_arboles: lote.total_arboles ?? 0,
-        notas: lote.notas,
-      }}
-    />
+    <div className="space-y-6">
+      <FormularioEditarLote
+        lote={{
+          id: String(lote.id),
+          nombre: lote.nombre,
+          hectareas: lote.hectareas !== null ? String(lote.hectareas) : null,
+          fecha_siembra: formatearISO(lote.fecha_siembra),
+          total_arboles: lote.total_arboles ?? 0,
+          notas: lote.notas,
+        }}
+      />
+      <FormSiembra
+        loteId={String(lote.id)}
+        fechaLote={formatearISO(lote.fecha_siembra)}
+      />
+    </div>
   );
 }

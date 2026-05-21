@@ -6,10 +6,110 @@ import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 
 export type EstadoEdicionLote = { error: string | null; aviso: string | null };
+export type EstadoSiembra = { error: string | null; aviso: string | null };
 
 function parsearId(raw: string | null): bigint | null {
   if (!raw || !/^\d+$/.test(raw)) return null;
   try { return BigInt(raw); } catch { return null; }
+}
+
+export async function aplicarFechaSiembraArboles(
+  _prev: EstadoSiembra,
+  formData: FormData,
+): Promise<EstadoSiembra> {
+  await requerirUsuario("JEFE");
+
+  const loteId = parsearId(String(formData.get("lote_id") ?? ""));
+  if (!loteId) return { error: "ID de lote inválido.", aviso: null };
+
+  const modo = String(formData.get("modo") ?? "");
+  if (modo !== "lote" && modo !== "lapso") {
+    return { error: "Modo inválido.", aviso: null };
+  }
+
+  const sobrescribir = String(formData.get("sobrescribir") ?? "") === "on";
+
+  if (modo === "lote") {
+    const lote = await prisma.lotes.findUnique({
+      where: { id: loteId },
+      select: { fecha_siembra: true },
+    });
+    if (!lote?.fecha_siembra) {
+      return {
+        error: "Primero define una fecha de siembra para el lote.",
+        aviso: null,
+      };
+    }
+    const where = sobrescribir
+      ? { lote_id: loteId, deleted_at: null }
+      : { lote_id: loteId, deleted_at: null, fecha_siembra: null };
+    const r = await prisma.arboles.updateMany({
+      where,
+      data: { fecha_siembra: lote.fecha_siembra },
+    });
+    revalidatePath(`/jefe/lotes/${loteId}`);
+    return {
+      error: null,
+      aviso: `Se aplicó la fecha del lote a ${r.count} árbol${r.count === 1 ? "" : "es"}.`,
+    };
+  }
+
+  const desdeRaw = String(formData.get("desde") ?? "").trim();
+  const hastaRaw = String(formData.get("hasta") ?? "").trim();
+  if (!desdeRaw || !hastaRaw) {
+    return { error: "Ingresá ambas fechas (desde y hasta).", aviso: null };
+  }
+  const desde = new Date(desdeRaw);
+  const hasta = new Date(hastaRaw);
+  if (Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime())) {
+    return { error: "Fechas inválidas.", aviso: null };
+  }
+  if (desde.getTime() > hasta.getTime()) {
+    return { error: "La fecha desde no puede ser mayor que hasta.", aviso: null };
+  }
+
+  const arboles = await prisma.arboles.findMany({
+    where: sobrescribir
+      ? { lote_id: loteId, deleted_at: null }
+      : { lote_id: loteId, deleted_at: null, fecha_siembra: null },
+    select: { id: true, numero_placa: true },
+    orderBy: { numero_placa: "asc" },
+  });
+
+  if (arboles.length === 0) {
+    return {
+      error: null,
+      aviso: "No hay árboles para actualizar (todos ya tienen fecha o no hay árboles cargados).",
+    };
+  }
+
+  const inicioMs = desde.getTime();
+  const finMs = hasta.getTime();
+  const n = arboles.length;
+
+  const actualizaciones = arboles.map((a, i) => {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const ms = inicioMs + (finMs - inicioMs) * t;
+    return prisma.arboles.update({
+      where: { id: a.id },
+      data: { fecha_siembra: new Date(ms) },
+    });
+  });
+
+  try {
+    await prisma.$transaction(actualizaciones);
+  } catch (e) {
+    return {
+      error: `No se pudo aplicar el lapso: ${(e as Error)?.message ?? "desconocido"}.`,
+      aviso: null,
+    };
+  }
+
+  revalidatePath(`/jefe/lotes/${loteId}`);
+  return {
+    error: null,
+    aviso: `Se distribuyó la fecha de siembra entre ${n} árbol${n === 1 ? "" : "es"} desde ${desdeRaw} hasta ${hastaRaw}.`,
+  };
 }
 
 export async function actualizarLote(

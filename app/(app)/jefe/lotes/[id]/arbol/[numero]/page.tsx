@@ -10,6 +10,7 @@ import {
   Calendar,
   History,
   Plus,
+  Weight,
 } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -108,11 +109,29 @@ export default async function FichaArbol({
   const arbol = await prisma.arboles.findFirst({
     where: { lote_id: loteId, numero_placa: num, deleted_at: null },
     include: {
-      lotes: { select: { id: true, nombre: true, total_arboles: true } },
+      lotes: {
+        select: { id: true, nombre: true, total_arboles: true, fecha_siembra: true },
+      },
     },
   });
 
   if (!arbol) notFound();
+
+  const [arbolesGenerados, cosechaAgg] = await Promise.all([
+    prisma.arboles.count({
+      where: { lote_id: loteId, deleted_at: null },
+    }),
+    prisma.cosechas.aggregate({
+      where: { lote_id: loteId },
+      _sum: { peso_kg: true },
+    }),
+  ]);
+  const cosechaTotalLote = Number(cosechaAgg._sum.peso_kg ?? 0);
+  const promedioKg = arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
+
+  // Fecha de siembra: la del árbol gana; fallback a la del lote
+  const fechaSiembraEfectiva = arbol.fecha_siembra ?? arbol.lotes.fecha_siembra;
+  const fechaSiembraOrigen = arbol.fecha_siembra ? "árbol" : arbol.lotes.fecha_siembra ? "lote" : null;
 
   const [novedades, registrosRaw] = await Promise.all([
     prisma.novedades.findMany({
@@ -233,7 +252,12 @@ export default async function FichaArbol({
               Siembra
             </dt>
             <dd className="mt-0.5 text-zelanda-verde-900">
-              {arbol.fecha_siembra ? formatearFechaCorta(arbol.fecha_siembra) : "—"}
+              {fechaSiembraEfectiva ? formatearFechaCorta(fechaSiembraEfectiva) : "—"}
+              {fechaSiembraOrigen === "lote" ? (
+                <span className="ml-1 text-[10px] text-zelanda-verde-700/70">
+                  (del lote)
+                </span>
+              ) : null}
             </dd>
           </div>
           <div>
@@ -241,7 +265,7 @@ export default async function FichaArbol({
               Edad
             </dt>
             <dd className="mt-0.5 text-zelanda-verde-900">
-              {arbol.fecha_siembra ? aniosDesde(arbol.fecha_siembra) : "—"}
+              {fechaSiembraEfectiva ? aniosDesde(fechaSiembraEfectiva) : "—"}
             </dd>
           </div>
         </dl>
@@ -251,6 +275,26 @@ export default async function FichaArbol({
           </p>
         ) : null}
       </section>
+
+      {cosechaTotalLote > 0 ? (
+        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+            <Weight className="h-4 w-4 text-zelanda-ocre-600" />
+            Producción estimada
+          </h2>
+          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
+            ≈ {promedioKg.toFixed(1)} <span className="text-base">kg</span>
+          </p>
+          <p className="mt-1 text-xs text-zelanda-verde-700">
+            Promedio del lote: {cosechaTotalLote.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg
+            cosechados ÷ {arbolesGenerados.toLocaleString("es-CO")} árboles
+          </p>
+          <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
+            Estimación a partir de lo recibido en almacén. La producción real de
+            este árbol específico no se mide individualmente.
+          </p>
+        </section>
+      ) : null}
 
       <Link
         href={`/trabajador/novedad/nueva?lote_id=${arbol.lote_id}&numero_placa=${arbol.numero_placa}`}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil, BarChart3, MapPin, Grid3x3 } from "lucide-react";
+import { ChevronLeft, Pencil, BarChart3, MapPin, Grid3x3, Weight } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatearFechaCorta } from "@/lib/utils";
@@ -107,6 +107,18 @@ export default async function DetalleLote({
     include: { arboles: { select: { numero_placa: true } } },
   });
 
+  const cosechaAgg = await prisma.cosechas.aggregate({
+    where: { lote_id: idBig },
+    _sum: { peso_kg: true },
+    _count: { _all: true },
+    _max: { fecha: true },
+  });
+  const cosechaTotalKg = Number(cosechaAgg._sum.peso_kg ?? 0);
+  const cosechaCount = cosechaAgg._count._all;
+  const ultimaCosecha = cosechaAgg._max.fecha;
+  const promedioKgPorArbol =
+    arbolesGenerados > 0 ? cosechaTotalKg / arbolesGenerados : 0;
+
   return (
     <div className="space-y-5">
       <Link
@@ -208,6 +220,47 @@ export default async function DetalleLote({
             {lote.notas}
           </p>
         ) : null}
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+          <Weight className="h-4 w-4 text-zelanda-ocre-600" />
+          Cosecha acumulada
+        </h2>
+        {cosechaCount === 0 ? (
+          <p className="mt-2 text-sm text-zelanda-verde-700">
+            Aún no se ha registrado cosecha de este lote en el almacén.
+          </p>
+        ) : (
+          <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-3 text-sm">
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                Total
+              </dt>
+              <dd className="mt-0.5 font-serif text-xl text-zelanda-verde-900">
+                {cosechaTotalKg.toLocaleString("es-CO", { maximumFractionDigits: 0 })}{" "}
+                <span className="text-sm">kg</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                Promedio
+              </dt>
+              <dd className="mt-0.5 font-serif text-xl text-zelanda-verde-900">
+                {promedioKgPorArbol.toFixed(1)}{" "}
+                <span className="text-sm">kg/árbol</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                Última
+              </dt>
+              <dd className="mt-0.5 text-sm text-zelanda-verde-900">
+                {ultimaCosecha ? formatearFechaCorta(ultimaCosecha) : "—"}
+              </dd>
+            </div>
+          </dl>
+        )}
       </section>
 
       {arbolesGenerados > 0 ? (
