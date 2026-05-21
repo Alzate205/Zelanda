@@ -317,8 +317,7 @@ Pasos:
 - Reportes básicos
 
 ### Fase 5 — Apicultura y refinamientos
-- Módulo de apiarios (pendiente)
-- Tareas de apicultura (pendiente)
+- Módulo de apiarios ✅ (visita con estado general bien/problemas/crítico, push automático al jefe si crítico, cosecha de miel con kg, detalle apiario con historial)
 - Notificaciones push ✅ (sub-fase 5.1)
 - Modo offline trabajador ✅ (sub-fase 5.2a — ver tareas, registrar avance/novedad, sync con backoff, pantalla `/trabajador/pendientes`)
 - Modo offline bodega/almacén/jefe ✅ (sub-fase 5.2b — crear/cerrar despacho offline, cosecha + salida offline, jefe dashboard cacheado; pantallas `/bodega/pendientes` y `/almacen/pendientes`)

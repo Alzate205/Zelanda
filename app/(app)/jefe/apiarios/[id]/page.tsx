@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil, Hexagon, MapPin } from "lucide-react";
+import { ChevronLeft, Pencil, Hexagon, MapPin, Droplet } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { calcularResumen, formatearDias, etiquetaEstado } from "@/lib/fechas-tarea";
+
+const ETIQUETA_ESTADO_APIARIO: Record<string, string> = {
+  BIEN: "Bien",
+  CON_PROBLEMAS: "Con problemas",
+  CRITICO: "Crítico",
+};
+
+function tonoEstadoApiario(estado: string | null): "info" | "neutro" | "alerta" {
+  if (estado === "BIEN") return "info";
+  if (estado === "CON_PROBLEMAS") return "neutro";
+  if (estado === "CRITICO") return "alerta";
+  return "neutro";
+}
 
 function tonoBadge(estado: "aldia" | "proxima" | "vencida" | "sin_historial"): "neutro" | "alerta" | "info" {
   if (estado === "aldia") return "info";
@@ -58,18 +71,54 @@ export default async function DetalleApiario({
 
   const idStr = String(apiario.id);
 
-  const [tiposApicultura, completadas] = await Promise.all([
-    prisma.tipos_tarea.findMany({
-      where: { area: "APICULTURA", activo: true },
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true, frecuencia_dias_default: true },
-    }),
-    prisma.asignaciones.findMany({
-      where: { apiario_id: idBig, estado: "COMPLETADA" },
-      orderBy: { fecha_completada: "desc" },
-      select: { tipo_tarea_id: true, fecha_completada: true },
-    }),
-  ]);
+  const [tiposApicultura, completadas, visitasRecientes, cosechasMiel, totalKgAnioRows] =
+    await Promise.all([
+      prisma.tipos_tarea.findMany({
+        where: { area: "APICULTURA", activo: true },
+        orderBy: { nombre: "asc" },
+        select: { id: true, nombre: true, frecuencia_dias_default: true },
+      }),
+      prisma.asignaciones.findMany({
+        where: { apiario_id: idBig, estado: "COMPLETADA" },
+        orderBy: { fecha_completada: "desc" },
+        select: { tipo_tarea_id: true, fecha_completada: true },
+      }),
+      prisma.registros_avance.findMany({
+        where: {
+          tipo_registro: "VISITA",
+          asignaciones: { apiario_id: idBig },
+        },
+        orderBy: { fecha_registro: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          fecha_registro: true,
+          estado_apiario: true,
+          observaciones: true,
+          persona: { select: { nombre_completo: true } },
+        },
+      }),
+      prisma.cosechas_miel.findMany({
+        where: { apiario_id: idBig },
+        orderBy: { fecha: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          fecha: true,
+          kg: true,
+          notas: true,
+          persona: { select: { nombre_completo: true } },
+        },
+      }),
+      prisma.$queryRaw<{ kg: string }[]>`
+        SELECT COALESCE(SUM(kg), 0)::text AS kg
+        FROM cosechas_miel
+        WHERE apiario_id = ${idBig}
+          AND date_part('year', fecha) = date_part('year', CURRENT_DATE)
+      `,
+    ]);
+
+  const totalKgAnio = Number(totalKgAnioRows[0]?.kg ?? 0);
 
   const mapaUltima = new Map<string, Date | null>();
   for (const c of completadas) {
@@ -171,6 +220,87 @@ export default async function DetalleApiario({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Últimas visitas
+        </h2>
+        {visitasRecientes.length === 0 ? (
+          <p className="mt-2 text-sm text-zelanda-verde-700">Sin visitas registradas todavía.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+            {visitasRecientes.map((v) => (
+              <li key={String(v.id)} className="py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zelanda-verde-900">
+                      {v.fecha_registro.toLocaleString("es-CO", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    <p className="text-xs text-zelanda-verde-700">
+                      {v.persona.nombre_completo}
+                    </p>
+                  </div>
+                  <BadgeBase tono={tonoEstadoApiario(v.estado_apiario)}>
+                    {v.estado_apiario
+                      ? ETIQUETA_ESTADO_APIARIO[v.estado_apiario]
+                      : "Sin estado"}
+                  </BadgeBase>
+                </div>
+                {v.observaciones ? (
+                  <p className="mt-1 text-xs text-zelanda-verde-700/80">
+                    {v.observaciones}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+            <Droplet className="h-4 w-4 text-zelanda-ocre-600" />
+            Cosechas de miel
+          </h2>
+          <p className="text-xs text-zelanda-verde-700">
+            Total {new Date().getFullYear()}:{" "}
+            <strong className="text-zelanda-verde-900">
+              {totalKgAnio.toLocaleString("es-CO", { maximumFractionDigits: 1 })} kg
+            </strong>
+          </p>
+        </div>
+        {cosechasMiel.length === 0 ? (
+          <p className="mt-2 text-sm text-zelanda-verde-700">Sin cosechas registradas todavía.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+            {cosechasMiel.map((c) => (
+              <li key={String(c.id)} className="py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-zelanda-verde-900">
+                      {Number(c.kg).toLocaleString("es-CO", { maximumFractionDigits: 1 })} kg
+                    </p>
+                    <p className="text-xs text-zelanda-verde-700">
+                      {c.fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+                      {" · "}
+                      {c.persona.nombre_completo}
+                    </p>
+                  </div>
+                </div>
+                {c.notas ? (
+                  <p className="mt-1 text-xs text-zelanda-verde-700/80">{c.notas}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
