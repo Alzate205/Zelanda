@@ -1,16 +1,11 @@
-// Service worker para Hacienda La Zelanda — sub-fase 5.2a
-// Maneja push notifications + cache de app shell para navegación offline.
+// Service worker para Hacienda La Zelanda — sub-fase 5.2b
+// Push + cache de app shell para navegación offline.
 
-const VERSION = "5.2b-1";
+const VERSION = "5.2b-2";
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 
 const SHELL_URLS = [
-  "/",
-  "/trabajador",
-  "/bodega",
-  "/almacen",
-  "/jefe",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -23,6 +18,25 @@ const RUTAS_NAVEGABLES = [
   "/jefe",
   "/mi-perfil",
 ];
+
+// HTML mínimo que decide a qué home ir según el rol guardado en localStorage.
+const LAUNCHER_HTML = `<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#3D5C42">
+<title>La Zelanda</title>
+<style>body{background:#F5F1E8;color:#3D5C42;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}</style>
+</head><body>
+<p>Cargando…</p>
+<script>
+(function(){
+  var mapa={TRABAJADOR:"/trabajador",BODEGA:"/bodega",ALMACEN:"/almacen",JEFE:"/jefe"};
+  var rol=null;
+  try{rol=localStorage.getItem("zelanda_rol_ultimo")}catch(e){}
+  location.replace(mapa[rol]||"/trabajador");
+})();
+</script>
+</body></html>`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -55,6 +69,9 @@ self.addEventListener("fetch", (event) => {
   if (
     url.pathname.startsWith("/api/trabajador/avance") ||
     url.pathname.startsWith("/api/trabajador/novedad") ||
+    url.pathname.startsWith("/api/bodega/despacho") ||
+    url.pathname.startsWith("/api/almacen/cosecha") ||
+    url.pathname.startsWith("/api/almacen/salida") ||
     url.pathname.startsWith("/api/push") ||
     url.pathname.startsWith("/api/cron")
   ) {
@@ -80,7 +97,7 @@ self.addEventListener("fetch", (event) => {
         (r) => url.pathname === r || url.pathname.startsWith(`${r}/`),
       );
     if (esRutaApp) {
-      event.respondWith(navegacionConFallback(req));
+      event.respondWith(navegacionConFallback(req, url));
       return;
     }
   }
@@ -92,18 +109,27 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-async function navegacionConFallback(req) {
+async function navegacionConFallback(req, url) {
   const cache = await caches.open(CACHE_SHELL);
   try {
     const res = await fetch(req);
-    if (res.ok || res.status === 307 || res.status === 308) {
+    // No cacheamos redirects: Safari rechaza responses cacheadas con .redirected=true.
+    if (res.ok && !res.redirected) {
       cache.put(req, res.clone());
     }
     return res;
   } catch {
+    // Sin red. Si piden "/", devolvemos un launcher que redirige según el rol.
+    if (url.pathname === "/") {
+      return new Response(LAUNCHER_HTML, {
+        status: 200,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    // Cache directo de la ruta pedida
     const hit = await cache.match(req);
     if (hit) return hit;
-    // Fallback: cualquier home de rol cacheada
+    // Fallback: cualquier home de rol que tengamos cacheada
     for (const ruta of ["/trabajador", "/bodega", "/almacen", "/jefe"]) {
       const home = await cache.match(ruta);
       if (home) return home;
@@ -144,19 +170,7 @@ async function networkFirst(req, cacheName) {
   }
 }
 
-async function staleWhileRevalidate(req, cacheName) {
-  const cache = await caches.open(cacheName);
-  const hit = await cache.match(req);
-  const fetchPromise = fetch(req)
-    .then((res) => {
-      if (res.ok) cache.put(req, res.clone());
-      return res;
-    })
-    .catch(() => hit);
-  return hit || fetchPromise;
-}
-
-// === Push (sin cambios) ===
+// === Push ===
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;

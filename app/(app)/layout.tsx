@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/shared/BottomNav";
 import { PushPrompt } from "@/components/shared/PushPrompt";
 import { SyncEngineInit } from "@/components/shared/SyncEngineInit";
 import { BannerOffline } from "@/components/shared/BannerOffline";
+import { GuardarRolLocal } from "@/components/shared/GuardarRolLocal";
 
 export default async function LayoutApp({
   children,
@@ -21,6 +22,7 @@ export default async function LayoutApp({
       <BottomNav rol={usuario.rol} />
       <PushPrompt />
       <SyncEngineInit />
+      <GuardarRolLocal rol={usuario.rol} />
       <BannerOffline />
     </div>
   );
