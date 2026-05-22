@@ -16,6 +16,10 @@ export default async function PaginaReportes() {
     rankingLotes,
     topRecolectores,
     insumosConsumidos,
+    mielTotal,
+    rankingApiarios,
+    topRecolectoresMiel,
+    salidasPorTipo,
   ] = await Promise.all([
     prisma.cosechas.aggregate({
       _count: { _all: true },
@@ -92,6 +96,38 @@ export default async function PaginaReportes() {
       GROUP BY i.id, i.nombre, i.unidad
       ORDER BY SUM(di.cantidad_consumida) DESC
     `,
+    prisma.cosechas_miel.aggregate({
+      _sum: { kg: true },
+      _count: { _all: true },
+    }),
+    prisma.$queryRaw<{ nombre: string; total_kg: string }[]>`
+      SELECT a.nombre, SUM(cm.kg)::text AS total_kg
+      FROM cosechas_miel cm
+      JOIN apiarios a ON a.id = cm.apiario_id
+      GROUP BY a.id, a.nombre
+      ORDER BY SUM(cm.kg) DESC
+    `,
+    prisma.$queryRaw<{
+      persona_id: bigint;
+      nombre_completo: string;
+      total_kg: string;
+    }[]>`
+      SELECT cm.persona_id, p.nombre_completo, SUM(cm.kg)::text AS total_kg
+      FROM cosechas_miel cm
+      JOIN personas p ON p.id = cm.persona_id
+      GROUP BY cm.persona_id, p.nombre_completo
+      ORDER BY SUM(cm.kg) DESC
+      LIMIT 5
+    `,
+    prisma.$queryRaw<{ tipo: string; total_kg: string; n_salidas: number }[]>`
+      SELECT tipo::text                  AS tipo,
+             SUM(cantidad_kg)::text       AS total_kg,
+             COUNT(*)::int                AS n_salidas
+      FROM salidas_cosecha
+      WHERE fecha >= NOW() - INTERVAL '12 months'
+      GROUP BY tipo
+      ORDER BY SUM(cantidad_kg) DESC
+    `,
   ]);
 
   const totalCosechaKg = Number(cosechasTotal._sum.peso_kg ?? 0);
@@ -119,6 +155,25 @@ export default async function PaginaReportes() {
     (m, r) => Math.max(m, Number(r.kg_total)),
     0,
   );
+
+  const totalMielKg = Number(mielTotal._sum.kg ?? 0);
+  const hayMiel = mielTotal._count._all > 0;
+
+  const totalSalidas12m = salidasPorTipo.reduce(
+    (s, r) => s + Number(r.total_kg),
+    0,
+  );
+  const maxSalida = salidasPorTipo.reduce(
+    (m, r) => Math.max(m, Number(r.total_kg)),
+    0,
+  );
+
+  const TONO_TIPO_SALIDA: Record<string, string> = {
+    VENTA: "bg-zelanda-verde-700/10 text-zelanda-verde-800",
+    CONSUMO: "bg-zelanda-ocre-700/10 text-zelanda-ocre-800",
+    PERDIDA: "bg-estado-vencida/10 text-estado-vencida",
+    OTRO: "bg-zelanda-beige-200 text-zelanda-verde-700",
+  };
 
   return (
     <div className="space-y-6">
@@ -315,6 +370,112 @@ export default async function PaginaReportes() {
                 </span>
               </li>
             ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Sección 6: Miel — solo si hay datos */}
+      {hayMiel ? (
+        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <h2 className="font-serif text-lg text-zelanda-verde-900">
+            Apicultura — miel
+          </h2>
+          <p className="mt-2 font-serif text-3xl text-zelanda-verde-900">
+            {fmtKg(totalMielKg)} kg
+          </p>
+          <p className="text-xs text-zelanda-verde-700/70">
+            {mielTotal._count._all} cosecha{mielTotal._count._all === 1 ? "" : "s"} de miel
+          </p>
+
+          {rankingApiarios.length > 0 ? (
+            <div className="mt-4">
+              <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                Por apiario
+              </h3>
+              <ul className="mt-2 divide-y divide-zelanda-beige-200">
+                {rankingApiarios.map((a) => (
+                  <li
+                    key={a.nombre}
+                    className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                  >
+                    <span className="truncate font-medium text-zelanda-verde-900">
+                      {a.nombre}
+                    </span>
+                    <span className="text-right font-serif text-zelanda-verde-900">
+                      {fmtKg(Number(a.total_kg))} kg
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {topRecolectoresMiel.length > 0 ? (
+            <div className="mt-4">
+              <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                Top recolectores de miel
+              </h3>
+              <ul className="mt-2 divide-y divide-zelanda-beige-200">
+                {topRecolectoresMiel.map((r) => (
+                  <li
+                    key={r.persona_id.toString()}
+                    className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                  >
+                    <span className="truncate font-medium text-zelanda-verde-900">
+                      {r.nombre_completo}
+                    </span>
+                    <span className="text-right font-serif text-zelanda-verde-900">
+                      {fmtKg(Number(r.total_kg))} kg
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Sección 7: Salidas por tipo (últimos 12 meses) */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-lg text-zelanda-verde-900">
+          Salidas del almacén — últimos 12 meses
+        </h2>
+        {salidasPorTipo.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin salidas registradas en los últimos 12 meses.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {salidasPorTipo.map((s) => {
+              const kg = Number(s.total_kg);
+              const pct = maxSalida > 0 ? (kg / maxSalida) * 100 : 0;
+              const pctTotal =
+                totalSalidas12m > 0 ? (kg / totalSalidas12m) * 100 : 0;
+              return (
+                <li key={s.tipo} className="text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-xs ${TONO_TIPO_SALIDA[s.tipo] ?? ""}`}
+                    >
+                      {s.tipo}
+                    </span>
+                    <span className="font-serif text-zelanda-verde-900">
+                      {fmtKg(kg)} kg
+                    </span>
+                  </div>
+                  <div className="mt-0.5 text-xs text-zelanda-verde-700/70">
+                    {pctTotal.toFixed(1)}% del total · {s.n_salidas} salida
+                    {s.n_salidas === 1 ? "" : "s"}
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
+                    <div
+                      className="h-full rounded-full bg-zelanda-verde-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
