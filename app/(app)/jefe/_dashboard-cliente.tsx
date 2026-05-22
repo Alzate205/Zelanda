@@ -251,6 +251,25 @@ export function DashboardJefeCliente({
         </div>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+          Configuración
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href="/jefe/tareas"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Tipos de tarea
+            </p>
+            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
+              Frecuencias y catálogo
+            </p>
+          </Link>
+        </div>
+      </section>
+
       <p className="pt-2 text-center text-[11px] text-zelanda-verde-700/70">
         {describirActualizacion(tsCache)}
       </p>
