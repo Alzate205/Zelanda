@@ -5,6 +5,9 @@ import { ChevronLeft } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FormularioCrearAcceso } from "./FormularioCrearAcceso";
+import { FormularioCambiarRol } from "./FormularioCambiarRol";
+import { FormularioResetContrasena } from "./FormularioResetContrasena";
+import type { RolUsuario } from "@/types";
 
 export const metadata: Metadata = { title: "Gestionar acceso" };
 
@@ -73,14 +76,49 @@ export default async function PaginaAcceso({
       </header>
 
       {usuario ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-          <p className="text-sm text-zelanda-verde-700">
-            Cuenta actual: <span className="font-medium text-zelanda-verde-900">{usuario.email}</span> · rol <span className="font-medium text-zelanda-verde-900">{usuario.rol}</span>.
-          </p>
-          <p className="mt-3 text-sm text-zelanda-verde-700">
-            (Cambiar rol y resetear contraseña se habilitan en la siguiente tarea.)
-          </p>
-        </section>
+        <>
+          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Cuenta actual
+            </h2>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Correo</dt>
+                <dd className="mt-0.5 text-zelanda-verde-900">{usuario.email}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Rol actual</dt>
+                <dd className="mt-0.5 text-zelanda-verde-900">{usuario.rol}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Cambiar rol
+            </h2>
+            <p className="mt-1 mb-4 text-sm text-zelanda-verde-700">
+              Define qué interfaz ve esta persona al entrar (trabajador, bodega,
+              almacén o jefe).
+            </p>
+            <FormularioCambiarRol
+              personaId={idStr}
+              usuarioId={usuario.id}
+              rolActual={usuario.rol as RolUsuario}
+            />
+          </section>
+
+          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Resetear contraseña
+            </h2>
+            <p className="mt-1 mb-4 text-sm text-zelanda-verde-700">
+              Pon una contraseña temporal y compártesela al usuario por canal
+              seguro.
+            </p>
+            <FormularioResetContrasena usuarioId={usuario.id} />
+          </section>
+        </>
       ) : (
         <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
           <h2 className="font-serif text-base text-zelanda-verde-900">

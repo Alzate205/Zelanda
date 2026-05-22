@@ -95,3 +95,76 @@ export async function crearAccesoParaPersona(
   revalidatePath("/jefe/equipo");
   redirect(`/jefe/equipo/${personaId}`);
 }
+
+export async function cambiarRolUsuario(
+  _prev: EstadoAcceso,
+  formData: FormData,
+): Promise<EstadoAcceso> {
+  await requerirUsuario("JEFE");
+
+  const personaIdRaw = String(formData.get("persona_id") ?? "");
+  const personaId = parsearId(personaIdRaw);
+  if (!personaId) return { ...ESTADO_INICIAL, error: "ID de persona inválido." };
+
+  const usuarioId = String(formData.get("usuario_id") ?? "").trim();
+  if (!usuarioId) return { ...ESTADO_INICIAL, error: "ID de usuario inválido." };
+
+  const rolRaw = String(formData.get("rol") ?? "");
+  if (!esRolValido(rolRaw)) {
+    return { ...ESTADO_INICIAL, error: "Rol inválido." };
+  }
+
+  try {
+    await prisma.usuarios.update({
+      where: { id: usuarioId },
+      data: { rol: rolRaw },
+    });
+  } catch (e) {
+    return {
+      ...ESTADO_INICIAL,
+      error: `No se pudo cambiar el rol: ${(e as Error)?.message ?? "desconocido"}.`,
+    };
+  }
+
+  revalidatePath(`/jefe/equipo/${personaId}`);
+  revalidatePath(`/jefe/equipo/${personaId}/acceso`);
+  revalidatePath("/jefe/equipo");
+  return { error: null, exito: "Rol actualizado." };
+}
+
+export async function resetearContrasenaUsuario(
+  _prev: EstadoAcceso,
+  formData: FormData,
+): Promise<EstadoAcceso> {
+  await requerirUsuario("JEFE");
+
+  const usuarioId = String(formData.get("usuario_id") ?? "").trim();
+  if (!usuarioId) return { ...ESTADO_INICIAL, error: "ID de usuario inválido." };
+
+  const nueva = String(formData.get("contrasena_nueva") ?? "");
+  const confirm = String(formData.get("contrasena_confirmacion") ?? "");
+
+  if (nueva.length < 8) {
+    return { ...ESTADO_INICIAL, error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+  if (nueva !== confirm) {
+    return { ...ESTADO_INICIAL, error: "Las contraseñas no coinciden." };
+  }
+
+  const supabaseAdmin = crearClienteSupabaseAdmin();
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(usuarioId, {
+    password: nueva,
+  });
+
+  if (error) {
+    return {
+      ...ESTADO_INICIAL,
+      error: `No se pudo resetear: ${error.message}`,
+    };
+  }
+
+  return {
+    error: null,
+    exito: "Contraseña actualizada. Compártesela al usuario.",
+  };
+}
