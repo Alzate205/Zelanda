@@ -8,7 +8,13 @@ export const dynamic = "force-dynamic";
 export default async function PaginaReportes() {
   await requerirUsuario("JEFE");
 
-  const [cosechasTotal, salidasTotal, stockRows, cosechasMes] = await Promise.all([
+  const [
+    cosechasTotal,
+    salidasTotal,
+    stockRows,
+    cosechasMes,
+    rankingLotes,
+  ] = await Promise.all([
     prisma.cosechas.aggregate({
       _count: { _all: true },
       _sum: { peso_kg: true },
@@ -28,6 +34,25 @@ export default async function PaginaReportes() {
       WHERE fecha >= NOW() - INTERVAL '12 months'
       GROUP BY ym
       ORDER BY ym DESC
+    `,
+    prisma.$queryRaw<{
+      id: bigint;
+      nombre: string;
+      total_arboles: number;
+      hectareas: string | null;
+      kg_total: string;
+    }[]>`
+      SELECT
+        l.id,
+        l.nombre,
+        l.total_arboles,
+        l.hectareas::text       AS hectareas,
+        COALESCE(SUM(c.peso_kg), 0)::text AS kg_total
+      FROM lotes l
+      LEFT JOIN cosechas c ON c.lote_id = l.id
+      WHERE l.deleted_at IS NULL
+      GROUP BY l.id, l.nombre, l.total_arboles, l.hectareas
+      ORDER BY SUM(c.peso_kg) DESC NULLS LAST, l.nombre ASC
     `,
   ]);
 
@@ -49,6 +74,11 @@ export default async function PaginaReportes() {
 
   const maxMes = cosechasMes.reduce(
     (m, r) => Math.max(m, Number(r.total_kg)),
+    0,
+  );
+
+  const maxLote = rankingLotes.reduce(
+    (m, r) => Math.max(m, Number(r.kg_total)),
     0,
   );
 
@@ -140,6 +170,48 @@ export default async function PaginaReportes() {
             })}
           </ul>
         )}
+      </section>
+
+      {/* Sección 3: Ranking de lotes */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-lg text-zelanda-verde-900">
+          Ranking de lotes
+        </h2>
+        <p className="mt-1 text-xs text-zelanda-verde-700/70">
+          Ordenados por cosecha acumulada. Métricas derivadas cuando hay árboles y hectáreas.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {rankingLotes.map((l) => {
+            const kg = Number(l.kg_total);
+            const pct = maxLote > 0 ? (kg / maxLote) * 100 : 0;
+            const kgArbol = l.total_arboles > 0 ? kg / l.total_arboles : null;
+            const hect = l.hectareas ? Number(l.hectareas) : 0;
+            const kgHa = hect > 0 ? kg / hect : null;
+            return (
+              <li key={l.id.toString()} className="text-sm">
+                <div className="flex items-center justify-between gap-2 text-zelanda-verde-900">
+                  <span className="font-medium">{l.nombre}</span>
+                  <span className="font-serif">{fmtKg(kg)} kg</span>
+                </div>
+                <div className="mt-0.5 text-xs text-zelanda-verde-700/70">
+                  {kgArbol !== null
+                    ? `${kgArbol.toFixed(2)} kg/árbol`
+                    : "— kg/árbol"}
+                  {" · "}
+                  {kgHa !== null
+                    ? `${kgHa.toFixed(2)} kg/ha`
+                    : "— kg/ha"}
+                </div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
+                  <div
+                    className="h-full rounded-full bg-zelanda-verde-700"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </section>
     </div>
   );
