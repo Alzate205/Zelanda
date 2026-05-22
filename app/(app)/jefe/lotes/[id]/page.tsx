@@ -6,6 +6,7 @@ import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatearFechaCorta } from "@/lib/utils";
 import { calcularResumen, formatearDias, etiquetaEstado, tonoEstado } from "@/lib/fechas-tarea";
+import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { BuscadorArbol } from "./_buscador-arbol";
 
@@ -71,10 +72,10 @@ export default async function DetalleLote({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true, frecuencia_dias_default: true },
     }),
-    prisma.asignaciones.findMany({
+    prisma.asignaciones.groupBy({
+      by: ["tipo_tarea_id"],
       where: { lote_id: idBig, estado: "COMPLETADA" },
-      orderBy: { fecha_completada: "desc" },
-      select: { tipo_tarea_id: true, fecha_completada: true },
+      _max: { fecha_completada: true },
     }),
     prisma.frecuencias_lote.findMany({
       where: { lote_id: idBig },
@@ -84,8 +85,7 @@ export default async function DetalleLote({
 
   const mapaUltima = new Map<string, Date | null>();
   for (const c of asignacionesCompletadas) {
-    const key = String(c.tipo_tarea_id);
-    if (!mapaUltima.has(key)) mapaUltima.set(key, c.fecha_completada);
+    mapaUltima.set(String(c.tipo_tarea_id), c._max.fecha_completada);
   }
 
   const mapaFreq = new Map<string, number>();
@@ -334,7 +334,7 @@ export default async function DetalleLote({
                   className="block rounded-lg border border-zelanda-beige-200 px-3 py-2 text-sm transition hover:bg-zelanda-beige-50"
                 >
                   <span className="font-medium text-zelanda-verde-900">Árbol {n.arboles.numero_placa}</span>
-                  <span className="text-zelanda-verde-700"> · {n.tipo.replace("_", " ")}</span>
+                  <span className="text-zelanda-verde-700"> · {ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo}</span>
                 </Link>
               </li>
             ))}

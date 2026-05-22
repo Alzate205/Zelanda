@@ -1,13 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useColaPendientes } from "@/hooks/useColaPendientes";
 
+const PATH_PENDIENTES_POR_ROL: Record<string, string> = {
+  JEFE: "/trabajador/pendientes",
+  TRABAJADOR: "/trabajador/pendientes",
+  BODEGA: "/bodega/pendientes",
+  ALMACEN: "/almacen/pendientes",
+};
+
 export function BannerOffline() {
   const online = useOnlineStatus();
   const { total, errores } = useColaPendientes();
+  const [rol, setRol] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      setRol(localStorage.getItem("zelanda_rol_ultimo"));
+    } catch {
+      setRol(null);
+    }
+  }, []);
 
   if (online && total === 0) return null;
 
@@ -43,8 +60,11 @@ export function BannerOffline() {
       className="fixed inset-x-0 z-30 mx-auto flex max-w-screen-md justify-center px-4"
       style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
     >
-      {total > 0 ? (
-        <Link href="/trabajador/pendientes" aria-label="Ver pendientes">
+      {total > 0 && rol ? (
+        <Link
+          href={PATH_PENDIENTES_POR_ROL[rol] ?? "/trabajador/pendientes"}
+          aria-label="Ver pendientes"
+        >
           {cuerpo}
         </Link>
       ) : (

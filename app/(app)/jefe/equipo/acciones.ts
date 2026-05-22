@@ -120,31 +120,41 @@ export async function crearMiembro(
     rol_app = rolAppRaw;
   }
 
-  // --- 1. Crear persona (id manual, BIGINT sin autoincrement post-migración) ---
-  const filas = await prisma.$queryRaw<{ next_id: bigint }[]>`
-    SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM personas
-  `;
-  const nextId = filas[0].next_id;
+  // --- 1. Crear persona (id manual, BIGINT sin autoincrement post-migración)
+  //     Retry on PK collision para evitar race condition con inserciones concurrentes.
   let personaId: bigint;
-  try {
-    const p = await prisma.personas.create({
-      data: {
-        id: nextId,
-        nombre_completo,
-        cedula,
-        telefono,
-        fecha_nacimiento,
-        notas,
-        activo: true,
-      },
-    });
-    personaId = p.id;
-  } catch (e) {
-    const msg = (e as Error)?.message ?? "Error desconocido";
-    if (/unique constraint.*cedula/i.test(msg)) {
-      return { ...ESTADO_INICIAL, error: "Ya existe una persona con esa cédula." };
+  let intentos = 0;
+  const MAX_INTENTOS = 5;
+  while (true) {
+    intentos++;
+    const filas = await prisma.$queryRaw<{ next_id: bigint }[]>`
+      SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM personas
+    `;
+    const nextId = filas[0].next_id;
+    try {
+      const p = await prisma.personas.create({
+        data: {
+          id: nextId,
+          nombre_completo,
+          cedula,
+          telefono,
+          fecha_nacimiento,
+          notas,
+          activo: true,
+        },
+      });
+      personaId = p.id;
+      break;
+    } catch (e) {
+      const msg = (e as Error)?.message ?? "Error desconocido";
+      if (/unique constraint.*cedula/i.test(msg)) {
+        return { ...ESTADO_INICIAL, error: "Ya existe una persona con esa cédula." };
+      }
+      if (/unique constraint.*pkey|unique constraint.*"personas_pkey"/i.test(msg) && intentos < MAX_INTENTOS) {
+        continue;
+      }
+      return { ...ESTADO_INICIAL, error: sanitizarError(e, "jefe/equipo/crear-persona") };
     }
-    return { ...ESTADO_INICIAL, error: sanitizarError(e, "jefe/equipo/crear-persona") };
   }
 
   // --- 2. Crear vinculación ---

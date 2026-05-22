@@ -29,6 +29,11 @@ function esUuid(s: unknown): s is string {
 }
 
 export async function POST(req: Request) {
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario || usuario.rol !== "BODEGA") {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -64,11 +69,6 @@ export async function POST(req: Request) {
       id: String(despachoId),
       duplicado: true,
     });
-  }
-
-  const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== "BODEGA") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   if (!Array.isArray(body.items)) {

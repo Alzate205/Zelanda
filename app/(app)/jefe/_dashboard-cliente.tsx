@@ -12,14 +12,7 @@ import {
   tsJefe,
 } from "@/lib/offline/cache";
 import type { SnapshotJefe } from "@/lib/offline/tipos";
-
-const ETIQUETA_NOVEDAD: Record<string, string> = {
-  PLAGA: "Plaga",
-  DANO_FISICO: "Daño físico",
-  ENFERMEDAD: "Enfermedad",
-  OBSERVACION: "Observación",
-  OTRO: "Otro",
-};
+import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
 
 function formatearDias(dias: number | null): string {
   if (dias === null) return "—";

@@ -43,7 +43,7 @@ Casa principal, Bodega, Almacén, Apiario El Cedro (sector norte), Apiario La Qu
 
 | Componente | Tecnología |
 |---|---|
-| Frontend | **Next.js 14+ (App Router)** + React + TypeScript |
+| Frontend | **Next.js 15.5 (App Router)** + React 19 + TypeScript |
 | Estilos | **Tailwind CSS** |
 | Mapas | **Leaflet** (con react-leaflet) |
 | Iconografía | **Lucide React** |
@@ -284,7 +284,7 @@ El prototipo `zelanda_app.jsx` (entregado en la conversación previa) es **la gu
 ### ✅ Fase 0 — Definición (COMPLETADA)
 Prototipo navegable, documento maestro, esquema de BD.
 
-### 🎯 Fase 1 — Infraestructura base (ACTUAL)
+### ✅ Fase 1 — Infraestructura base (COMPLETADA — desplegada 2026-05-11)
 **Objetivo:** tener un Next.js desplegado en Vercel con login funcional y los 4 roles.
 
 Pasos:
@@ -297,34 +297,35 @@ Pasos:
 7. Configurar RLS policies básicas en Supabase
 8. Deploy a Vercel con variables de entorno
 
-### Fase 2 — Mapa y lotes
-- Cargar los 15 lotes (sin polígono real al inicio, solo nombres)
-- Implementar Leaflet con vista satelital
-- Vista de detalle de lote
-- Trabajo de campo paralelo: capturar polígonos reales
+### ✅ Fase 2 — Mapa y lotes (COMPLETADA)
+- 15 lotes cargados, Leaflet con vista satelital, detalle de lote, polígonos reales capturables.
 
-### Fase 3 — Tareas y asignaciones
-- CRUD de tipos de tarea
-- Configuración de frecuencias por lote
-- Flujo de asignación (jefe → trabajador)
-- Registro de avance (3 modos)
-- Cálculo de próximas fechas y alertas
+### ✅ Fase 3 — Tareas y asignaciones (COMPLETADA)
+- CRUD de tipos de tarea, frecuencias por lote, flujo de asignación, registro de avance (TRAMO/SUELTOS/VISITA), cálculo de próximas fechas y alertas.
 
-### Fase 4 — Bodega y almacén
-- Catálogos de herramientas e insumos
-- Flujos de despacho y devolución (con reserva/consumo)
-- Flujos de recepción y salida de cosecha
-- Reportes básicos
+### ✅ Fase 4 — Bodega y almacén (COMPLETADA)
+- Catálogos, despacho/devolución (reserva + consumo), recepción y salida de cosecha, reporte por lote.
 
-### Fase 5 — Apicultura y refinamientos
+### ✅ Fase 5 — Apicultura y refinamientos (mayormente COMPLETADA)
 - Módulo de apiarios ✅ (visita con estado general bien/problemas/crítico, push automático al jefe si crítico, cosecha de miel con kg, detalle apiario con historial)
 - Notificaciones push ✅ (sub-fase 5.1)
 - Modo offline trabajador ✅ (sub-fase 5.2a — ver tareas, registrar avance/novedad, sync con backoff, pantalla `/trabajador/pendientes`)
 - Modo offline bodega/almacén/jefe ✅ (sub-fase 5.2b — crear/cerrar despacho offline, cosecha + salida offline, jefe dashboard cacheado; pantallas `/bodega/pendientes` y `/almacen/pendientes`)
-- Fotos offline con re-escalado a 1280px (sub-fase 5.2c, pendiente)
+- Fotos offline con re-escalado a 1280px (sub-fase 5.2c, **pendiente**)
+
+### 🎯 Mejoras agregadas después del roadmap original
+- Pokédex de árbol con heat-map y mapa de árboles por lote ✅
+- Login con username (además de email) ✅
+- Condición de devolución de herramienta ✅
+- Edición de vinculación activa sin cerrar histórico ✅
+- Gestión de acceso (crear / cambiar rol / resetear contraseña) ✅
+- Reportes globales de la finca (`/jefe/reportes`) ✅
+- Búsqueda global desde el header (solo JEFE) ✅
+- Productividad por trabajador en ficha de persona ✅
+- Pulido PWA "feel nativa" (no pull-to-refresh, safe areas, status bar integrado) ✅
 
 ### Fase 6 — Futuro (no hacer aún)
-Productividad detallada, costos, pagos, clima, compras, ventas, reportes avanzados, códigos QR en placas.
+Capa financiera (pagos, jornales, servicios contratados — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`), clima, compras, ventas, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
 
 ---
 

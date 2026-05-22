@@ -17,6 +17,7 @@ type Asignacion = {
   id: string;
   tipoTarea: string;
   area: "CULTIVO" | "APICULTURA";
+  esCosechaMiel: boolean;
   loteNombre: string | null;
   totalArboles: number | null;
   arbolesCompletados: number;
@@ -53,8 +54,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const esCultivo = asignacion.area === "CULTIVO";
-  const esCosechaMiel =
-    !esCultivo && /miel/i.test(asignacion.tipoTarea);
+  const esCosechaMiel = asignacion.esCosechaMiel;
   const esVisitaApiario = !esCultivo && !esCosechaMiel;
   const [tipo, setTipo] = useState<"TRAMO" | "SUELTOS">("TRAMO");
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
@@ -235,11 +235,11 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="desde" className={labelBase}>Desde árbol</label>
-                  <input id="desde" name="desde" type="number" min="1" required className={inputBase} />
+                  <input id="desde" name="desde" type="number" inputMode="numeric" pattern="[0-9]*" min="1" required className={inputBase} />
                 </div>
                 <div>
                   <label htmlFor="hasta" className={labelBase}>Hasta árbol</label>
-                  <input id="hasta" name="hasta" type="number" min="1" required className={inputBase} />
+                  <input id="hasta" name="hasta" type="number" inputMode="numeric" pattern="[0-9]*" min="1" required className={inputBase} />
                 </div>
               </div>
             ) : (
@@ -284,6 +284,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
               id="kg"
               name="kg"
               type="number"
+              inputMode="decimal"
               min="0.01"
               step="0.01"
               required

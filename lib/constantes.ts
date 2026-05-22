@@ -47,3 +47,11 @@ export const ETIQUETA_ESTADO_ASIGNACION: Record<string, string> = {
   COMPLETADA: "Completada",
   CANCELADA: "Cancelada",
 };
+
+export const ETIQUETA_NOVEDAD: Record<string, string> = {
+  PLAGA: "Plaga",
+  DANO_FISICO: "Daño físico",
+  ENFERMEDAD: "Enfermedad",
+  OBSERVACION: "Observación",
+  OTRO: "Otro",
+};

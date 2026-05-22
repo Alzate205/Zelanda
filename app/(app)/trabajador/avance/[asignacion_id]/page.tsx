@@ -49,12 +49,17 @@ export default async function PaginaAvance({
     totalColmenas = ap?.total_colmenas ?? null;
   }
 
+  const esApicultura = a.tipos_tarea.area === "APICULTURA";
+  const esCosechaMiel =
+    esApicultura && /\bcosecha\b/i.test(a.tipos_tarea.nombre);
+
   return (
     <FormAvance
       asignacion={{
         id: String(a.id),
         tipoTarea: a.tipos_tarea.nombre,
         area: a.tipos_tarea.area,
+        esCosechaMiel,
         loteNombre: a.lotes?.nombre ?? null,
         totalArboles: a.lotes?.total_arboles ?? null,
         arbolesCompletados: a.arboles_completados,
