@@ -39,6 +39,21 @@ export async function actualizarPersonaYVinculacion(
 
   if (!nombre_completo) return { error: "Nombre completo obligatorio." };
 
+  const fechaNacRaw = String(formData.get("fecha_nacimiento") ?? "").trim();
+  let fecha_nacimiento: Date | null = null;
+  if (fechaNacRaw) {
+    const d = new Date(fechaNacRaw);
+    if (Number.isNaN(d.getTime())) {
+      return { error: "Fecha de nacimiento inválida." };
+    }
+    const hoy = new Date();
+    hoy.setHours(23, 59, 59, 999);
+    if (d > hoy) {
+      return { error: "La fecha de nacimiento no puede ser futura." };
+    }
+    fecha_nacimiento = d;
+  }
+
   const modoRaw = String(formData.get("modo_vinculacion") ?? "dejar");
   if (!esModoValido(modoRaw)) {
     return { error: "Modo de vinculación inválido." };
@@ -47,7 +62,7 @@ export async function actualizarPersonaYVinculacion(
 
   await prisma.personas.update({
     where: { id: personaId },
-    data: { nombre_completo, cedula, telefono, notas },
+    data: { nombre_completo, cedula, telefono, fecha_nacimiento, notas },
   });
 
   if (modo === "dejar") {

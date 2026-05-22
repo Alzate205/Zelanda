@@ -21,6 +21,7 @@ type Persona = {
   nombre_completo: string;
   cedula: string | null;
   telefono: string | null;
+  fecha_nacimiento: string | null;
   notas: string | null;
 };
 
@@ -104,6 +105,19 @@ export function FormularioEditarMiembro({
               className={inputBase}
             />
           </div>
+        </div>
+        <div>
+          <label htmlFor="fecha_nacimiento" className={labelBase}>
+            Fecha de nacimiento
+          </label>
+          <input
+            id="fecha_nacimiento"
+            name="fecha_nacimiento"
+            type="date"
+            defaultValue={persona.fecha_nacimiento ?? ""}
+            autoComplete="bday"
+            className={inputBase}
+          />
         </div>
         <div>
           <label htmlFor="notas" className={labelBase}>Notas</label>

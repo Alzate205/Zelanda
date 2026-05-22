@@ -49,6 +49,9 @@ export default async function PaginaEditarMiembro({
         nombre_completo: persona.nombre_completo,
         cedula: persona.cedula,
         telefono: persona.telefono,
+        fecha_nacimiento: persona.fecha_nacimiento
+          ? persona.fecha_nacimiento.toISOString().slice(0, 10)
+          : null,
         notas: persona.notas,
       }}
       vincActiva={vincActiva}
