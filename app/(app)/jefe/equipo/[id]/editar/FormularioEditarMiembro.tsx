@@ -14,7 +14,7 @@ const inputBase =
 
 const labelBase = "block text-sm font-medium text-zelanda-verde-800";
 
-type ModoVinculacion = "dejar" | "cambiar" | "cerrar";
+type ModoVinculacion = "dejar" | "editar" | "cambiar" | "cerrar";
 
 type Persona = {
   id: string;
@@ -28,6 +28,9 @@ type Persona = {
 type VinculacionActiva = {
   tipo: TipoVinculacion;
   rol_finca: string | null;
+  salario_base: number | null;
+  periodo_pago: string | null;
+  tarifa_jornal: number | null;
 } | null;
 
 export function FormularioEditarMiembro({
@@ -172,6 +175,27 @@ export function FormularioEditarMiembro({
             <input
               type="radio"
               name="modo_visible"
+              value="editar"
+              checked={modo === "editar"}
+              onChange={() => setModo("editar")}
+              disabled={!vincActiva}
+              className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-zelanda-verde-900">
+                Editar la activa
+              </span>
+              <span className="mt-0.5 block text-xs text-zelanda-verde-700">
+                Corrige rol, salario o tarifa sin tocar histórico. No cambia el
+                tipo (para eso usa &ldquo;Cambiar a otro tipo&rdquo;).
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+            <input
+              type="radio"
+              name="modo_visible"
               value="cambiar"
               checked={modo === "cambiar"}
               onChange={() => setModo("cambiar")}
@@ -290,6 +314,81 @@ export function FormularioEditarMiembro({
                   className={inputBase}
                 />
               </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {modo === "editar" && vincActiva ? (
+          <div className="space-y-4 border-t border-zelanda-beige-200 pt-4">
+            <div>
+              <label htmlFor="edit_rol_finca" className={labelBase}>
+                Rol en la finca
+              </label>
+              <input
+                id="edit_rol_finca"
+                name="edit_rol_finca"
+                type="text"
+                defaultValue={vincActiva.rol_finca ?? ""}
+                className={inputBase}
+              />
+            </div>
+            {vincActiva.tipo === "FIJO" ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="edit_salario_base" className={labelBase}>
+                    Salario base
+                  </label>
+                  <input
+                    id="edit_salario_base"
+                    name="edit_salario_base"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    required
+                    defaultValue={vincActiva.salario_base ?? ""}
+                    className={inputBase}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit_periodo_pago" className={labelBase}>
+                    Período
+                  </label>
+                  <select
+                    id="edit_periodo_pago"
+                    name="edit_periodo_pago"
+                    required
+                    defaultValue={vincActiva.periodo_pago ?? "QUINCENAL"}
+                    className={inputBase}
+                  >
+                    <option value="MENSUAL">Mensual</option>
+                    <option value="QUINCENAL">Quincenal</option>
+                    <option value="SEMANAL">Semanal</option>
+                  </select>
+                </div>
+              </div>
+            ) : null}
+            {vincActiva.tipo === "JORNALERO" ? (
+              <div>
+                <label htmlFor="edit_tarifa_jornal" className={labelBase}>
+                  Tarifa por jornal
+                </label>
+                <input
+                  id="edit_tarifa_jornal"
+                  name="edit_tarifa_jornal"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  required
+                  defaultValue={vincActiva.tarifa_jornal ?? ""}
+                  className={inputBase}
+                />
+              </div>
+            ) : null}
+            {vincActiva.tipo === "CONTRATISTA" || vincActiva.tipo === "FAMILIAR" ? (
+              <p className="text-xs text-zelanda-verde-700">
+                Este tipo de vinculación no tiene salario ni tarifa configurable.
+                Solo puedes actualizar el rol en la finca.
+              </p>
             ) : null}
           </div>
         ) : null}

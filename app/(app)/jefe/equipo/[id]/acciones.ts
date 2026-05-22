@@ -14,8 +14,8 @@ function esTipoValido(v: string): v is TipoVinculacion {
 function esPeriodoValido(v: string): v is TipoPeriodoPago {
   return v === "MENSUAL" || v === "QUINCENAL" || v === "SEMANAL";
 }
-function esModoValido(v: string): v is "dejar" | "cambiar" | "cerrar" {
-  return v === "dejar" || v === "cambiar" || v === "cerrar";
+function esModoValido(v: string): v is "dejar" | "cambiar" | "cerrar" | "editar" {
+  return v === "dejar" || v === "cambiar" || v === "cerrar" || v === "editar";
 }
 
 function parsearId(raw: string | null): bigint | null {
@@ -76,6 +76,66 @@ export async function actualizarPersonaYVinculacion(
       where: { persona_id: personaId, fecha_fin: null },
       data: { fecha_fin: new Date() },
     });
+    revalidatePath(`/jefe/equipo/${personaId}`);
+    revalidatePath("/jefe/equipo");
+    redirect(`/jefe/equipo/${personaId}`);
+  }
+
+  if (modo === "editar") {
+    const activas = await prisma.vinculaciones.count({
+      where: { persona_id: personaId, fecha_fin: null },
+    });
+    if (activas === 0) {
+      return { error: "No hay vinculación activa para editar." };
+    }
+    if (activas > 1) {
+      return {
+        error:
+          "Hay más de una vinculación activa para esta persona. Pídele al admin que revise la base de datos.",
+      };
+    }
+
+    const vincActual = await prisma.vinculaciones.findFirst({
+      where: { persona_id: personaId, fecha_fin: null },
+      select: { tipo: true },
+    });
+    if (!vincActual) {
+      return { error: "Vinculación activa no encontrada." };
+    }
+    const tipoActual = vincActual.tipo as TipoVinculacion;
+
+    const rol_finca = String(formData.get("edit_rol_finca") ?? "").trim() || null;
+    const salarioRaw = String(formData.get("edit_salario_base") ?? "").trim();
+    const periodoRaw = String(formData.get("edit_periodo_pago") ?? "");
+    const tarifaRaw = String(formData.get("edit_tarifa_jornal") ?? "").trim();
+
+    let salario_base: number | null = null;
+    let periodo_pago: TipoPeriodoPago | null = null;
+    let tarifa_jornal: number | null = null;
+
+    if (tipoActual === "FIJO") {
+      const s = Number(salarioRaw);
+      if (!Number.isFinite(s) || s <= 0) {
+        return { error: "Salario base inválido para FIJO." };
+      }
+      salario_base = s;
+      if (!esPeriodoValido(periodoRaw)) {
+        return { error: "Período de pago inválido para FIJO." };
+      }
+      periodo_pago = periodoRaw;
+    } else if (tipoActual === "JORNALERO") {
+      const t = Number(tarifaRaw);
+      if (!Number.isFinite(t) || t <= 0) {
+        return { error: "Tarifa por jornal inválida para JORNALERO." };
+      }
+      tarifa_jornal = t;
+    }
+
+    await prisma.vinculaciones.updateMany({
+      where: { persona_id: personaId, fecha_fin: null },
+      data: { rol_finca, salario_base, periodo_pago, tarifa_jornal },
+    });
+
     revalidatePath(`/jefe/equipo/${personaId}`);
     revalidatePath("/jefe/equipo");
     redirect(`/jefe/equipo/${personaId}`);

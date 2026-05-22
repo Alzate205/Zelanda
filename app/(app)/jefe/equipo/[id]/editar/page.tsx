@@ -28,17 +28,27 @@ export default async function PaginaEditarMiembro({
       vinculaciones: {
         where: { fecha_fin: null },
         take: 1,
-        select: { tipo: true, rol_finca: true },
+        select: {
+          tipo: true,
+          rol_finca: true,
+          salario_base: true,
+          periodo_pago: true,
+          tarifa_jornal: true,
+        },
       },
     },
   });
 
   if (!persona || persona.deleted_at) notFound();
 
-  const vincActiva = persona.vinculaciones[0]
+  const v = persona.vinculaciones[0];
+  const vincActiva = v
     ? {
-        tipo: persona.vinculaciones[0].tipo as TipoVinculacion,
-        rol_finca: persona.vinculaciones[0].rol_finca,
+        tipo: v.tipo as TipoVinculacion,
+        rol_finca: v.rol_finca,
+        salario_base: v.salario_base ? Number(v.salario_base) : null,
+        periodo_pago: v.periodo_pago,
+        tarifa_jornal: v.tarifa_jornal ? Number(v.tarifa_jornal) : null,
       }
     : null;
 
