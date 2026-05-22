@@ -1,7 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil, Calendar, Phone, IdCard } from "lucide-react";
+import {
+  ChevronLeft,
+  Pencil,
+  Calendar,
+  Phone,
+  IdCard,
+  TrendingUp,
+  Sprout,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
@@ -44,13 +54,66 @@ export default async function DetalleMiembro({
   const idBig = parsearId(id);
   if (!idBig) notFound();
 
-  const persona = await prisma.personas.findUnique({
-    where: { id: idBig },
-    include: {
-      usuarios: { select: { id: true, email: true, rol: true, activo: true } },
-      vinculaciones: { orderBy: { fecha_inicio: "desc" } },
-    },
-  });
+  const hace30dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    persona,
+    cosecha30d,
+    cosechaTotal,
+    arboles30d,
+    arbolesTotal,
+    novedades30d,
+    novedadesTotal,
+    tareas30d,
+    tareasTotal,
+  ] = await Promise.all([
+    prisma.personas.findUnique({
+      where: { id: idBig },
+      include: {
+        usuarios: { select: { id: true, email: true, rol: true, activo: true } },
+        vinculaciones: { orderBy: { fecha_inicio: "desc" } },
+      },
+    }),
+    prisma.cosechas.aggregate({
+      where: { persona_id: idBig, fecha: { gte: hace30dias } },
+      _sum: { peso_kg: true },
+    }),
+    prisma.cosechas.aggregate({
+      where: { persona_id: idBig },
+      _sum: { peso_kg: true },
+    }),
+    prisma.registros_avance.aggregate({
+      where: {
+        persona_id: idBig,
+        tipo_registro: { in: ["TRAMO", "SUELTOS"] },
+        fecha_registro: { gte: hace30dias },
+      },
+      _sum: { cantidad_arboles: true },
+    }),
+    prisma.registros_avance.aggregate({
+      where: {
+        persona_id: idBig,
+        tipo_registro: { in: ["TRAMO", "SUELTOS"] },
+      },
+      _sum: { cantidad_arboles: true },
+    }),
+    prisma.novedades.count({
+      where: { persona_id: idBig, fecha: { gte: hace30dias } },
+    }),
+    prisma.novedades.count({
+      where: { persona_id: idBig },
+    }),
+    prisma.asignaciones.count({
+      where: {
+        persona_id: idBig,
+        estado: "COMPLETADA",
+        fecha_completada: { gte: hace30dias },
+      },
+    }),
+    prisma.asignaciones.count({
+      where: { persona_id: idBig, estado: "COMPLETADA" },
+    }),
+  ]);
 
   if (!persona || persona.deleted_at) notFound();
 
@@ -58,6 +121,18 @@ export default async function DetalleMiembro({
   const historial = persona.vinculaciones.filter((v) => v.fecha_fin !== null);
   const usuario = persona.usuarios[0];
   const idStr = String(persona.id);
+
+  const kg30d = Number(cosecha30d._sum.peso_kg ?? 0);
+  const kgTotal = Number(cosechaTotal._sum.peso_kg ?? 0);
+  const arb30d = arboles30d._sum.cantidad_arboles ?? 0;
+  const arbTotal = arbolesTotal._sum.cantidad_arboles ?? 0;
+
+  const hayActividad =
+    kgTotal > 0 || arbTotal > 0 || novedadesTotal > 0 || tareasTotal > 0;
+
+  const fmtKg = (n: number) =>
+    n.toLocaleString("es-CO", { maximumFractionDigits: 2 });
+  const fmtN = (n: number) => n.toLocaleString("es-CO");
 
   return (
     <div className="space-y-5">
@@ -174,6 +249,77 @@ export default async function DetalleMiembro({
         ) : (
           <p className="mt-2 text-sm text-zelanda-verde-700">
             Sin vinculación activa.
+          </p>
+        )}
+      </section>
+
+      {/* Productividad */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-base text-zelanda-verde-900">
+          Productividad
+        </h2>
+        <p className="mt-1 text-xs text-zelanda-verde-700">
+          Últimos 30 días · acumulado total.
+        </p>
+
+        {hayActividad ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+              <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+                <TrendingUp className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wider">Cosecha</p>
+              </div>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
+                {fmtKg(kg30d)} kg
+              </p>
+              <p className="text-xs text-zelanda-verde-700/70">
+                {fmtKg(kgTotal)} kg total
+              </p>
+            </div>
+            <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+              <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+                <Sprout className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wider">
+                  Árboles atendidos
+                </p>
+              </div>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
+                {fmtN(arb30d)}
+              </p>
+              <p className="text-xs text-zelanda-verde-700/70">
+                {fmtN(arbTotal)} total
+              </p>
+            </div>
+            <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+              <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+                <AlertCircle className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wider">Novedades</p>
+              </div>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
+                {fmtN(novedades30d)}
+              </p>
+              <p className="text-xs text-zelanda-verde-700/70">
+                {fmtN(novedadesTotal)} total
+              </p>
+            </div>
+            <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
+              <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+                <CheckCircle2 className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-wider">
+                  Tareas completadas
+                </p>
+              </div>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
+                {fmtN(tareas30d)}
+              </p>
+              <p className="text-xs text-zelanda-verde-700/70">
+                {fmtN(tareasTotal)} total
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin actividad operativa registrada para esta persona.
           </p>
         )}
       </section>
