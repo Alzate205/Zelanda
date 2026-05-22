@@ -204,11 +204,19 @@ export default async function DetalleMiembro({
       ) : null}
 
       {/* Acceso */}
-      {usuario ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-serif text-base text-zelanda-verde-900">
             Acceso al sistema
           </h2>
+          <Link
+            href={`/jefe/equipo/${idStr}/acceso`}
+            className="inline-flex min-h-touch items-center rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-xs font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+          >
+            {usuario ? "Gestionar" : "Dar acceso"}
+          </Link>
+        </div>
+        {usuario ? (
           <dl className="mt-3 space-y-2 text-sm">
             <div>
               <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Correo</dt>
@@ -219,8 +227,12 @@ export default async function DetalleMiembro({
               <dd className="mt-0.5 text-zelanda-verde-900">{usuario.rol}</dd>
             </div>
           </dl>
-        </section>
-      ) : null}
+        ) : (
+          <p className="mt-2 text-sm text-zelanda-verde-700">
+            Esta persona aún no puede entrar a la app.
+          </p>
+        )}
+      </section>
     </div>
   );
 }
