@@ -91,10 +91,11 @@ export function FormularioCosecha({
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="recolector" className="block text-sm font-medium text-zelanda-verde-900">
           Recolector
         </label>
         <select
+          id="recolector"
           required
           value={personaId}
           onChange={(e) => setPersonaId(e.target.value)}
@@ -110,10 +111,11 @@ export function FormularioCosecha({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="lote" className="block text-sm font-medium text-zelanda-verde-900">
           Lote
         </label>
         <select
+          id="lote"
           required
           value={loteId}
           onChange={(e) => setLoteId(e.target.value)}
@@ -159,10 +161,11 @@ export function FormularioCosecha({
       {metodo === "CANASTA" ? (
         <>
           <div>
-            <label className="block text-sm font-medium text-zelanda-verde-900">
+            <label htmlFor="canastas" className="block text-sm font-medium text-zelanda-verde-900">
               Cantidad de canastas
             </label>
             <input
+              id="canastas"
               type="number"
               min="1"
               step="1"
@@ -173,10 +176,11 @@ export function FormularioCosecha({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zelanda-verde-900">
+            <label htmlFor="capacidad" className="block text-sm font-medium text-zelanda-verde-900">
               Capacidad por canasta (kg)
             </label>
             <input
+              id="capacidad"
               type="number"
               min="0.01"
               step="0.01"
@@ -194,10 +198,11 @@ export function FormularioCosecha({
         </>
       ) : (
         <div>
-          <label className="block text-sm font-medium text-zelanda-verde-900">
+          <label htmlFor="peso" className="block text-sm font-medium text-zelanda-verde-900">
             Peso (kg)
           </label>
           <input
+            id="peso"
             type="number"
             min="0.01"
             step="0.01"
@@ -210,10 +215,11 @@ export function FormularioCosecha({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="notas" className="block text-sm font-medium text-zelanda-verde-900">
           Notas (opcional)
         </label>
         <textarea
+          id="notas"
           rows={2}
           value={notas}
           onChange={(e) => setNotas(e.target.value)}

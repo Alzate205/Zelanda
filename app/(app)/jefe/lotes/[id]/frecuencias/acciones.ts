@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoFrecuencias = { error: string | null };
 
@@ -75,7 +76,7 @@ export async function guardarFrecuencias(
   try {
     await prisma.$transaction(operaciones);
   } catch (e) {
-    return { error: `No se pudo guardar: ${(e as Error)?.message ?? "desconocido"}.` };
+    return { error: sanitizarError(e, "jefe/lotes/frecuencias/guardar") };
   }
 
   revalidatePath(`/jefe/lotes/${loteId}`);

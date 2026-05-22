@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { obtenerUsuarioActual } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizarError } from "@/lib/errores";
 import {
   notificarStockBajoSiCorresponde,
   snapshotDisponiblesAntes,
@@ -223,7 +224,7 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     return NextResponse.json(
-      { error: `Error al cerrar: ${(e as Error)?.message ?? "desconocido"}` },
+      { error: sanitizarError(e, "api/bodega/despacho/cerrar") },
       { status: 500 },
     );
   }

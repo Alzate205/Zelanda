@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { obtenerUsuarioActual } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizarError } from "@/lib/errores";
 
 type Body = {
   id_local: string;
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, id: String(creada.id) });
   } catch (e) {
     return NextResponse.json(
-      { error: `No se pudo registrar: ${(e as Error)?.message ?? "desconocido"}` },
+      { error: sanitizarError(e, "api/almacen/salida") },
       { status: 500 },
     );
   }

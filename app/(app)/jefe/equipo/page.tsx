@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
 import { BadgeRol, BadgeBase } from "@/components/shared/BadgeRol";
 import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
-import { cambiarEstadoMiembro } from "./acciones";
+import { BotonEstadoMiembro } from "./_boton-estado";
 import type { RolUsuario, TipoVinculacion } from "@/types";
 
 export const metadata = { title: "Equipo" };
@@ -113,20 +113,11 @@ export default async function PaginaEquipo() {
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-zelanda-verde-700/40" />
                 </Link>
-                <form action={cambiarEstadoMiembro}>
-                  <input type="hidden" name="id" value={idStr} />
-                  <input
-                    type="hidden"
-                    name="activar"
-                    value={p.activo ? "false" : "true"}
-                  />
-                  <button
-                    type="submit"
-                    className="min-h-touch rounded-lg px-2.5 py-1.5 text-xs font-medium text-zelanda-verde-700 transition hover:bg-zelanda-beige-100 hover:text-zelanda-verde-900"
-                  >
-                    {p.activo ? "Desactivar" : "Reactivar"}
-                  </button>
-                </form>
+                <BotonEstadoMiembro
+                  id={idStr}
+                  nombre={p.nombre_completo}
+                  activo={p.activo}
+                />
               </li>
             );
           })}

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 import { arrayAWktPolygon, type LngLat } from "@/lib/geo";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoEdicion = { error: string | null };
 
@@ -53,9 +54,7 @@ export async function guardarPoligonoLote(
       BigInt(idRaw),
     );
   } catch (e) {
-    return {
-      error: `No se pudo guardar: ${(e as Error)?.message ?? "desconocido"}`,
-    };
+    return { error: sanitizarError(e, "jefe/lotes/poligono/guardar") };
   }
 
   revalidatePath("/jefe/lotes");

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoEdicion = { error: string | null; ok?: boolean };
 
@@ -44,7 +45,7 @@ export async function actualizarArbol(
       data: { estado: estadoRaw, notas },
     });
   } catch (e) {
-    return { error: `No se pudo guardar: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "jefe/lotes/arbol/guardar") };
   }
 
   revalidatePath(`/jefe/lotes/${arbol.lote_id}/arbol/${arbol.numero_placa}`);

@@ -76,10 +76,17 @@ export default async function PaginaDetalleDespacho({
               <li key={it.id.toString()} className="py-2 text-sm">
                 {it.tipo_item === "HERRAMIENTA" ? (
                   <div>
-                    <p>
-                      <span className="font-medium">{it.herramientas?.nombre}</span>{" "}
-                      × {it.cantidad.toString()} ·{" "}
-                      {it.devuelto ? "devuelta" : "no devuelta"}
+                    <p className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-medium">{it.herramientas?.nombre}</span>
+                      <span>× {it.cantidad.toString()}</span>
+                      <span>·</span>
+                      {it.devuelto ? (
+                        <span>devuelta</span>
+                      ) : (
+                        <span className="rounded bg-estado-vencida/10 px-1.5 py-0.5 text-xs font-medium text-estado-vencida">
+                          no devuelta
+                        </span>
+                      )}
                     </p>
                     {it.condicion_devolucion ? (
                       <p className="mt-0.5 text-xs text-zelanda-ocre-700">

@@ -100,10 +100,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="cantidad" className="block text-sm font-medium text-zelanda-verde-900">
           Cantidad (kg)
         </label>
         <input
+          id="cantidad"
           type="number"
           min="0.01"
           max={stockMax}
@@ -118,10 +119,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
       {tipo === "VENTA" && (
         <>
           <div>
-            <label className="block text-sm font-medium text-zelanda-verde-900">
+            <label htmlFor="cliente" className="block text-sm font-medium text-zelanda-verde-900">
               Cliente
             </label>
             <input
+              id="cliente"
               required
               value={cliente}
               onChange={(e) => setCliente(e.target.value)}
@@ -130,10 +132,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zelanda-verde-900">
+            <label htmlFor="precio" className="block text-sm font-medium text-zelanda-verde-900">
               Precio total (COP, opcional)
             </label>
             <input
+              id="precio"
               type="number"
               min="1"
               step="1"
@@ -147,10 +150,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
 
       {tipo !== "VENTA" && (
         <div>
-          <label className="block text-sm font-medium text-zelanda-verde-900">
+          <label htmlFor="detalle" className="block text-sm font-medium text-zelanda-verde-900">
             Detalle (opcional)
           </label>
           <input
+            id="detalle"
             value={cliente}
             onChange={(e) => setCliente(e.target.value)}
             placeholder="ej: consumo casa principal"
@@ -160,10 +164,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="notas" className="block text-sm font-medium text-zelanda-verde-900">
           Notas (opcional)
         </label>
         <textarea
+          id="notas"
           rows={2}
           value={notas}
           onChange={(e) => setNotas(e.target.value)}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoEdicionApiario = { error: string | null };
 
@@ -43,7 +44,7 @@ export async function actualizarApiario(
       data: { nombre, total_colmenas, ubicacion_descripcion, activo },
     });
   } catch (e) {
-    return { error: `No se pudo actualizar el apiario: ${(e as Error)?.message ?? "desconocido"}.` };
+    return { error: sanitizarError(e, "jefe/apiarios/actualizar") };
   }
 
   revalidatePath(`/jefe/apiarios/${apiarioId}`);

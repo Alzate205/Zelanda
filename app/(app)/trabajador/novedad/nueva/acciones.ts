@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { obtenerUsuarioActual } from "@/lib/auth";
 import { subirFoto } from "@/lib/supabase/storage";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoNovedad = { error: string | null };
 
@@ -73,7 +74,7 @@ export async function crearNovedad(
     });
     novedadId = creada.id;
   } catch (e) {
-    return { error: `No se pudo guardar: ${(e as Error)?.message ?? "desconocido"}.` };
+    return { error: sanitizarError(e, "trabajador/novedad/crear") };
   }
 
   try {

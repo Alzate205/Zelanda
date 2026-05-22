@@ -38,6 +38,9 @@ export function FormularioNuevaAsignacion({
   );
 
   const hoy = new Date().toISOString().slice(0, 10);
+  const max = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   return (
     <form action={accion} className="space-y-6" noValidate>
@@ -154,6 +157,7 @@ export function FormularioNuevaAsignacion({
             name="fecha_inicio"
             type="date"
             defaultValue={hoy}
+            max={max}
             className={inputBase}
           />
         </div>

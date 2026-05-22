@@ -215,11 +215,13 @@ export function FormularioDespacho({
                             {h.nombre} (×{h.total})
                           </option>
                         ))
-                      : insumos.map((i) => (
-                          <option key={i.id} value={i.id}>
-                            {i.nombre} ({i.disponible} {i.unidad})
-                          </option>
-                        ))}
+                      : insumos
+                          .filter((i) => i.disponible > 0)
+                          .map((i) => (
+                            <option key={i.id} value={i.id}>
+                              {i.nombre} ({i.disponible} {i.unidad})
+                            </option>
+                          ))}
                   </select>
                   <input
                     type="number"

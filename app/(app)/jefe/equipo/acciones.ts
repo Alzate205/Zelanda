@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 import { crearClienteSupabaseAdmin } from "@/lib/supabase/admin";
+import { sanitizarError } from "@/lib/errores";
 import type { RolUsuario, TipoVinculacion, TipoPeriodoPago } from "@/types";
 
 export type EstadoFormulario = {
@@ -143,7 +144,7 @@ export async function crearMiembro(
     if (/unique constraint.*cedula/i.test(msg)) {
       return { ...ESTADO_INICIAL, error: "Ya existe una persona con esa cédula." };
     }
-    return { ...ESTADO_INICIAL, error: `No se pudo crear la persona: ${msg}` };
+    return { ...ESTADO_INICIAL, error: sanitizarError(e, "jefe/equipo/crear-persona") };
   }
 
   // --- 2. Crear vinculación ---
@@ -163,7 +164,7 @@ export async function crearMiembro(
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     return {
       ...ESTADO_INICIAL,
-      error: `No se pudo crear la vinculación: ${(e as Error)?.message ?? "desconocido"}.`,
+      error: sanitizarError(e, "jefe/equipo/crear-vinculacion"),
     };
   }
 
@@ -186,12 +187,11 @@ export async function crearMiembro(
     await prisma.vinculaciones.deleteMany({ where: { persona_id: personaId } }).catch(() => {});
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     const yaRegistrado = /already registered|already exists/i.test(authError?.message ?? "");
-    return {
-      ...ESTADO_INICIAL,
-      error: yaRegistrado
-        ? "Ese correo ya está registrado en el sistema."
-        : `Error al crear el acceso: ${authError?.message ?? "desconocido"}.`,
-    };
+    if (yaRegistrado) {
+      return { ...ESTADO_INICIAL, error: "Ese correo ya está registrado en el sistema." };
+    }
+    console.error("[jefe/equipo/auth-create]", authError?.message);
+    return { ...ESTADO_INICIAL, error: "Ocurrió un error inesperado al crear el acceso. Intentá de nuevo." };
   }
 
   try {
@@ -212,7 +212,7 @@ export async function crearMiembro(
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     return {
       ...ESTADO_INICIAL,
-      error: `No se pudo enlazar el acceso: ${(e as Error)?.message ?? "desconocido"}.`,
+      error: sanitizarError(e, "jefe/equipo/enlazar-acceso"),
     };
   }
 

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoEdicion = { error: string | null };
 
@@ -46,7 +47,7 @@ export async function crearHerramienta(
     ) {
       return { error: "Ya existe una herramienta con ese nombre." };
     }
-    return { error: `No se pudo crear: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/crear") };
   }
 
   revalidatePath("/bodega/inventario");
@@ -88,7 +89,7 @@ export async function actualizarHerramienta(
     ) {
       return { error: "Ya existe una herramienta con ese nombre." };
     }
-    return { error: `No se pudo actualizar: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/actualizar") };
   }
 
   revalidatePath("/bodega/inventario");
@@ -176,7 +177,7 @@ export async function crearInsumo(
     ) {
       return { error: "Ya existe un insumo con ese nombre." };
     }
-    return { error: `No se pudo crear: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/crear") };
   }
 
   revalidatePath("/bodega/inventario");
@@ -235,7 +236,7 @@ export async function actualizarInsumo(
     ) {
       return { error: "Ya existe un insumo con ese nombre." };
     }
-    return { error: `No se pudo actualizar: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/actualizar") };
   }
 
   revalidatePath("/bodega/inventario");
@@ -305,7 +306,7 @@ export async function ingresarStock(
       }),
     ]);
   } catch (e) {
-    return { error: `Error al ingresar: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/ingresar") };
   }
 
   revalidatePath("/bodega/inventario");
@@ -364,7 +365,7 @@ export async function ajustarStock(
       }),
     ]);
   } catch (e) {
-    return { error: `Error al ajustar: ${(e as Error)?.message ?? "desconocido"}` };
+    return { error: sanitizarError(e, "bodega/inventario/ajustar") };
   }
 
   revalidatePath("/bodega/inventario");

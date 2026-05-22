@@ -6,7 +6,9 @@ import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { formatearFechaCorta } from "@/lib/utils";
+import { ETIQUETA_ESTADO_ASIGNACION } from "@/lib/constantes";
 import { cancelarAsignacion, reabrirAsignacion } from "../acciones";
+import { BotonSubmit } from "./_botones";
 
 export const metadata: Metadata = { title: "Asignación" };
 
@@ -80,7 +82,7 @@ export default async function DetalleAsignacion({
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <BadgeBase tono={a.estado === "COMPLETADA" ? "info" : a.estado === "CANCELADA" ? "alerta" : "neutro"}>
-            {a.estado}
+            {ETIQUETA_ESTADO_ASIGNACION[a.estado] ?? a.estado}
           </BadgeBase>
           <span className="text-xs text-zelanda-verde-700">
             {a.persona.nombre_completo}
@@ -142,22 +144,20 @@ export default async function DetalleAsignacion({
         {abierta ? (
           <form action={cancelarAsignacion} className="flex-1">
             <input type="hidden" name="asignacion_id" value={String(a.id)} />
-            <button
-              type="submit"
-              className="w-full rounded-lg border border-zelanda-beige-300 px-4 py-3 text-base font-medium text-estado-vencida transition hover:bg-zelanda-beige-100"
-            >
-              Cancelar asignación
-            </button>
+            <BotonSubmit
+              texto="Cancelar asignación"
+              textoPendiente="Cancelando…"
+              className="w-full rounded-lg border border-zelanda-beige-300 px-4 py-3 text-base font-medium text-estado-vencida transition hover:bg-zelanda-beige-100 disabled:opacity-60"
+            />
           </form>
         ) : a.estado === "COMPLETADA" ? (
           <form action={reabrirAsignacion} className="flex-1">
             <input type="hidden" name="asignacion_id" value={String(a.id)} />
-            <button
-              type="submit"
-              className="w-full rounded-lg border border-zelanda-beige-300 px-4 py-3 text-base font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
-            >
-              Reabrir
-            </button>
+            <BotonSubmit
+              texto="Reabrir"
+              textoPendiente="Reabriendo…"
+              className="w-full rounded-lg border border-zelanda-beige-300 px-4 py-3 text-base font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100 disabled:opacity-60"
+            />
           </form>
         ) : null}
       </div>

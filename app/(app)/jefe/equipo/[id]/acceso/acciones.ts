@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 import { crearClienteSupabaseAdmin } from "@/lib/supabase/admin";
+import { sanitizarError } from "@/lib/errores";
 import type { RolUsuario } from "@/types";
 
 export type EstadoAcceso = { error: string | null; exito: string | null };
@@ -85,10 +86,7 @@ export async function crearAccesoParaPersona(
     });
   } catch (e) {
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id).catch(() => {});
-    return {
-      ...ESTADO_INICIAL,
-      error: `No se pudo enlazar el acceso: ${(e as Error)?.message ?? "desconocido"}.`,
-    };
+    return { ...ESTADO_INICIAL, error: sanitizarError(e, "acceso/enlazar") };
   }
 
   revalidatePath(`/jefe/equipo/${personaId}`);
@@ -122,7 +120,7 @@ export async function cambiarRolUsuario(
   } catch (e) {
     return {
       ...ESTADO_INICIAL,
-      error: `No se pudo cambiar el rol: ${(e as Error)?.message ?? "desconocido"}.`,
+      error: sanitizarError(e, "acceso/cambiar-rol"),
     };
   }
 

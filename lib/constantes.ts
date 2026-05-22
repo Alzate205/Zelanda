@@ -40,3 +40,10 @@ export const ETIQUETA_TIPO_VINCULACION: Record<TipoVinculacion, string> = {
   CONTRATISTA: "Contratista",
   FAMILIAR: "Familia",
 };
+
+export const ETIQUETA_ESTADO_ASIGNACION: Record<string, string> = {
+  PENDIENTE: "Pendiente",
+  EN_CURSO: "En curso",
+  COMPLETADA: "Completada",
+  CANCELADA: "Cancelada",
+};

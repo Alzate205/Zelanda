@@ -22,10 +22,11 @@ export function FormularioIngresoStock({
       <input type="hidden" name="insumo_id" value={insumoId} />
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="cantidad" className="block text-sm font-medium text-zelanda-verde-900">
           Cantidad ({unidad})
         </label>
         <input
+          id="cantidad"
           name="cantidad"
           type="number"
           min="0.001"
@@ -37,10 +38,11 @@ export function FormularioIngresoStock({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="notas" className="block text-sm font-medium text-zelanda-verde-900">
           Notas (opcional)
         </label>
         <textarea
+          id="notas"
           name="notas"
           rows={3}
           placeholder="ej: compra del 12/05 a CampoFuerte"

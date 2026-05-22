@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { obtenerUsuarioActual } from "@/lib/auth";
 import { crearClienteSupabaseServidor } from "@/lib/supabase/server";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoPerfil = { error: string | null; exito: string | null };
 
@@ -47,7 +48,7 @@ export async function actualizarMisDatos(
     if (/unique constraint.*cedula/i.test(msg)) {
       return { ...ESTADO_INICIAL, error: "Esa cédula ya está registrada." };
     }
-    return { ...ESTADO_INICIAL, error: `No se pudo guardar: ${msg}` };
+    return { ...ESTADO_INICIAL, error: sanitizarError(e, "mi-perfil/actualizar-datos") };
   }
 
   revalidatePath("/mi-perfil");
@@ -99,7 +100,7 @@ export async function actualizarMiUsername(
         error: "Ese nombre de usuario ya está en uso. Probá otro.",
       };
     }
-    return { ...ESTADO_INICIAL, error: `No se pudo guardar: ${msg}` };
+    return { ...ESTADO_INICIAL, error: sanitizarError(e, "mi-perfil/actualizar-username") };
   }
 
   revalidatePath("/mi-perfil");

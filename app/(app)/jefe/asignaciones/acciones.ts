@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoAsignacion = { error: string | null };
 
@@ -56,6 +57,10 @@ export async function crearAsignacion(
     if (Number.isNaN(f.getTime())) {
       return { error: "Fecha de inicio inválida." };
     }
+    const limite = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    if (f > limite) {
+      return { error: "La fecha de inicio no puede ser de más de un año en el futuro." };
+    }
     fecha_inicio = f;
   }
 
@@ -74,7 +79,7 @@ export async function crearAsignacion(
     });
     nuevaId = creada.id;
   } catch (e) {
-    return { error: `No se pudo crear: ${(e as Error)?.message ?? "desconocido"}.` };
+    return { error: sanitizarError(e, "jefe/asignaciones/crear") };
   }
 
   try {

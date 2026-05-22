@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoTipoTarea = { error: string | null };
 
@@ -66,7 +67,7 @@ export async function crearTipoTarea(
     if (/unique constraint.*nombre/i.test(msg)) {
       return { error: "Ya existe un tipo de tarea con ese nombre." };
     }
-    return { error: `No se pudo crear: ${msg}` };
+    return { error: sanitizarError(e, "jefe/tareas/crear") };
   }
 
   revalidatePath("/jefe/tareas");
@@ -110,7 +111,7 @@ export async function actualizarTipoTarea(
       data: { nombre, descripcion, frecuencia_dias_default, color, icono },
     });
   } catch (e) {
-    return { error: `No se pudo actualizar: ${(e as Error)?.message ?? "desconocido"}.` };
+    return { error: sanitizarError(e, "jefe/tareas/actualizar") };
   }
 
   revalidatePath("/jefe/tareas");

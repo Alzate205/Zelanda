@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
+import { sanitizarError } from "@/lib/errores";
 
 export type EstadoEdicionLote = { error: string | null; aviso: string | null };
 export type EstadoSiembra = { error: string | null; aviso: string | null };
@@ -100,7 +101,7 @@ export async function aplicarFechaSiembraArboles(
     await prisma.$transaction(actualizaciones);
   } catch (e) {
     return {
-      error: `No se pudo aplicar el lapso: ${(e as Error)?.message ?? "desconocido"}.`,
+      error: sanitizarError(e, "jefe/lotes/aplicar-lapso"),
       aviso: null,
     };
   }
@@ -192,7 +193,7 @@ export async function actualizarLote(
     }
   } catch (e) {
     return {
-      error: `No se pudo actualizar el lote: ${(e as Error)?.message ?? "desconocido"}.`,
+      error: sanitizarError(e, "jefe/lotes/actualizar"),
       aviso: null,
     };
   }

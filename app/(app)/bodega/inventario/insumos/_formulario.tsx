@@ -33,10 +33,11 @@ export function FormularioInsumo({
       {valores?.id && <input type="hidden" name="id" value={valores.id} />}
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="nombre" className="block text-sm font-medium text-zelanda-verde-900">
           Nombre
         </label>
         <input
+          id="nombre"
           name="nombre"
           required
           defaultValue={valores?.nombre ?? ""}
@@ -45,10 +46,11 @@ export function FormularioInsumo({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="categoria" className="block text-sm font-medium text-zelanda-verde-900">
           Categoría
         </label>
         <select
+          id="categoria"
           name="categoria"
           required
           defaultValue={valores?.categoria ?? "CULTIVO"}
@@ -61,10 +63,11 @@ export function FormularioInsumo({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="unidad" className="block text-sm font-medium text-zelanda-verde-900">
           Unidad
         </label>
         <input
+          id="unidad"
           name="unidad"
           required
           placeholder="L, kg, unidades, m..."
@@ -74,10 +77,11 @@ export function FormularioInsumo({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="stock_minimo" className="block text-sm font-medium text-zelanda-verde-900">
           Stock mínimo
         </label>
         <input
+          id="stock_minimo"
           name="stock_minimo"
           type="number"
           min="0"
@@ -89,10 +93,11 @@ export function FormularioInsumo({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="costo_unitario" className="block text-sm font-medium text-zelanda-verde-900">
           Costo unitario (opcional)
         </label>
         <input
+          id="costo_unitario"
           name="costo_unitario"
           type="number"
           min="0.01"

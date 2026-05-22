@@ -31,10 +31,11 @@ export function FormularioHerramienta({
       {valores?.id && <input type="hidden" name="id" value={valores.id} />}
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="nombre" className="block text-sm font-medium text-zelanda-verde-900">
           Nombre
         </label>
         <input
+          id="nombre"
           name="nombre"
           required
           defaultValue={valores?.nombre ?? ""}
@@ -43,10 +44,11 @@ export function FormularioHerramienta({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="categoria" className="block text-sm font-medium text-zelanda-verde-900">
           Categoría
         </label>
         <select
+          id="categoria"
           name="categoria"
           required
           defaultValue={valores?.categoria ?? "CULTIVO"}
@@ -59,10 +61,11 @@ export function FormularioHerramienta({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zelanda-verde-900">
+        <label htmlFor="total" className="block text-sm font-medium text-zelanda-verde-900">
           Total disponible
         </label>
         <input
+          id="total"
           name="total"
           type="number"
           min="0"
