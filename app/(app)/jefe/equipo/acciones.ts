@@ -38,6 +38,21 @@ export async function crearMiembro(
   const telefono = String(formData.get("telefono") ?? "").trim() || null;
   const notas = String(formData.get("notas") ?? "").trim() || null;
 
+  const fechaNacRaw = String(formData.get("fecha_nacimiento") ?? "").trim();
+  let fecha_nacimiento: Date | null = null;
+  if (fechaNacRaw) {
+    const d = new Date(fechaNacRaw);
+    if (Number.isNaN(d.getTime())) {
+      return { ...ESTADO_INICIAL, error: "Fecha de nacimiento inválida." };
+    }
+    const hoy = new Date();
+    hoy.setHours(23, 59, 59, 999);
+    if (d > hoy) {
+      return { ...ESTADO_INICIAL, error: "La fecha de nacimiento no puede ser futura." };
+    }
+    fecha_nacimiento = d;
+  }
+
   // --- Datos vinculación ---
   const tipoVinculacionRaw = String(formData.get("tipo_vinculacion") ?? "");
   const rol_finca = String(formData.get("rol_finca") ?? "").trim();
@@ -117,6 +132,7 @@ export async function crearMiembro(
         nombre_completo,
         cedula,
         telefono,
+        fecha_nacimiento,
         notas,
         activo: true,
       },

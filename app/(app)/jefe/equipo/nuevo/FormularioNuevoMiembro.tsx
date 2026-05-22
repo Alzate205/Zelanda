@@ -96,6 +96,19 @@ export function FormularioNuevoMiembro() {
         </div>
 
         <div>
+          <label htmlFor="fecha_nacimiento" className={labelBase}>
+            Fecha de nacimiento
+          </label>
+          <input
+            id="fecha_nacimiento"
+            name="fecha_nacimiento"
+            type="date"
+            autoComplete="bday"
+            className={inputBase}
+          />
+        </div>
+
+        <div>
           <label htmlFor="notas" className={labelBase}>
             Notas
           </label>
