@@ -17,6 +17,7 @@ import type {
 
 const BACKOFFS_MS = [1000, 5000, 30000, 300000];
 const MAX_INTENTOS = 5;
+const CONCURRENCIA_POR_TIPO = 3;
 
 function backoff(intentos: number): number {
   return BACKOFFS_MS[Math.min(intentos, BACKOFFS_MS.length - 1)];
@@ -24,6 +25,24 @@ function backoff(intentos: number): number {
 
 function esperar(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function procesarEnParalelo<T>(
+  items: T[],
+  concurrencia: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  const enVuelo = new Set<Promise<void>>();
+  for (const item of items) {
+    const p = fn(item).finally(() => {
+      enVuelo.delete(p);
+    });
+    enVuelo.add(p);
+    if (enVuelo.size >= concurrencia) {
+      await Promise.race(enVuelo);
+    }
+  }
+  await Promise.all(enVuelo);
 }
 
 function payloadAvance(i: ItemColaAvance) {
@@ -154,37 +173,43 @@ class SyncEngineImpl {
 
   private async procesarTipo(tipo: TipoCola): Promise<void> {
     const items = await listarPendientesPorTipo(tipo);
-    for (const item of items) {
-      if (item.intentos >= MAX_INTENTOS) {
-        await marcarErrorPermanente(
-          tipo,
-          item.id_local,
-          item.ultimo_error ?? "Máximo de reintentos",
-        );
-        continue;
-      }
-      await marcarSubiendo(tipo, item.id_local);
-      try {
-        const body = payloadDeItem(tipo, item);
-        const res = await fetch(endpointPara(tipo), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (res.ok) {
-          await marcarSubido(tipo, item.id_local);
-        } else if (res.status >= 400 && res.status < 500) {
-          const j = await res.json().catch(() => ({}) as { error?: string });
-          await marcarErrorPermanente(tipo, item.id_local, j.error ?? `HTTP ${res.status}`);
-        } else {
-          await marcarFallidoTemp(tipo, item.id_local, `HTTP ${res.status}`);
-          await esperar(backoff(item.intentos));
-        }
-      } catch (e) {
-        await marcarFallidoTemp(tipo, item.id_local, (e as Error).message);
+    await procesarEnParalelo(items, CONCURRENCIA_POR_TIPO, (item) =>
+      this.procesarItem(tipo, item),
+    );
+  }
+
+  private async procesarItem(
+    tipo: TipoCola,
+    item: { id_local: string; intentos: number; ultimo_error: string | null } & object,
+  ): Promise<void> {
+    if (item.intentos >= MAX_INTENTOS) {
+      await marcarErrorPermanente(
+        tipo,
+        item.id_local,
+        item.ultimo_error ?? "Máximo de reintentos",
+      );
+      return;
+    }
+    await marcarSubiendo(tipo, item.id_local);
+    try {
+      const body = payloadDeItem(tipo, item);
+      const res = await fetch(endpointPara(tipo), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        await marcarSubido(tipo, item.id_local);
+      } else if (res.status >= 400 && res.status < 500) {
+        const j = await res.json().catch(() => ({}) as { error?: string });
+        await marcarErrorPermanente(tipo, item.id_local, j.error ?? `HTTP ${res.status}`);
+      } else {
+        await marcarFallidoTemp(tipo, item.id_local, `HTTP ${res.status}`);
         await esperar(backoff(item.intentos));
-        if (typeof navigator !== "undefined" && !navigator.onLine) break;
       }
+    } catch (e) {
+      await marcarFallidoTemp(tipo, item.id_local, (e as Error).message);
+      await esperar(backoff(item.intentos));
     }
   }
 }
