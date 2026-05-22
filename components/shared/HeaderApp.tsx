@@ -8,7 +8,10 @@ import type { UsuarioActual } from "@/lib/auth";
 
 export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-zelanda-verde-900/20 bg-gradient-to-b from-zelanda-verde-800 to-zelanda-verde-700 text-zelanda-beige-50 shadow-suave">
+    <header
+      className="sticky top-0 z-20 border-b border-zelanda-verde-900/20 bg-gradient-to-b from-zelanda-verde-800 to-zelanda-verde-700 text-zelanda-beige-50 shadow-suave"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="mx-auto flex max-w-screen-md items-center gap-3 px-4 py-3">
         <Link
           href="/mi-perfil"
