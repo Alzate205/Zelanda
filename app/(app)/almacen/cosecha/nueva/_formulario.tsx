@@ -167,6 +167,8 @@ export function FormularioCosecha({
             <input
               id="canastas"
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
               min="1"
               step="1"
               required
@@ -182,6 +184,7 @@ export function FormularioCosecha({
             <input
               id="capacidad"
               type="number"
+              inputMode="decimal"
               min="0.01"
               step="0.01"
               required
@@ -204,6 +207,7 @@ export function FormularioCosecha({
           <input
             id="peso"
             type="number"
+            inputMode="decimal"
             min="0.01"
             step="0.01"
             required

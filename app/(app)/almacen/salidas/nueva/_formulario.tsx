@@ -106,6 +106,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
         <input
           id="cantidad"
           type="number"
+          inputMode="decimal"
           min="0.01"
           max={stockMax}
           step="0.01"
@@ -138,6 +139,8 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
             <input
               id="precio"
               type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
               min="1"
               step="1"
               value={precio}

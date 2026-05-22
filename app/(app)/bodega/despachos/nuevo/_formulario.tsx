@@ -226,6 +226,7 @@ export function FormularioDespacho({
                   <input
                     type="number"
                     placeholder="Cantidad"
+                    inputMode={it.tipo === "HERRAMIENTA" ? "numeric" : "decimal"}
                     min={it.tipo === "HERRAMIENTA" ? "1" : "0.001"}
                     step={it.tipo === "HERRAMIENTA" ? "1" : "0.001"}
                     required

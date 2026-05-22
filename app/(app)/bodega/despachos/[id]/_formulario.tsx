@@ -202,6 +202,7 @@ export function FormularioCierreDespacho({
                   <input
                     type="number"
                     name={`consumido_${it.id}`}
+                    inputMode="decimal"
                     min="0"
                     max={it.cantidad}
                     step="0.001"

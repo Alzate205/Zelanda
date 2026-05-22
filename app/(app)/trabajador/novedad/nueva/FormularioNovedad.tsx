@@ -152,6 +152,8 @@ export function FormularioNovedad({
             id="numero_placa"
             name="numero_placa"
             type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
             min="1"
             max={loteSeleccionado?.totalArboles ?? undefined}
             required

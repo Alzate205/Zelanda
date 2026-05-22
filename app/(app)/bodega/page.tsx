@@ -11,7 +11,7 @@ export default async function PaginaInicioBodega() {
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
-  const [abiertos, cerradosHoy, stockBajo] = await Promise.all([
+  const [abiertos, cerradosHoy, stockBajo, stockBajoTotal] = await Promise.all([
     prisma.despachos.count({ where: { estado: "ABIERTO" } }),
     prisma.despachos.count({
       where: { estado: "CERRADO", fecha_devolucion: { gte: inicioDia } },
@@ -25,7 +25,13 @@ export default async function PaginaInicioBodega() {
       ORDER BY nombre
       LIMIT 5
     `,
+    prisma.$queryRaw<{ total: bigint }[]>`
+      SELECT COUNT(*)::bigint AS total
+      FROM v_insumos_stock
+      WHERE activo = TRUE AND por_debajo_minimo = TRUE
+    `,
   ]);
+  const totalStockBajo = Number(stockBajoTotal[0]?.total ?? 0);
 
   return (
     <div className="space-y-6">
@@ -61,7 +67,7 @@ export default async function PaginaInicioBodega() {
             <p className="text-xs uppercase tracking-wider">Stock bajo</p>
           </div>
           <p className="mt-2 font-serif text-3xl text-zelanda-verde-900">
-            {stockBajo.length}
+            {totalStockBajo}
           </p>
         </Link>
 
@@ -94,6 +100,14 @@ export default async function PaginaInicioBodega() {
               </li>
             ))}
           </ul>
+          {totalStockBajo > stockBajo.length ? (
+            <p className="mt-3 text-xs text-zelanda-verde-700/70">
+              y {totalStockBajo - stockBajo.length} más — ver{" "}
+              <Link href="/bodega/inventario" className="underline">
+                inventario
+              </Link>
+            </p>
+          ) : null}
         </section>
       )}
     </div>
