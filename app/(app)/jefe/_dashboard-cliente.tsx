@@ -246,7 +246,7 @@ export function DashboardJefeCliente({
 
       <section className="space-y-3">
         <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Configuración
+          Más secciones
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
@@ -269,6 +269,28 @@ export function DashboardJefeCliente({
             </p>
             <p className="mt-1 font-serif text-base text-zelanda-verde-900">
               Cosecha, lotes, recolectores
+            </p>
+          </Link>
+          <Link
+            href="/jefe/inventario"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Inventario
+            </p>
+            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
+              Insumos y herramientas
+            </p>
+          </Link>
+          <Link
+            href="/jefe/almacen-vista"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Almacén
+            </p>
+            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
+              Cosecha y salidas
             </p>
           </Link>
         </div>
