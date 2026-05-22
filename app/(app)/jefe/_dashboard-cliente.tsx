@@ -11,7 +11,7 @@ import {
   leerSnapshotJefe,
   tsJefe,
 } from "@/lib/offline/cache";
-import type { SnapshotJefe } from "@/lib/offline/tipos";
+import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
 import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
 
 function formatearDias(dias: number | null): string {
@@ -35,6 +35,100 @@ function describirActualizacion(ts: number | null): string {
   return `Actualizado hace ${dias} d`;
 }
 
+type GrupoAlerta = {
+  tipo_id: string;
+  tipo_nombre: string;
+  lotes: AlertaTareaJefe[];
+};
+
+function urgenciaEfectiva(lote: AlertaTareaJefe): number {
+  if (lote.estado === "sin_historial") return Number.NEGATIVE_INFINITY;
+  return lote.dias_para_proxima ?? 0;
+}
+
+function agruparPorTipo(alertas: AlertaTareaJefe[]): GrupoAlerta[] {
+  const mapa = new Map<string, GrupoAlerta>();
+  for (const a of alertas) {
+    let g = mapa.get(a.tipo_id);
+    if (!g) {
+      g = { tipo_id: a.tipo_id, tipo_nombre: a.tipo_nombre, lotes: [] };
+      mapa.set(a.tipo_id, g);
+    }
+    g.lotes.push(a);
+  }
+  for (const g of mapa.values()) {
+    g.lotes.sort((x, y) => urgenciaEfectiva(x) - urgenciaEfectiva(y));
+  }
+  return [...mapa.values()].sort(
+    (a, b) => urgenciaEfectiva(a.lotes[0]) - urgenciaEfectiva(b.lotes[0]),
+  );
+}
+
+function GrupoTareaItem({
+  grupo,
+  tono,
+  expandido,
+  onToggle,
+}: {
+  grupo: GrupoAlerta;
+  tono: "vencida" | "proxima";
+  expandido: boolean;
+  onToggle: () => void;
+}) {
+  const colorTexto =
+    tono === "vencida" ? "text-estado-vencida" : "text-estado-proxima";
+  const masUrgente = grupo.lotes[0];
+  const resumenUrgencia =
+    masUrgente.estado === "sin_historial"
+      ? "nunca hecho"
+      : formatearDias(masUrgente.dias_para_proxima);
+  const cantidad = grupo.lotes.length;
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 rounded-lg border border-zelanda-beige-200 px-3 py-2 text-left text-sm transition hover:bg-zelanda-beige-50"
+      >
+        <span className="flex-1">
+          <span className="block font-medium text-zelanda-verde-900">
+            {grupo.tipo_nombre}
+          </span>
+          <span className={`block text-xs ${colorTexto}`}>
+            {cantidad} {cantidad === 1 ? "lote" : "lotes"} · {resumenUrgencia}
+          </span>
+        </span>
+        <ChevronRight
+          className={`h-4 w-4 text-zelanda-verde-700/40 transition-transform ${expandido ? "rotate-90" : ""}`}
+        />
+      </button>
+      {expandido && (
+        <ul className="ml-3 mt-1.5 space-y-1 border-l border-zelanda-beige-200 pl-3">
+          {grupo.lotes.map((l) => (
+            <li key={`${l.lote_id}_${l.tipo_id}`}>
+              <Link
+                href={`/jefe/asignaciones/nueva?lote_id=${l.lote_id}&tipo_tarea_id=${l.tipo_id}`}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition hover:bg-zelanda-beige-50"
+              >
+                <span className="flex-1 text-zelanda-verde-900">
+                  Lote {l.lote_nombre}
+                </span>
+                <span className={`text-xs ${colorTexto}`}>
+                  {l.estado === "sin_historial"
+                    ? "nunca hecho"
+                    : formatearDias(l.dias_para_proxima)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 export function DashboardJefeCliente({
   nombrePila,
   snapshotInicial,
@@ -45,6 +139,12 @@ export function DashboardJefeCliente({
   const online = useOnlineStatus();
   const [snapshot, setSnapshot] = useState<SnapshotJefe>(snapshotInicial);
   const [tsCache, setTsCache] = useState<number | null>(null);
+  const [expandidasVencidas, setExpandidasVencidas] = useState<Set<string>>(
+    new Set(),
+  );
+  const [expandidasProximas, setExpandidasProximas] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     let cancelado = false;
@@ -86,6 +186,24 @@ export function DashboardJefeCliente({
   }, [online, snapshotInicial]);
 
   const { vencidas, proximas, novedades_pendientes, contadores } = snapshot;
+  const gruposVencidas = agruparPorTipo(vencidas);
+  const gruposProximas = agruparPorTipo(proximas);
+
+  const alternarVencida = (id: string) =>
+    setExpandidasVencidas((prev) => {
+      const nuevo = new Set(prev);
+      if (nuevo.has(id)) nuevo.delete(id);
+      else nuevo.add(id);
+      return nuevo;
+    });
+
+  const alternarProxima = (id: string) =>
+    setExpandidasProximas((prev) => {
+      const nuevo = new Set(prev);
+      if (nuevo.has(id)) nuevo.delete(id);
+      else nuevo.add(id);
+      return nuevo;
+    });
 
   return (
     <div className="space-y-6">
@@ -107,22 +225,14 @@ export function DashboardJefeCliente({
           <p className="mt-2 text-sm text-zelanda-verde-700">Todo al día por ahora.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {vencidas.map((f) => (
-              <li key={`${f.lote_id}_${f.tipo_id}`}>
-                <Link
-                  href={`/jefe/asignaciones/nueva?lote_id=${f.lote_id}&tipo_tarea_id=${f.tipo_id}`}
-                  className="flex items-center gap-2 rounded-lg border border-zelanda-beige-200 px-3 py-2 text-sm transition hover:bg-zelanda-beige-50"
-                >
-                  <span className="flex-1">
-                    <span className="font-medium text-zelanda-verde-900">{f.tipo_nombre}</span>
-                    <span className="text-zelanda-verde-700"> · Lote {f.lote_nombre}</span>
-                  </span>
-                  <span className="text-xs text-estado-vencida">
-                    {f.estado === "sin_historial" ? "nunca hecho" : `vencida ${formatearDias(f.dias_para_proxima)}`}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
-                </Link>
-              </li>
+            {gruposVencidas.map((g) => (
+              <GrupoTareaItem
+                key={g.tipo_id}
+                grupo={g}
+                tono="vencida"
+                expandido={expandidasVencidas.has(g.tipo_id)}
+                onToggle={() => alternarVencida(g.tipo_id)}
+              />
             ))}
           </ul>
         )}
@@ -137,20 +247,14 @@ export function DashboardJefeCliente({
           <p className="mt-2 text-sm text-zelanda-verde-700">Sin tareas próximas.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {proximas.map((f) => (
-              <li key={`${f.lote_id}_${f.tipo_id}`}>
-                <Link
-                  href={`/jefe/asignaciones/nueva?lote_id=${f.lote_id}&tipo_tarea_id=${f.tipo_id}`}
-                  className="flex items-center gap-2 rounded-lg border border-zelanda-beige-200 px-3 py-2 text-sm transition hover:bg-zelanda-beige-50"
-                >
-                  <span className="flex-1">
-                    <span className="font-medium text-zelanda-verde-900">{f.tipo_nombre}</span>
-                    <span className="text-zelanda-verde-700"> · Lote {f.lote_nombre}</span>
-                  </span>
-                  <span className="text-xs text-estado-proxima">{formatearDias(f.dias_para_proxima)}</span>
-                  <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
-                </Link>
-              </li>
+            {gruposProximas.map((g) => (
+              <GrupoTareaItem
+                key={g.tipo_id}
+                grupo={g}
+                tono="proxima"
+                expandido={expandidasProximas.has(g.tipo_id)}
+                onToggle={() => alternarProxima(g.tipo_id)}
+              />
             ))}
           </ul>
         )}
