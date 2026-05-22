@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, BarChart3, FlaskConical } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -14,6 +14,8 @@ export default async function PaginaReportes() {
     stockRows,
     cosechasMes,
     rankingLotes,
+    topRecolectores,
+    insumosConsumidos,
   ] = await Promise.all([
     prisma.cosechas.aggregate({
       _count: { _all: true },
@@ -53,6 +55,42 @@ export default async function PaginaReportes() {
       WHERE l.deleted_at IS NULL
       GROUP BY l.id, l.nombre, l.total_arboles, l.hectareas
       ORDER BY SUM(c.peso_kg) DESC NULLS LAST, l.nombre ASC
+    `,
+    prisma.$queryRaw<{
+      persona_id: bigint;
+      nombre_completo: string;
+      total_kg: string;
+      n_cosechas: number;
+    }[]>`
+      SELECT
+        c.persona_id,
+        p.nombre_completo,
+        SUM(c.peso_kg)::text    AS total_kg,
+        COUNT(c.id)::int        AS n_cosechas
+      FROM cosechas c
+      JOIN personas p ON p.id = c.persona_id
+      GROUP BY c.persona_id, p.nombre_completo
+      ORDER BY SUM(c.peso_kg) DESC
+      LIMIT 10
+    `,
+    prisma.$queryRaw<{
+      insumo_id: bigint;
+      nombre: string;
+      unidad: string;
+      total: string;
+    }[]>`
+      SELECT
+        i.id                                AS insumo_id,
+        i.nombre,
+        i.unidad,
+        SUM(di.cantidad_consumida)::text    AS total
+      FROM despacho_items di
+      JOIN insumos i ON i.id = di.insumo_id
+      WHERE di.tipo_item = 'INSUMO'
+        AND di.cantidad_consumida IS NOT NULL
+        AND di.cantidad_consumida > 0
+      GROUP BY i.id, i.nombre, i.unidad
+      ORDER BY SUM(di.cantidad_consumida) DESC
     `,
   ]);
 
@@ -212,6 +250,73 @@ export default async function PaginaReportes() {
             );
           })}
         </ul>
+      </section>
+
+      {/* Sección 4: Top recolectores de la finca */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="font-serif text-lg text-zelanda-verde-900">
+          Top recolectores
+        </h2>
+        {topRecolectores.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin recolectores registrados.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+            {topRecolectores.map((r) => (
+              <li
+                key={r.persona_id.toString()}
+                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-zelanda-verde-900">
+                    {r.nombre_completo}
+                  </p>
+                  <p className="text-xs text-zelanda-verde-700/70">
+                    {r.n_cosechas} cosecha{r.n_cosechas === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <p className="text-right font-serif text-zelanda-verde-900">
+                  {fmtKg(Number(r.total_kg))} kg
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Sección 5: Insumos consumidos (finca) */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
+          <FlaskConical className="h-5 w-5" /> Insumos consumidos
+        </h2>
+        <p className="mt-1 text-xs text-zelanda-verde-700/70">
+          Suma de <code>cantidad_consumida</code> en todos los despachos cerrados.
+        </p>
+        {insumosConsumidos.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin insumos consumidos.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+            {insumosConsumidos.map((c) => (
+              <li
+                key={c.insumo_id.toString()}
+                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+              >
+                <span className="truncate font-medium text-zelanda-verde-900">
+                  {c.nombre}
+                </span>
+                <span className="text-right font-serif text-zelanda-verde-900">
+                  {Number(c.total).toLocaleString("es-CO", {
+                    maximumFractionDigits: 3,
+                  })}{" "}
+                  {c.unidad}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
