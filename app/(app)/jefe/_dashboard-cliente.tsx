@@ -267,6 +267,17 @@ export function DashboardJefeCliente({
               Frecuencias y catálogo
             </p>
           </Link>
+          <Link
+            href="/jefe/reportes"
+            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+          >
+            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              Reportes
+            </p>
+            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
+              Cosecha, lotes, recolectores
+            </p>
+          </Link>
         </div>
       </section>
 
