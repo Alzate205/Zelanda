@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Warehouse, ShoppingBag } from "lucide-react";
+import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, BarChart3 } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function PaginaReportes() {
   await requerirUsuario("JEFE");
 
-  const [cosechasTotal, salidasTotal, stockRows] = await Promise.all([
+  const [cosechasTotal, salidasTotal, stockRows, cosechasMes] = await Promise.all([
     prisma.cosechas.aggregate({
       _count: { _all: true },
       _sum: { peso_kg: true },
@@ -19,6 +19,16 @@ export default async function PaginaReportes() {
     prisma.$queryRaw<{ stock_kg: string }[]>`
       SELECT stock_kg::text FROM v_stock_almacen
     `,
+    prisma.$queryRaw<{ ym: string; total_kg: string; n_cosechas: number }[]>`
+      SELECT
+        TO_CHAR(fecha, 'YYYY-MM')          AS ym,
+        SUM(peso_kg)::text                  AS total_kg,
+        COUNT(*)::int                       AS n_cosechas
+      FROM cosechas
+      WHERE fecha >= NOW() - INTERVAL '12 months'
+      GROUP BY ym
+      ORDER BY ym DESC
+    `,
   ]);
 
   const totalCosechaKg = Number(cosechasTotal._sum.peso_kg ?? 0);
@@ -28,6 +38,19 @@ export default async function PaginaReportes() {
 
   const fmtKg = (n: number) =>
     n.toLocaleString("es-CO", { maximumFractionDigits: 2 });
+
+  const fmtMes = (ym: string) => {
+    const [y, m] = ym.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("es-CO", {
+      month: "short",
+      year: "2-digit",
+    });
+  };
+
+  const maxMes = cosechasMes.reduce(
+    (m, r) => Math.max(m, Number(r.total_kg)),
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -81,6 +104,42 @@ export default async function PaginaReportes() {
             {fmtKg(stockKg)} kg
           </p>
         </div>
+      </section>
+
+      {/* Sección 2: Cosecha últimos 12 meses */}
+      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
+          <BarChart3 className="h-5 w-5" /> Cosecha — últimos 12 meses
+        </h2>
+        {cosechasMes.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin cosechas en los últimos 12 meses.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {cosechasMes.map((r) => {
+              const v = Number(r.total_kg);
+              const pct = maxMes > 0 ? (v / maxMes) * 100 : 0;
+              return (
+                <li key={r.ym} className="text-sm">
+                  <div className="flex items-center justify-between text-xs text-zelanda-verde-700/70">
+                    <span>{fmtMes(r.ym)}</span>
+                    <span>
+                      {fmtKg(v)} kg · {r.n_cosechas} cosecha
+                      {r.n_cosechas === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
+                    <div
+                      className="h-full rounded-full bg-zelanda-verde-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </div>
   );
