@@ -306,23 +306,28 @@ Pasos:
 ### ✅ Fase 4 — Bodega y almacén (COMPLETADA)
 - Catálogos, despacho/devolución (reserva + consumo), recepción y salida de cosecha, reporte por lote.
 
-### ✅ Fase 5 — Apicultura y refinamientos (mayormente COMPLETADA)
+### ✅ Fase 5 — Apicultura y refinamientos (COMPLETADA)
 - Módulo de apiarios ✅ (visita con estado general bien/problemas/crítico, push automático al jefe si crítico, cosecha de miel con kg, detalle apiario con historial)
 - Notificaciones push ✅ (sub-fase 5.1)
 - Modo offline trabajador ✅ (sub-fase 5.2a — ver tareas, registrar avance/novedad, sync con backoff, pantalla `/trabajador/pendientes`)
 - Modo offline bodega/almacén/jefe ✅ (sub-fase 5.2b — crear/cerrar despacho offline, cosecha + salida offline, jefe dashboard cacheado; pantallas `/bodega/pendientes` y `/almacen/pendientes`)
-- Fotos offline con re-escalado a 1280px (sub-fase 5.2c, **pendiente**)
+- Fotos offline con re-escalado a 1280px ✅ (sub-fase 5.2c — `SubirFoto` comprime client-side a 1280 px de lado mayor y JPEG calidad 0.85 antes de enviar al servidor, vía DataTransfer API)
 
 ### 🎯 Mejoras agregadas después del roadmap original
-- Pokédex de árbol con heat-map y mapa de árboles por lote ✅
+- Pokédex de árbol con heat-map, mapa de árboles por lote y bar chart de cosecha por año ✅
 - Login con username (además de email) ✅
 - Condición de devolución de herramienta ✅
 - Edición de vinculación activa sin cerrar histórico ✅
 - Gestión de acceso (crear / cambiar rol / resetear contraseña) ✅
-- Reportes globales de la finca (`/jefe/reportes`) ✅
+- Reportes globales de la finca (`/jefe/reportes`) con bar charts y CSV ✅
 - Búsqueda global desde el header (solo JEFE) ✅
 - Productividad por trabajador en ficha de persona ✅
-- Pulido PWA "feel nativa" (no pull-to-refresh, safe areas, status bar integrado) ✅
+- Pulido PWA "feel nativa" (no pull-to-refresh, safe areas, status bar integrado, `InstalarPWABanner` con `beforeinstallprompt`) ✅
+- Diseño visual del mockup de Claude Design aplicado a toda la app ✅ (heroes verdes con back en detalles, KPIs unificados, badges de estado, cards `rounded-2xl shadow-suave`, eyebrows `text-[10.5px] tracking-[0.18em]`, mascota del aguacate en login/splash/empty states)
+- Wizard de "Asignar tarea" en 4 pasos con `Stepper` (lote/apiario → tipo → persona → confirmar) ✅
+- Wizard de "Nuevo despacho" en 3 pasos con `Stepper` (persona → items con `FilaCantidad` +/- → confirmar) ✅
+- Pantalla de éxito `AsignacionCerradaSuccess` al cerrar la última avance que completa una asignación ✅
+- Cerrar despacho con `FilaCondicion` (Buen estado / Usada / Dañada) por herramienta y `FilaConsumo` con `+/-` y barra de % por insumo ✅
 
 ### Fase 6 — Futuro (no hacer aún)
 Capa financiera (pagos, jornales, servicios contratados — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`), clima, compras, ventas, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
@@ -382,5 +387,5 @@ NEXT_PUBLIC_APP_NAME=La Zelanda
 
 ---
 
-**Versión del documento:** 1.0 · Mayo 2026
+**Versión del documento:** 1.1 · Mayo 2026 (Fase 5 cerrada, diseño visual aplicado, wizards y SubirFoto con re-escalado)
 **Autor:** Samuel Alzate
