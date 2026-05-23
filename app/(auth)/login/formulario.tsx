@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Boton } from "@/components/ui/Boton";
 import { iniciarSesion, type EstadoLogin } from "./acciones";
 
 const ESTADO_INICIAL: EstadoLogin = { error: null };
@@ -12,7 +13,7 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
   );
 
   return (
-    <form action={accion} className="space-y-5" noValidate>
+    <form action={accion} className="flex flex-col gap-3" noValidate>
       {redirigir ? (
         <input type="hidden" name="redirigir" value={redirigir} />
       ) : null}
@@ -20,7 +21,7 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
       <div>
         <label
           htmlFor="identificador"
-          className="block text-sm font-medium text-zelanda-verde-800"
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
         >
           Usuario o correo
         </label>
@@ -32,14 +33,14 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
           autoCapitalize="off"
           spellCheck={false}
           required
-          className="mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20"
+          className="h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
       <div>
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-zelanda-verde-800"
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
         >
           Contraseña
         </label>
@@ -49,7 +50,7 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20"
+          className="h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -62,13 +63,9 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pendiente}
-        className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {pendiente ? "Entrando…" : "Iniciar sesión"}
-      </button>
+      <Boton bloque className="mt-3" disabled={pendiente}>
+        {pendiente ? "Entrando…" : "Entrar"}
+      </Boton>
     </form>
   );
 }

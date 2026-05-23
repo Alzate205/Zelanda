@@ -30,7 +30,7 @@ export function FormSiembra({
   return (
     <form
       action={accion}
-      className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card"
+      className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave"
     >
       <input type="hidden" name="lote_id" value={loteId} />
       <input type="hidden" name="modo" value={modo} />

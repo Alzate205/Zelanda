@@ -178,61 +178,74 @@ export default async function PaginaReportes() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Jefe · Reportes
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Reportes de la finca
         </h1>
-        <p className="mt-1 text-xs text-zelanda-verde-700/70">
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
           Datos consolidados de todos los lotes y operaciones.
         </p>
       </header>
 
-      {/* Sección 1: Resumen acumulado */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card">
-          <div className="flex items-center gap-2 text-zelanda-verde-700">
-            <TrendingUp className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-wider">Cosecha total</p>
+      <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="flex flex-col rounded-2xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
+          <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span className="text-[10.5px] uppercase tracking-[0.14em]">
+              Cosecha total
+            </span>
           </div>
-          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
-            {fmtKg(totalCosechaKg)} kg
-          </p>
+          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+            {fmtKg(totalCosechaKg)}
+          </span>
+          <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>
         </div>
-        <div className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card">
-          <div className="flex items-center gap-2 text-zelanda-verde-700">
-            <ShoppingBag className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-wider">Cosechas</p>
+        <div className="flex flex-col rounded-2xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
+          <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+            <ShoppingBag className="h-3.5 w-3.5" />
+            <span className="text-[10.5px] uppercase tracking-[0.14em]">
+              Cosechas
+            </span>
           </div>
-          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
+          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
             {nCosechas.toLocaleString("es-CO")}
-          </p>
+          </span>
+          <span className="mt-1 text-xs text-zelanda-verde-700">
+            registros
+          </span>
         </div>
-        <div className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card">
-          <div className="flex items-center gap-2 text-zelanda-verde-700">
-            <TrendingDown className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-wider">Salidas totales</p>
+        <div className="flex flex-col rounded-2xl border border-zelanda-ocre-200 bg-zelanda-ocre-50 p-3 shadow-suave">
+          <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+            <TrendingDown className="h-3.5 w-3.5" />
+            <span className="text-[10.5px] uppercase tracking-[0.14em]">
+              Salidas totales
+            </span>
           </div>
-          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
-            {fmtKg(totalSalidasKg)} kg
-          </p>
+          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+            {fmtKg(totalSalidasKg)}
+          </span>
+          <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>
         </div>
-        <div className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card">
-          <div className="flex items-center gap-2 text-zelanda-verde-700">
-            <Warehouse className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-wider">Stock actual</p>
+        <div className="flex flex-col rounded-2xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
+          <div className="flex items-center gap-1.5 text-zelanda-verde-700">
+            <Warehouse className="h-3.5 w-3.5" />
+            <span className="text-[10.5px] uppercase tracking-[0.14em]">
+              Stock actual
+            </span>
           </div>
-          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
-            {fmtKg(stockKg)} kg
-          </p>
+          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+            {fmtKg(stockKg)}
+          </span>
+          <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>
         </div>
       </section>
 
       {/* Sección 2: Cosecha últimos 12 meses */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
             <BarChart3 className="h-5 w-5" /> Cosecha — últimos 12 meses
@@ -279,7 +292,7 @@ export default async function PaginaReportes() {
       </section>
 
       {/* Sección 3: Ranking de lotes */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-serif text-lg text-zelanda-verde-900">
             Ranking de lotes
@@ -346,7 +359,7 @@ export default async function PaginaReportes() {
       </section>
 
       {/* Sección 4: Top recolectores de la finca */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-serif text-lg text-zelanda-verde-900">
             Top recolectores
@@ -390,7 +403,7 @@ export default async function PaginaReportes() {
       </section>
 
       {/* Sección 5: Insumos consumidos (finca) */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
             <FlaskConical className="h-5 w-5" /> Insumos consumidos
@@ -436,7 +449,7 @@ export default async function PaginaReportes() {
 
       {/* Sección 6: Miel — solo si hay datos */}
       {hayMiel ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <h2 className="font-serif text-lg text-zelanda-verde-900">
             Apicultura — miel
           </h2>
@@ -450,7 +463,7 @@ export default async function PaginaReportes() {
           {rankingApiarios.length > 0 ? (
             <div className="mt-4">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                <h3 className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Por apiario
                 </h3>
                 <DescargarCSVButton
@@ -483,7 +496,7 @@ export default async function PaginaReportes() {
           {topRecolectoresMiel.length > 0 ? (
             <div className="mt-4">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                <h3 className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Top recolectores de miel
                 </h3>
                 <DescargarCSVButton
@@ -516,7 +529,7 @@ export default async function PaginaReportes() {
       ) : null}
 
       {/* Sección 7: Salidas por tipo (últimos 12 meses) */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-serif text-lg text-zelanda-verde-900">
             Salidas del almacén — últimos 12 meses

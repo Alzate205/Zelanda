@@ -112,7 +112,7 @@ export function FormularioCierreDespacho({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h3 className="font-serif text-lg text-zelanda-verde-900">Devoluciones</h3>
         <p className="mt-1 text-xs text-zelanda-verde-700">
           Al cerrar el despacho, todas las herramientas quedan registradas como
@@ -236,7 +236,7 @@ export function FormularioCierreDespacho({
       <button
         type="submit"
         disabled={pendiente}
-        className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-white disabled:opacity-60"
+        className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
         {pendiente ? "Cerrando..." : "Cerrar despacho"}
       </button>

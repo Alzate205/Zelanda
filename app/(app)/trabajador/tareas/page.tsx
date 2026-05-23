@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ListChecks,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -12,6 +11,7 @@ import {
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BadgeBase } from "@/components/shared/BadgeRol";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { formatearFechaCorta } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Mis tareas" };
@@ -98,16 +98,17 @@ export default async function PaginaTareasTrabajador({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <Eyebrow>Mis tareas</Eyebrow>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Histórico
-        </p>
-        <h1 className="mt-1 flex items-center gap-2 font-serif text-2xl text-zelanda-verde-900">
-          <ListChecks className="h-6 w-6 text-zelanda-verde-600" />
-          Mis tareas
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          {asignaciones.length}{" "}
+          {asignaciones.length === 1 ? "tarea" : "tareas"}
+        </p>
       </header>
 
-      <nav className="flex gap-1 rounded-lg border border-zelanda-beige-300 bg-white p-1">
+      <nav className="grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
         {(
           [
             ["activas", "Activas"],
@@ -118,10 +119,10 @@ export default async function PaginaTareasTrabajador({
           <Link
             key={clave}
             href={`/trabajador/tareas?filtro=${clave}`}
-            className={`flex-1 rounded-md px-3 py-2 text-center text-sm font-medium transition ${
+            className={`rounded-lg px-2 py-2 text-center text-[13px] font-semibold transition ${
               filtro === clave
-                ? "bg-zelanda-verde-700 text-zelanda-beige-50"
-                : "text-zelanda-verde-700 hover:bg-zelanda-beige-100"
+                ? "bg-white text-zelanda-verde-900 shadow-suave"
+                : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
             }`}
           >
             {etiqueta}
@@ -185,7 +186,7 @@ export default async function PaginaTareasTrabajador({
             return (
               <li
                 key={String(a.id)}
-                className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-suave"
+                className="rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300"
               >
                 {esActiva ? (
                   <Link

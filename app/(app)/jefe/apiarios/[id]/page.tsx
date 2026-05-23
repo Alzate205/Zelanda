@@ -144,7 +144,7 @@ export default async function DetalleApiario({
 
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+          <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
             Apiario
           </p>
           <h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-zelanda-verde-900">
@@ -173,25 +173,25 @@ export default async function DetalleApiario({
         </div>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Información
         </h2>
         <dl className="mt-3 space-y-3 text-sm">
           <div className="flex items-center gap-3">
             <Hexagon className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-24 text-xs uppercase tracking-wider text-zelanda-verde-700">Colmenas</dt>
+            <dt className="w-24 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Colmenas</dt>
             <dd className="text-zelanda-verde-900">{apiario.total_colmenas}</dd>
           </div>
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-24 shrink-0 text-xs uppercase tracking-wider text-zelanda-verde-700">Ubicación</dt>
+            <dt className="w-24 shrink-0 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Ubicación</dt>
             <dd className="text-zelanda-verde-900">{apiario.ubicacion_descripcion ?? "—"}</dd>
           </div>
         </dl>
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Tareas y estado
         </h2>
@@ -222,7 +222,7 @@ export default async function DetalleApiario({
         </ul>
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Últimas visitas
         </h2>
@@ -263,7 +263,7 @@ export default async function DetalleApiario({
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
             <Droplet className="h-4 w-4 text-zelanda-ocre-600" />

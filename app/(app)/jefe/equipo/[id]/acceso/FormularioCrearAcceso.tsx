@@ -81,7 +81,7 @@ export function FormularioCrearAcceso({ personaId }: { personaId: string }) {
       <button
         type="submit"
         disabled={pendiente}
-        className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-touch w-full rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pendiente ? "Creando…" : "Dar acceso"}
       </button>

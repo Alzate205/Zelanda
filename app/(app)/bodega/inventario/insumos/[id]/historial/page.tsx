@@ -75,7 +75,7 @@ export default async function PaginaHistorialInsumo({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Insumo
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -116,7 +116,7 @@ export default async function PaginaHistorialInsumo({
         </div>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-lg text-zelanda-verde-900">
           Ajustar stock
         </h2>
@@ -132,7 +132,7 @@ export default async function PaginaHistorialInsumo({
         </div>
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-lg text-zelanda-verde-900">
           Movimientos recientes
         </h2>

@@ -26,7 +26,7 @@ export function FormularioNuevoTipo() {
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Crear
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -34,7 +34,7 @@ export function FormularioNuevoTipo() {
         </h1>
       </header>
 
-      <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div>
           <label htmlFor="nombre" className={labelBase}>Nombre</label>
           <input id="nombre" name="nombre" type="text" required className={inputBase} />
@@ -110,14 +110,14 @@ export function FormularioNuevoTipo() {
       <div className="flex gap-3">
         <Link
           href="/jefe/tareas"
-          className="flex-1 rounded-lg border border-zelanda-beige-300 px-4 py-3 text-center text-base font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+          className="flex-1 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 text-center font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
         >
           Cancelar
         </Link>
         <button
           type="submit"
           disabled={pendiente}
-          className="flex-1 rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pendiente ? "Creando…" : "Crear"}
         </button>

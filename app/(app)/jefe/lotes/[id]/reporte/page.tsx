@@ -118,7 +118,7 @@ export default async function PaginaReporteLote({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Reporte · Lote
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -130,7 +130,7 @@ export default async function PaginaReporteLote({
         </p>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-center gap-2 text-zelanda-verde-700">
           <TrendingUp className="h-5 w-5" />
           <p className="text-xs uppercase tracking-wider">Cosecha acumulada</p>
@@ -157,7 +157,7 @@ export default async function PaginaReporteLote({
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
           <BarChart3 className="h-5 w-5" /> Últimos 12 meses
         </h2>
@@ -194,7 +194,7 @@ export default async function PaginaReporteLote({
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-lg text-zelanda-verde-900">
           Recolectores principales
         </h2>
@@ -224,7 +224,7 @@ export default async function PaginaReporteLote({
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
           <FlaskConical className="h-5 w-5" /> Insumos consumidos
         </h2>

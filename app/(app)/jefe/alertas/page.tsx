@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Bell } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcularResumen, formatearDias } from "@/lib/fechas-tarea";
 import { formatearFechaCorta } from "@/lib/utils";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import {
   AlertasFiltrables,
   type Alerta,
@@ -332,15 +332,16 @@ export default async function PaginaAlertas() {
     .map(limpiar);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Vista general
-        </p>
-        <h1 className="mt-1 flex items-center gap-2 font-serif text-2xl text-zelanda-verde-900">
-          <Bell className="h-6 w-6 text-zelanda-ocre-600" />
+        <Eyebrow>Centro de alertas</Eyebrow>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Alertas
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          {criticas.length} críticas · {importantes.length} importantes ·{" "}
+          {informativas.length} informativas
+        </p>
       </header>
 
       <AlertasFiltrables

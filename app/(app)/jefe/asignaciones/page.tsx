@@ -59,19 +59,25 @@ export default async function PaginaAsignaciones({
   const filtroActual = filtroEstado ?? "abiertas";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-            Tareas
+          <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+            Tareas asignadas
           </p>
           <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
             Asignaciones
           </h1>
+          <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+            {asignaciones.length}{" "}
+            {asignaciones.length === 1 ? "asignación" : "asignaciones"} ·
+            {" "}
+            {opciones.find((o) => o.value === filtroActual)?.label.toLowerCase()}
+          </p>
         </div>
         <Link
           href="/jefe/asignaciones/nueva"
-          className="inline-flex min-h-touch items-center gap-1.5 rounded-lg bg-zelanda-verde-700 px-3.5 py-2 text-sm font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800"
+          className="inline-flex min-h-touch items-center gap-1.5 rounded-xl bg-zelanda-verde-700 px-3.5 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
         >
           <Plus className="h-4 w-4" />
           Nueva

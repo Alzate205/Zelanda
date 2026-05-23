@@ -2,16 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff } from "lucide-react";
+import { CloudOff, Check } from "lucide-react";
 import { enviarCosecha } from "@/lib/offline/api-cliente";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { Segmented } from "@/components/ui/Segmented";
 
 export function FormularioCosecha({
   personas,
   lotes,
+  compacto = false,
 }: {
   personas: { id: string; nombre: string }[];
   lotes: { id: string; nombre: string }[];
+  compacto?: boolean;
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
@@ -84,102 +87,101 @@ export function FormularioCosecha({
         setError(r.error);
         return;
       }
-      router.push("/almacen/cosecha");
+      if (compacto) {
+        setPersonaId("");
+        setLoteId("");
+        setCanastas("");
+        setCapacidad("");
+        setPeso("");
+        setNotas("");
+        router.refresh();
+      } else {
+        router.push("/almacen/cosecha");
+      }
     });
   }
 
+  const labelClase =
+    "mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  const inputClase =
+    "h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-3" noValidate>
       <div>
-        <label htmlFor="recolector" className="block text-sm font-medium text-zelanda-verde-900">
-          Recolector
-        </label>
-        <select
-          id="recolector"
-          required
-          value={personaId}
-          onChange={(e) => setPersonaId(e.target.value)}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
-        >
-          <option value="">Selecciona...</option>
-          {personas.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
+        <label className={labelClase}>Método</label>
+        <Segmented
+          opciones={[
+            { id: "CANASTA", etiqueta: "Canastas" },
+            { id: "BASCULA", etiqueta: "Báscula" },
+          ]}
+          valor={metodo}
+          onCambio={setMetodo}
+        />
       </div>
 
-      <div>
-        <label htmlFor="lote" className="block text-sm font-medium text-zelanda-verde-900">
-          Lote
-        </label>
-        <select
-          id="lote"
-          required
-          value={loteId}
-          onChange={(e) => setLoteId(e.target.value)}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
-        >
-          <option value="">Selecciona...</option>
-          {lotes.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <p className="block text-sm font-medium text-zelanda-verde-900">
-          Método de medición
-        </p>
-        <div className="mt-1 flex gap-2">
-          {(["CANASTA", "BASCULA"] as const).map((m) => (
-            <label
-              key={m}
-              className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${
-                metodo === m
-                  ? "border-zelanda-verde-700 bg-zelanda-verde-700 text-white"
-                  : "border-zelanda-beige-300"
-              }`}
-            >
-              <input
-                type="radio"
-                name="metodo"
-                value={m}
-                checked={metodo === m}
-                onChange={() => setMetodo(m)}
-                className="sr-only"
-              />
-              {m === "CANASTA" ? "Canasta" : "Báscula"}
-            </label>
-          ))}
+      <div className="grid grid-cols-2 gap-2.5">
+        <div>
+          <label htmlFor="lote" className={labelClase}>
+            Lote
+          </label>
+          <select
+            id="lote"
+            required
+            value={loteId}
+            onChange={(e) => setLoteId(e.target.value)}
+            className={inputClase}
+          >
+            <option value="">Selecciona…</option>
+            {lotes.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="recolector" className={labelClase}>
+            Recolector
+          </label>
+          <select
+            id="recolector"
+            required
+            value={personaId}
+            onChange={(e) => setPersonaId(e.target.value)}
+            className={inputClase}
+          >
+            <option value="">Selecciona…</option>
+            {personas.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {metodo === "CANASTA" ? (
-        <>
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label htmlFor="canastas" className="block text-sm font-medium text-zelanda-verde-900">
-              Cantidad de canastas
+            <label htmlFor="canastas" className={labelClase}>
+              Canastas
             </label>
             <input
               id="canastas"
               type="number"
               inputMode="numeric"
-              pattern="[0-9]*"
               min="1"
               step="1"
               required
               value={canastas}
               onChange={(e) => setCanastas(e.target.value)}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+              className={inputClase}
             />
           </div>
           <div>
-            <label htmlFor="capacidad" className="block text-sm font-medium text-zelanda-verde-900">
-              Capacidad por canasta (kg)
+            <label htmlFor="capacidad" className={labelClase}>
+              Capacidad (kg)
             </label>
             <input
               id="capacidad"
@@ -190,18 +192,23 @@ export function FormularioCosecha({
               required
               value={capacidad}
               onChange={(e) => setCapacidad(e.target.value)}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+              className={inputClase}
             />
           </div>
-          {pesoCalculado !== null && (
-            <p className="rounded-lg bg-zelanda-beige-100 px-3 py-2 text-sm text-zelanda-verde-900">
-              Peso calculado: <strong>{pesoCalculado.toFixed(2)} kg</strong>
-            </p>
-          )}
-        </>
+          {pesoCalculado !== null ? (
+            <div className="col-span-2 flex items-center justify-between rounded-[10px] border border-zelanda-verde-200 bg-zelanda-verde-50 px-3 py-2.5">
+              <span className="text-xs text-zelanda-verde-700">
+                Total calculado
+              </span>
+              <span className="font-serif text-[22px] text-zelanda-verde-900">
+                {pesoCalculado.toFixed(0)} kg
+              </span>
+            </div>
+          ) : null}
+        </div>
       ) : (
         <div>
-          <label htmlFor="peso" className="block text-sm font-medium text-zelanda-verde-900">
+          <label htmlFor="peso" className={labelClase}>
             Peso (kg)
           </label>
           <input
@@ -213,46 +220,49 @@ export function FormularioCosecha({
             required
             value={peso}
             onChange={(e) => setPeso(e.target.value)}
-            className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+            className={inputClase}
           />
         </div>
       )}
 
-      <div>
-        <label htmlFor="notas" className="block text-sm font-medium text-zelanda-verde-900">
-          Notas (opcional)
-        </label>
-        <textarea
-          id="notas"
-          rows={2}
-          value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-zelanda-beige-300 px-3 py-2"
-        />
-      </div>
+      {!compacto ? (
+        <div>
+          <label htmlFor="notas" className={labelClase}>
+            Notas (opcional)
+          </label>
+          <textarea
+            id="notas"
+            rows={2}
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            className="w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2.5 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+          />
+        </div>
+      ) : null}
 
       {!online ? (
-        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
+        <p className="flex items-center gap-2 rounded-[10px] border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
           <CloudOff className="h-3.5 w-3.5" />
           Sin señal — la cosecha se guardará y subirá al volver la conexión.
         </p>
       ) : null}
 
-      {error && (
+      {error ? (
         <p
           role="alert"
-          className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+          className="rounded-[10px] bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
         >
           {error}
         </p>
-      )}
+      ) : null}
 
       <button
         type="submit"
         disabled={pendiente}
-        className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-white disabled:opacity-60"
+        className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pendiente ? "Registrando..." : "Registrar cosecha"}
+        <Check className="h-[18px] w-[18px]" />
+        {pendiente ? "Registrando…" : "Registrar ingreso"}
       </button>
     </form>
   );

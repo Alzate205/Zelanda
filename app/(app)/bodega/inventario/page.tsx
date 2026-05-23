@@ -1,4 +1,4 @@
-import { requerirUsuario } from "@/lib/auth";
+﻿import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GridInventario } from "./_grid";
 
@@ -81,15 +81,25 @@ export default async function PaginaInventario() {
     })),
   ];
 
+  const totalHerramientas = items.filter((i) => i.tipo === "HERRAMIENTA").length;
+  const totalInsumos = items.filter((i) => i.tipo === "INSUMO").length;
+  const insumosAlerta = items.filter(
+    (i) => i.tipo === "INSUMO" && i.por_debajo_minimo,
+  ).length;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Bodega
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Inventario
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          {totalHerramientas} herramientas · {totalInsumos} insumos
+          {insumosAlerta > 0 ? ` · ${insumosAlerta} en alerta` : ""}
+        </p>
       </header>
 
       <GridInventario items={items} />

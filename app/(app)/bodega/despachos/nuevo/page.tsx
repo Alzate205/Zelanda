@@ -1,4 +1,4 @@
-import { requerirUsuario } from "@/lib/auth";
+﻿import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FormularioDespacho } from "./_formulario";
 
@@ -44,7 +44,7 @@ export default async function PaginaNuevoDespacho() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Bodega
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -71,8 +71,8 @@ export default async function PaginaNuevoDespacho() {
         asignaciones={asignaciones.map((a) => ({
           id: a.id.toString(),
           persona_id: a.persona_id.toString(),
-          etiqueta: `${a.tipos_tarea.nombre} · ${
-            a.lotes?.nombre ?? a.apiarios?.nombre ?? "—"
+          etiqueta: `${a.tipos_tarea.nombre} Â· ${
+            a.lotes?.nombre ?? a.apiarios?.nombre ?? "â€”"
           }`,
         }))}
       />

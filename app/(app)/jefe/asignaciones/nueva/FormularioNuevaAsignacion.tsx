@@ -53,7 +53,7 @@ export function FormularioNuevaAsignacion({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Crear
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -61,11 +61,17 @@ export function FormularioNuevaAsignacion({
         </h1>
       </header>
 
-      <section className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div>
           <label className={labelBase}>Destino</label>
-          <div className="mt-1.5 flex gap-2">
-            <label className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${destino === "lote" ? "border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900" : "border-zelanda-beige-300 text-zelanda-verde-700"}`}>
+          <div className="mt-1.5 grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
+            <label
+              className={`flex cursor-pointer items-center justify-center rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                destino === "lote"
+                  ? "bg-white text-zelanda-verde-900 shadow-suave"
+                  : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
+              }`}
+            >
               <input
                 type="radio"
                 name="destino"
@@ -76,7 +82,13 @@ export function FormularioNuevaAsignacion({
               />
               Lote
             </label>
-            <label className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${destino === "apiario" ? "border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900" : "border-zelanda-beige-300 text-zelanda-verde-700"}`}>
+            <label
+              className={`flex cursor-pointer items-center justify-center rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                destino === "apiario"
+                  ? "bg-white text-zelanda-verde-900 shadow-suave"
+                  : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
+              }`}
+            >
               <input
                 type="radio"
                 name="destino"
@@ -169,17 +181,17 @@ export function FormularioNuevaAsignacion({
         </p>
       ) : null}
 
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Link
           href="/jefe/asignaciones"
-          className="flex-1 rounded-lg border border-zelanda-beige-300 px-4 py-3 text-center text-base font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+          className="flex min-h-touch flex-1 items-center justify-center rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
         >
           Cancelar
         </Link>
         <button
           type="submit"
           disabled={pendiente}
-          className="flex-1 rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-h-touch flex-[1.4] items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
         >
           {pendiente ? "Creando…" : "Crear asignación"}
         </button>

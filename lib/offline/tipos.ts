@@ -169,6 +169,15 @@ export type SnapshotJefe = {
     stock_bajo: number;
     despachos_abiertos: number;
     stock_almacen_kg: number;
+    total_lotes: number;
+    total_arboles: number;
+    lotes_aldia: number;
+    lotes_proxima: number;
+    lotes_vencida: number;
+    tareas_activas: number;
+    tareas_cerradas_hoy: number;
+    cosecha_mes_kg: number;
+    cosecha_mes_anterior_kg: number;
   };
   personas: PersonaCacheada[];
   ts: string;

@@ -32,12 +32,12 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     }),
   ]);
 
-  const mapaFreq = new Map<string, number>();
+  const mapaFreq = new globalThis.Map<string, number>();
   for (const f of frecuenciasOverride) {
     mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
   }
 
-  const mapaUltimaLote = new Map<string, Date | null>();
+  const mapaUltimaLote = new globalThis.Map<string, Date | null>();
   for (const c of completadasLote) {
     if (c.lote_id) {
       mapaUltimaLote.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
@@ -98,12 +98,22 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       estado: f.estado,
     }));
 
+  const ahora = new Date();
+  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+  const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+
   const [
     novedadesPendientesRaw,
     stockBajoRows,
     despachosAbiertos,
     stockAlmacenRows,
     personasRaw,
+    lotesTotales,
+    tareasActivas,
+    tareasCerradasHoy,
+    cosechaMes,
+    cosechaMesAnterior,
   ] = await Promise.all([
     prisma.novedades.findMany({
       where: { resuelta: false },
@@ -128,7 +138,49 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       orderBy: { nombre_completo: "asc" },
       select: { id: true, nombre_completo: true },
     }),
+    prisma.lotes.findMany({
+      where: { deleted_at: null },
+      select: { id: true, total_arboles: true },
+    }),
+    prisma.asignaciones.count({
+      where: { estado: { in: ["PENDIENTE", "EN_CURSO"] } },
+    }),
+    prisma.asignaciones.count({
+      where: { estado: "COMPLETADA", fecha_completada: { gte: inicioDia } },
+    }),
+    prisma.cosechas.aggregate({
+      where: { fecha: { gte: inicioMes } },
+      _sum: { peso_kg: true },
+    }),
+    prisma.cosechas.aggregate({
+      where: { fecha: { gte: inicioMesAnterior, lt: inicioMes } },
+      _sum: { peso_kg: true },
+    }),
   ]);
+
+  const totalLotes = lotesTotales.length;
+  const totalArboles = lotesTotales.reduce((a, l) => a + l.total_arboles, 0);
+
+  const lotesPorEstado = new globalThis.Map<string, "aldia" | "proxima" | "vencida">();
+  for (const l of lotes) {
+    lotesPorEstado.set(String(l.id), "aldia");
+  }
+  for (const f of filas) {
+    const actual = lotesPorEstado.get(f.lote_id) ?? "aldia";
+    if (f.estado === "vencida" || f.estado === "sin_historial") {
+      lotesPorEstado.set(f.lote_id, "vencida");
+    } else if (f.estado === "proxima" && actual !== "vencida") {
+      lotesPorEstado.set(f.lote_id, "proxima");
+    }
+  }
+  let lotesAldia = 0;
+  let lotesProxima = 0;
+  let lotesVencida = 0;
+  for (const v of lotesPorEstado.values()) {
+    if (v === "vencida") lotesVencida++;
+    else if (v === "proxima") lotesProxima++;
+    else lotesAldia++;
+  }
 
   const novedades_pendientes = novedadesPendientesRaw.map((n) => ({
     id: String(n.id),
@@ -151,6 +203,15 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       stock_bajo: stockBajoRows[0]?.count ?? 0,
       despachos_abiertos: despachosAbiertos,
       stock_almacen_kg: Number(stockAlmacenRows[0]?.stock_kg ?? 0),
+      total_lotes: totalLotes,
+      total_arboles: totalArboles,
+      lotes_aldia: lotesAldia,
+      lotes_proxima: lotesProxima,
+      lotes_vencida: lotesVencida,
+      tareas_activas: tareasActivas,
+      tareas_cerradas_hoy: tareasCerradasHoy,
+      cosecha_mes_kg: Number(cosechaMes._sum.peso_kg ?? 0),
+      cosecha_mes_anterior_kg: Number(cosechaMesAnterior._sum.peso_kg ?? 0),
     },
     personas,
     ts: new Date().toISOString(),

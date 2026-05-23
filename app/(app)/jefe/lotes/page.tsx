@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { MapaFincaCargador } from "@/components/mapa/MapaFincaCargador";
 import { parseGeoJsonSafe } from "@/lib/geo";
 import { colorDeLote } from "@/lib/paleta-lotes";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata = { title: "Lotes" };
 
@@ -124,13 +126,11 @@ export default async function PaginaLotes() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Cultivo y apicultura
-        </p>
+        <Eyebrow>Cultivo y apicultura</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Lotes y apiarios
         </h1>
-        <p className="mt-1 text-sm text-zelanda-verde-700">
+        <p className="mt-0.5 text-sm text-zelanda-verde-700">
           {lotesListMin.length} lotes · {apListMin.length} apiarios
         </p>
       </header>
@@ -158,7 +158,7 @@ export default async function PaginaLotes() {
       />
 
       {lotesParaMapa.some((l) => l.geojson !== null) && (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card">
+        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave">
           <h2 className="font-serif text-base text-zelanda-verde-900">
             Leyenda de lotes
           </h2>
@@ -183,24 +183,29 @@ export default async function PaginaLotes() {
       )}
 
       <section>
-        <h2 className="mb-3 font-serif text-base text-zelanda-verde-900">
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
           Lotes{" "}
           <span className="text-sm text-zelanda-verde-700">
             ({lotesListMin.length})
           </span>
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {lotesListMin.map((lote) => (
             <Link
               key={Number(lote.id)}
               href={`/jefe/lotes/${lote.id}`}
-              className="block rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
+              className="block rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
             >
-              <h3 className="font-serif text-lg text-zelanda-verde-900">
-                {lote.nombre}
-              </h3>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-serif text-lg text-zelanda-verde-900">
+                  {lote.nombre}
+                </h3>
+                <Badge estado="aldia" />
+              </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-zelanda-verde-700">
-                <span>{lote.total_arboles.toLocaleString("es-CO")} árboles</span>
+                <span>
+                  {lote.total_arboles.toLocaleString("es-CO")} árboles
+                </span>
                 {lote.hectareas ? (
                   <>
                     <span aria-hidden>·</span>
@@ -214,18 +219,18 @@ export default async function PaginaLotes() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-serif text-base text-zelanda-verde-900">
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
           Apiarios{" "}
           <span className="text-sm text-zelanda-verde-700">
             ({apListMin.length})
           </span>
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {apListMin.map((a) => (
             <Link
               key={Number(a.id)}
               href={`/jefe/apiarios/${a.id}`}
-              className="block rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
+              className="block rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
             >
               <div className="flex items-center gap-2">
                 <Hexagon className="h-4 w-4 shrink-0 text-zelanda-ocre-500" />

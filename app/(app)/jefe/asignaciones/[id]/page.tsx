@@ -74,7 +74,7 @@ export default async function DetalleAsignacion({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           {destino.tipo === "lote" ? "Lote" : "Apiario"} {destino.nombre}
         </p>
         <h1 className="mt-1 font-serif text-2xl leading-tight text-zelanda-verde-900">
@@ -90,22 +90,22 @@ export default async function DetalleAsignacion({
         </div>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">Información</h2>
         <dl className="mt-3 space-y-3 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Fecha inicio</dt>
+            <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Fecha inicio</dt>
             <dd className="mt-0.5 text-zelanda-verde-900">{formatearFechaCorta(a.fecha_inicio)}</dd>
           </div>
           {a.fecha_completada ? (
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Completada</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Completada</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">{formatearFechaCorta(a.fecha_completada)}</dd>
             </div>
           ) : null}
           {destino.total !== null ? (
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Progreso</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Progreso</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">
                 {a.arboles_completados} / {destino.total} árboles
                 ({destino.total > 0 ? Math.round((a.arboles_completados / destino.total) * 100) : 0}%)
@@ -115,7 +115,7 @@ export default async function DetalleAsignacion({
         </dl>
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">Historial de registros</h2>
         {a.registros_avance.length === 0 ? (
           <p className="mt-2 text-sm text-zelanda-verde-700">Sin registros aún.</p>

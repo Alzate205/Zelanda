@@ -205,7 +205,7 @@ export default function EditorBorde({
         <button
           type="submit"
           disabled={vertices.length < 3 || pending}
-          className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-white disabled:opacity-60"
+          className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
         >
           {pending ? "Guardando..." : "Cerrar y guardar"}
         </button>

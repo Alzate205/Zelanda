@@ -45,26 +45,27 @@ export default async function PaginaInstalaciones() {
   const fincaTieneBorde = fincaRows[0]?.tiene === true;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Mapa
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Instalaciones y borde de la finca
+          Instalaciones y borde
         </h1>
-        <p className="mt-1 text-sm text-zelanda-verde-700">
-          Capturá una sola vez la ubicación de cada elemento. Después podés editar si hace falta.
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          Capturá una sola vez la ubicación de cada elemento. Podés editar si
+          hace falta.
         </p>
       </header>
 
       <Link
         href="/jefe/instalaciones/finca"
-        className="block rounded-xl border border-zelanda-ocre-300 bg-zelanda-ocre-50 p-4 shadow-card transition hover:border-zelanda-ocre-500"
+        className="block rounded-2xl border border-zelanda-ocre-300 bg-zelanda-ocre-50 p-4 shadow-suave transition hover:border-zelanda-ocre-500"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+            <p className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
               Borde de la finca
             </p>
             <p className="mt-1 font-serif text-lg text-zelanda-verde-900">
@@ -87,7 +88,7 @@ export default async function PaginaInstalaciones() {
           </h2>
           <Link
             href="/jefe/instalaciones/nueva"
-            className="inline-flex min-h-touch items-center gap-1 rounded-lg border border-zelanda-verde-700 px-3 py-1.5 text-xs text-zelanda-verde-700"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 text-[13.5px] font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
           >
             <Plus className="h-3.5 w-3.5" /> Nueva
           </Link>
@@ -104,7 +105,7 @@ export default async function PaginaInstalaciones() {
                 <li key={i.id.toString()}>
                   <Link
                     href={`/jefe/instalaciones/${i.id}/ubicacion`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave transition hover:border-zelanda-verde-300"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zelanda-beige-100 text-zelanda-verde-700">

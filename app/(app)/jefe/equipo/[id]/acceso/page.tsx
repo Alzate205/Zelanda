@@ -67,7 +67,7 @@ export default async function PaginaAcceso({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Acceso al sistema
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
@@ -77,23 +77,23 @@ export default async function PaginaAcceso({
 
       {usuario ? (
         <>
-          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
             <h2 className="font-serif text-base text-zelanda-verde-900">
               Cuenta actual
             </h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div>
-                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Correo</dt>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Correo</dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">{usuario.email}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Rol actual</dt>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Rol actual</dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">{usuario.rol}</dd>
               </div>
             </dl>
           </section>
 
-          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
             <h2 className="font-serif text-base text-zelanda-verde-900">
               Cambiar rol
             </h2>
@@ -108,7 +108,7 @@ export default async function PaginaAcceso({
             />
           </section>
 
-          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
             <h2 className="font-serif text-base text-zelanda-verde-900">
               Resetear contraseña
             </h2>
@@ -120,7 +120,7 @@ export default async function PaginaAcceso({
           </section>
         </>
       ) : (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <h2 className="font-serif text-base text-zelanda-verde-900">
             Crear cuenta de acceso
           </h2>

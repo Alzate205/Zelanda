@@ -36,20 +36,29 @@ export default async function PaginaInventarioJefe() {
     `,
   ]);
 
+  const insumosAlerta = insumos.filter((i) => i.por_debajo_minimo).length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Jefe · Inventario
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Inventario de bodega
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          {herramientas.length} herramientas · {insumos.length} insumos
+          {insumosAlerta > 0 ? ` · ${insumosAlerta} en alerta` : ""}
+        </p>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <FlaskConical className="h-5 w-5" /> Insumos
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+          <FlaskConical className="h-4 w-4 text-zelanda-ocre-600" /> Insumos{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({insumos.length})
+          </span>
         </h2>
         <div className="mt-3 overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -100,9 +109,12 @@ export default async function PaginaInventarioJefe() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <Wrench className="h-5 w-5" /> Herramientas
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+          <Wrench className="h-4 w-4 text-zelanda-verde-700" /> Herramientas{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({herramientas.length})
+          </span>
         </h2>
         <ul className="mt-3 divide-y divide-zelanda-beige-200">
           {herramientas.map((h) => (

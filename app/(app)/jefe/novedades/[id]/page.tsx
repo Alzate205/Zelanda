@@ -65,16 +65,17 @@ export default async function DetalleNovedad({
       </Link>
 
       <header>
-        <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+          Reporte de campo
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <BadgeBase tono="alerta">{ETIQUETA_NOVEDAD[n.tipo]}</BadgeBase>
-          {n.resuelta ? (
-            <BadgeBase tono="info">Resuelta</BadgeBase>
-          ) : null}
-          <span className="text-xs text-zelanda-verde-700">
+          {n.resuelta ? <BadgeBase tono="info">Resuelta</BadgeBase> : null}
+          <span className="text-[11.5px] text-zelanda-verde-700">
             {formatearFechaCorta(n.fecha)}
           </span>
         </div>
-        <h1 className="mt-2 font-serif text-2xl text-zelanda-verde-900">
+        <h1 className="mt-1.5 font-serif text-2xl text-zelanda-verde-900">
           Árbol {n.arboles.numero_placa} · Lote {n.arboles.lotes.nombre}
         </h1>
         <p className="mt-1 text-sm text-zelanda-verde-700">
@@ -88,7 +89,7 @@ export default async function DetalleNovedad({
         </Link>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">Descripción</h2>
         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zelanda-verde-800">
           {n.descripcion}
@@ -144,7 +145,7 @@ export default async function DetalleNovedad({
             <Plus className="h-4 w-4" />
             Crear asignación para atender en el lote
           </Link>
-          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+          <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
             <h2 className="font-serif text-base text-zelanda-verde-900">
               Marcar como resuelta
             </h2>

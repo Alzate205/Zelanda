@@ -33,7 +33,7 @@ export function BuscadorArbol({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card"
+      className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave"
     >
       <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
         <Sprout className="h-4 w-4 text-zelanda-verde-600" />

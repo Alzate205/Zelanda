@@ -144,52 +144,61 @@ export default async function DetalleMiembro({
         Equipo
       </Link>
 
-      <header className="flex items-start gap-4">
-        <AvatarIniciales id={idStr} nombre={persona.nombre_completo} tamano="lg" />
-        <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-2xl leading-tight text-zelanda-verde-900">
-            {persona.nombre_completo}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {vincActiva ? (
-              <BadgeBase tono="info">
-                {ETIQUETA_TIPO_VINCULACION[vincActiva.tipo as TipoVinculacion]}
-              </BadgeBase>
-            ) : (
-              <BadgeBase tono="alerta">Sin vinculación</BadgeBase>
-            )}
-            {usuario ? <BadgeRol rol={usuario.rol as RolUsuario} /> : null}
-            {!persona.activo ? <BadgeBase tono="alerta">Inactivo</BadgeBase> : null}
-          </div>
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 text-center shadow-card">
+        <div className="flex justify-center">
+          <AvatarIniciales
+            id={idStr}
+            nombre={persona.nombre_completo}
+            tamano="lg"
+          />
         </div>
-        <Link
-          href={`/jefe/equipo/${idStr}/editar`}
-          className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
-        >
-          <Pencil className="h-4 w-4" />
-          Editar
-        </Link>
-      </header>
+        <h1 className="mt-2.5 font-serif text-[22px] text-zelanda-verde-900">
+          {persona.nombre_completo}
+        </h1>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+          {vincActiva ? (
+            <BadgeBase tono="info">
+              {ETIQUETA_TIPO_VINCULACION[vincActiva.tipo as TipoVinculacion]}
+              {vincActiva.rol_finca ? ` · ${vincActiva.rol_finca}` : ""}
+            </BadgeBase>
+          ) : (
+            <BadgeBase tono="alerta">Sin vinculación</BadgeBase>
+          )}
+          {usuario ? <BadgeRol rol={usuario.rol as RolUsuario} /> : null}
+          {!persona.activo ? (
+            <BadgeBase tono="alerta">Inactivo</BadgeBase>
+          ) : null}
+        </div>
+        <div className="mt-4 flex justify-center">
+          <Link
+            href={`/jefe/equipo/${idStr}/editar`}
+            className="inline-flex min-h-touch items-center gap-1.5 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 text-sm font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+          >
+            <Pencil className="h-4 w-4" />
+            Editar
+          </Link>
+        </div>
+      </section>
 
       {/* Datos personales */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Datos personales
         </h2>
         <dl className="mt-3 space-y-3 text-sm">
           <div className="flex items-center gap-3">
             <IdCard className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-xs uppercase tracking-wider text-zelanda-verde-700">Cédula</dt>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Cédula</dt>
             <dd className="text-zelanda-verde-900">{persona.cedula ?? "—"}</dd>
           </div>
           <div className="flex items-center gap-3">
             <Phone className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-xs uppercase tracking-wider text-zelanda-verde-700">Teléfono</dt>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Teléfono</dt>
             <dd className="text-zelanda-verde-900">{persona.telefono ?? "—"}</dd>
           </div>
           <div className="flex items-center gap-3">
             <Calendar className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-xs uppercase tracking-wider text-zelanda-verde-700">Nacimiento</dt>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Nacimiento</dt>
             <dd className="text-zelanda-verde-900">
               {persona.fecha_nacimiento ? formatearFechaCorta(persona.fecha_nacimiento) : "—"}
             </dd>
@@ -203,31 +212,31 @@ export default async function DetalleMiembro({
       </section>
 
       {/* Vinculación activa */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Vinculación activa
         </h2>
         {vincActiva ? (
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Tipo</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Tipo</dt>
               <dd className="mt-0.5 font-medium text-zelanda-verde-900">
                 {ETIQUETA_TIPO_VINCULACION[vincActiva.tipo as TipoVinculacion]}
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Rol en la finca</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Rol en la finca</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">{vincActiva.rol_finca ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Desde</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Desde</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">
                 {formatearFechaCorta(vincActiva.fecha_inicio)}
               </dd>
             </div>
             {vincActiva.salario_base ? (
               <div>
-                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Salario base ({vincActiva.periodo_pago?.toLowerCase()})
                 </dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">
@@ -237,7 +246,7 @@ export default async function DetalleMiembro({
             ) : null}
             {vincActiva.tarifa_jornal ? (
               <div>
-                <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Tarifa por jornal
                 </dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">
@@ -254,7 +263,7 @@ export default async function DetalleMiembro({
       </section>
 
       {/* Productividad */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
           Productividad
         </h2>
@@ -326,7 +335,7 @@ export default async function DetalleMiembro({
 
       {/* Histórico */}
       {historial.length > 0 ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <h2 className="font-serif text-base text-zelanda-verde-900">
             Histórico de vinculaciones
           </h2>
@@ -350,7 +359,7 @@ export default async function DetalleMiembro({
       ) : null}
 
       {/* Acceso */}
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-serif text-base text-zelanda-verde-900">
             Acceso al sistema
@@ -365,11 +374,11 @@ export default async function DetalleMiembro({
         {usuario ? (
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Correo</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Correo</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">{usuario.email}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">Rol</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Rol</dt>
               <dd className="mt-0.5 text-zelanda-verde-900">{usuario.rol}</dd>
             </div>
           </dl>

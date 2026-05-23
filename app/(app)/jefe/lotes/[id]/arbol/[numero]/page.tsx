@@ -7,15 +7,21 @@ import {
   Sprout,
   AlertCircle,
   Camera,
-  Calendar,
-  History,
   Plus,
-  Weight,
+  Leaf,
+  Bug,
+  Apple,
+  Scissors,
+  Droplets,
+  Check,
+  type LucideIcon,
 } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { urlFotoFirmada } from "@/lib/supabase/storage";
-import { BadgeBase } from "@/components/shared/BadgeRol";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { formatearFechaCorta } from "@/lib/utils";
 import { EditorArbol } from "./_editor";
 
@@ -25,20 +31,6 @@ const ETIQUETA_NOVEDAD: Record<string, string> = {
   ENFERMEDAD: "Enfermedad",
   OBSERVACION: "Observación",
   OTRO: "Otro",
-};
-
-const ETIQUETA_ESTADO: Record<string, string> = {
-  SALUDABLE: "Saludable",
-  CON_NOVEDAD: "Con novedad",
-  MUERTO: "Muerto",
-  REMOVIDO: "Removido",
-};
-
-const TONO_ESTADO: Record<string, "info" | "alerta" | "neutro"> = {
-  SALUDABLE: "info",
-  CON_NOVEDAD: "alerta",
-  MUERTO: "neutro",
-  REMOVIDO: "neutro",
 };
 
 function parsearId(raw: string): bigint | null {
@@ -56,17 +48,47 @@ function parsearNumero(raw: string): number | null {
   return n > 0 ? n : null;
 }
 
-function aniosDesde(fecha: Date): string {
+function aniosDesde(fecha: Date): {
+  display: string;
+  anios: number;
+  dias: number;
+} {
   const ms = Date.now() - fecha.getTime();
   const dias = Math.floor(ms / 86400000);
-  if (dias < 30) return `${dias} día${dias === 1 ? "" : "s"}`;
-  const meses = Math.floor(dias / 30);
-  if (meses < 24) return `${meses} mes${meses === 1 ? "" : "es"}`;
+  const meses = Math.floor(dias / 30.4375);
   const anios = Math.floor(meses / 12);
   const mesesRestantes = meses - anios * 12;
-  return mesesRestantes > 0
-    ? `${anios} año${anios === 1 ? "" : "s"} ${mesesRestantes} m`
-    : `${anios} año${anios === 1 ? "" : "s"}`;
+  let display: string;
+  if (dias < 30) {
+    display = `${dias} d`;
+  } else if (anios < 2) {
+    display = `${meses} m`;
+  } else if (mesesRestantes > 0) {
+    display = `${anios}a ${mesesRestantes}m`;
+  } else {
+    display = `${anios}a`;
+  }
+  return { display, anios, dias };
+}
+
+const ICONOS_TAREA: Record<string, LucideIcon> = {
+  riego: Droplets,
+  poda: Scissors,
+  fertilizacion: Sprout,
+  plagas: Bug,
+  cosecha: Apple,
+  plateo: Leaf,
+};
+
+function iconoPorTarea(nombre: string): LucideIcon {
+  const n = nombre.toLowerCase();
+  if (n.includes("rieg")) return ICONOS_TAREA.riego;
+  if (n.includes("poda")) return ICONOS_TAREA.poda;
+  if (n.includes("fert")) return ICONOS_TAREA.fertilizacion;
+  if (n.includes("plag")) return ICONOS_TAREA.plagas;
+  if (n.includes("cosech")) return ICONOS_TAREA.cosecha;
+  if (n.includes("plateo")) return ICONOS_TAREA.plateo;
+  return Leaf;
 }
 
 export async function generateMetadata({
@@ -110,7 +132,12 @@ export default async function FichaArbol({
     where: { lote_id: loteId, numero_placa: num, deleted_at: null },
     include: {
       lotes: {
-        select: { id: true, nombre: true, total_arboles: true, fecha_siembra: true },
+        select: {
+          id: true,
+          nombre: true,
+          total_arboles: true,
+          fecha_siembra: true,
+        },
       },
     },
   });
@@ -127,11 +154,18 @@ export default async function FichaArbol({
     }),
   ]);
   const cosechaTotalLote = Number(cosechaAgg._sum.peso_kg ?? 0);
-  const promedioKg = arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
+  const promedioKg =
+    arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
 
-  // Fecha de siembra: la del árbol gana; fallback a la del lote
   const fechaSiembraEfectiva = arbol.fecha_siembra ?? arbol.lotes.fecha_siembra;
-  const fechaSiembraOrigen = arbol.fecha_siembra ? "árbol" : arbol.lotes.fecha_siembra ? "lote" : null;
+  const fechaSiembraOrigen = arbol.fecha_siembra
+    ? "árbol"
+    : arbol.lotes.fecha_siembra
+      ? "lote"
+      : null;
+  const edad = fechaSiembraEfectiva
+    ? aniosDesde(fechaSiembraEfectiva)
+    : { display: "—", anios: 0, dias: 0 };
 
   const [novedades, registrosRaw] = await Promise.all([
     prisma.novedades.findMany({
@@ -194,244 +228,457 @@ export default async function FichaArbol({
     fecha: Date;
   }>;
 
-  const conteoTareas = new Map<string, number>();
+  const conteoTareas = new globalThis.Map<
+    string,
+    { total: number; ultima: Date }
+  >();
   for (const r of registros) {
-    conteoTareas.set(
-      r.tipo_tarea_nombre,
-      (conteoTareas.get(r.tipo_tarea_nombre) ?? 0) + 1,
-    );
+    const actual = conteoTareas.get(r.tipo_tarea_nombre);
+    if (!actual) {
+      conteoTareas.set(r.tipo_tarea_nombre, {
+        total: 1,
+        ultima: r.fecha_registro,
+      });
+    } else {
+      actual.total += 1;
+      if (r.fecha_registro > actual.ultima) actual.ultima = r.fecha_registro;
+    }
   }
-  const conteoArr = [...conteoTareas.entries()].sort((a, b) => b[1] - a[1]);
+  const conteoArr = [...conteoTareas.entries()].sort(
+    (a, b) => b[1].total - a[1].total,
+  );
+  const totalIntervenciones = conteoArr.reduce(
+    (acc, [, v]) => acc + v.total,
+    0,
+  );
 
-  const novedadesAbiertas = novedades.filter((n) => !n.resuelta).length;
-  const tonoActual = TONO_ESTADO[arbol.estado] ?? "neutro";
+  const novedadesResueltas = novedades.filter((n) => n.resuelta).length;
+  const novedadesAbiertas = novedades.length - novedadesResueltas;
+
+  const arbolIdLegible = `${arbol.lotes.nombre.slice(0, 2).toUpperCase()}-${String(arbol.numero_placa).padStart(3, "0")}`;
+
+  const estadoVisual = novedadesAbiertas > 0 ? "vencida" : "aldia";
+  const badgeTexto = novedadesAbiertas > 0 ? "Con novedad" : "Saludable";
 
   return (
-    <div className="space-y-5">
-      <Link
-        href={`/jefe/lotes/${arbol.lote_id}`}
-        className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
+    <div className="-mx-4 -mt-4">
+      <div
+        className="px-4 pb-5 pt-3 text-zelanda-beige-50"
+        style={{
+          background:
+            "radial-gradient(circle at 85% -10%, rgba(193,150,88,0.32), transparent 55%)," +
+            "radial-gradient(circle at 0% 100%, rgba(58,92,68,0.3), transparent 60%)," +
+            "linear-gradient(180deg, var(--tw-color-zelanda-verde-700, #2d4a35), var(--tw-color-zelanda-verde-900, #142c1a))",
+        }}
       >
-        <ChevronLeft className="h-4 w-4" />
-        Lote {arbol.lotes.nombre}
-      </Link>
-
-      <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Árbol
-        </p>
-        <h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-zelanda-verde-900">
-          <Sprout className="h-7 w-7 shrink-0 text-zelanda-verde-600" />
-          Nº {arbol.numero_placa}
-        </h1>
-        <p className="mt-1 text-sm text-zelanda-verde-700">
-          Lote {arbol.lotes.nombre} · de {arbol.lotes.total_arboles.toLocaleString("es-CO")} árboles
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <BadgeBase tono={tonoActual}>{ETIQUETA_ESTADO[arbol.estado] ?? arbol.estado}</BadgeBase>
-          {novedadesAbiertas > 0 ? (
-            <BadgeBase tono="alerta">
-              {novedadesAbiertas} novedad{novedadesAbiertas === 1 ? "" : "es"} sin resolver
-            </BadgeBase>
-          ) : null}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/jefe/lotes/${arbol.lote_id}`}
+            aria-label="Volver"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-zelanda-beige-50 hover:bg-white/15"
+          >
+            <ChevronLeft className="h-[18px] w-[18px]" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10.5px] uppercase tracking-[0.16em] text-zelanda-beige-100/72">
+              Pokédex · ficha técnica
+            </p>
+            <h1 className="mt-0.5 font-serif text-[18px] font-medium leading-tight">
+              {arbolIdLegible} · Lote {arbol.lotes.nombre}
+            </h1>
+          </div>
         </div>
-      </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-serif text-base text-zelanda-verde-900">Información</h2>
-          <EditorArbol
-            arbolId={String(arbol.id)}
-            estadoInicial={arbol.estado}
-            notasIniciales={arbol.notas}
+        <div className="mt-4 flex items-center gap-3.5">
+          <div
+            className="flex h-[92px] w-[92px] items-center justify-center rounded-[22px] border-2 border-white/30 font-serif text-[38px] font-semibold text-zelanda-beige-50"
+            style={{
+              background:
+                "linear-gradient(160deg, rgba(251,247,240,0.18), rgba(251,247,240,0.05))",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            #{arbol.numero_placa}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em]">
+                Hass
+              </span>
+              <Badge estado={estadoVisual}>{badgeTexto}</Badge>
+            </div>
+            <p className="m-0 font-serif text-[20px] leading-tight">Hass</p>
+            <p className="m-0 mt-1 text-[11.5px] text-zelanda-beige-100/75">
+              Lote {arbol.lotes.nombre} · de{" "}
+              {arbol.lotes.total_arboles.toLocaleString("es-CO")} árboles
+            </p>
+            {fechaSiembraEfectiva ? (
+              <p className="m-0 mt-0.5 text-[11px] text-zelanda-beige-100/65">
+                Sembrado {formatearFechaCorta(fechaSiembraEfectiva)}
+                {fechaSiembraOrigen === "lote" ? " (del lote)" : ""}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-3.5 grid grid-cols-4 gap-1.5">
+          <HeroMini
+            valor={edad.display}
+            unidad={edad.anios > 0 ? "edad" : "días"}
+            sub={
+              edad.dias > 0
+                ? `${edad.dias.toLocaleString("es-CO")} d`
+                : "sin fecha"
+            }
+          />
+          <HeroMini
+            valor={promedioKg.toFixed(1)}
+            unidad="kg / árbol"
+            sub="promedio lote"
+          />
+          <HeroMini
+            valor={totalIntervenciones}
+            unidad="tareas"
+            sub="registradas"
+          />
+          <HeroMini
+            valor={novedades.length}
+            unidad="novedades"
+            sub={`${novedadesAbiertas} activas`}
           />
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <div>
-            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Siembra
-            </dt>
-            <dd className="mt-0.5 text-zelanda-verde-900">
-              {fechaSiembraEfectiva ? formatearFechaCorta(fechaSiembraEfectiva) : "—"}
-              {fechaSiembraOrigen === "lote" ? (
-                <span className="ml-1 text-[10px] text-zelanda-verde-700/70">
-                  (del lote)
+      </div>
+
+      <div className="space-y-5 px-4 pt-5">
+        <section>
+          <div className="flex items-center justify-between">
+            <Eyebrow>Información</Eyebrow>
+            <EditorArbol
+              arbolId={String(arbol.id)}
+              estadoInicial={arbol.estado}
+              notasIniciales={arbol.notas}
+            />
+          </div>
+          <Card className="mt-2 p-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                  Siembra
+                </dt>
+                <dd className="mt-0.5 text-zelanda-verde-900">
+                  {fechaSiembraEfectiva
+                    ? formatearFechaCorta(fechaSiembraEfectiva)
+                    : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                  Edad
+                </dt>
+                <dd className="mt-0.5 text-zelanda-verde-900">
+                  {edad.display}
+                </dd>
+              </div>
+            </dl>
+            {arbol.notas ? (
+              <p className="mt-4 whitespace-pre-wrap border-t border-zelanda-beige-200 pt-4 text-sm leading-relaxed text-zelanda-verde-700">
+                {arbol.notas}
+              </p>
+            ) : null}
+          </Card>
+        </section>
+
+        {cosechaTotalLote > 0 ? (
+          <section>
+            <Eyebrow>Producción estimada</Eyebrow>
+            <Card lift className="mt-2 border-zelanda-ocre-200 p-4">
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif text-[32px] leading-none text-zelanda-verde-900">
+                  {promedioKg.toFixed(1)}
                 </span>
-              ) : null}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Edad
-            </dt>
-            <dd className="mt-0.5 text-zelanda-verde-900">
-              {fechaSiembraEfectiva ? aniosDesde(fechaSiembraEfectiva) : "—"}
-            </dd>
-          </div>
-        </dl>
-        {arbol.notas ? (
-          <p className="mt-4 whitespace-pre-wrap border-t border-zelanda-beige-200 pt-4 text-sm leading-relaxed text-zelanda-verde-700">
-            {arbol.notas}
-          </p>
+                <span className="text-[13px] text-zelanda-verde-700">
+                  kg / árbol (promedio del lote)
+                </span>
+              </div>
+              <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">
+                Lote {arbol.lotes.nombre}:{" "}
+                <strong className="text-zelanda-verde-900">
+                  {cosechaTotalLote.toLocaleString("es-CO", {
+                    maximumFractionDigits: 0,
+                  })}
+                </strong>{" "}
+                kg cosechados ÷{" "}
+                {arbolesGenerados.toLocaleString("es-CO")} árboles
+              </p>
+              <p className="mt-1 text-[10.5px] text-zelanda-verde-700/70">
+                La producción individual no se mide; estimamos con el promedio
+                del lote.
+              </p>
+            </Card>
+          </section>
         ) : null}
-      </section>
 
-      {cosechaTotalLote > 0 ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
-            <Weight className="h-4 w-4 text-zelanda-ocre-600" />
-            Producción estimada
-          </h2>
-          <p className="mt-2 font-serif text-2xl text-zelanda-verde-900">
-            ≈ {promedioKg.toFixed(1)} <span className="text-base">kg</span>
-          </p>
-          <p className="mt-1 text-xs text-zelanda-verde-700">
-            Promedio del lote: {cosechaTotalLote.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg
-            cosechados ÷ {arbolesGenerados.toLocaleString("es-CO")} árboles
-          </p>
-          <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
-            Estimación a partir de lo recibido en almacén. La producción real de
-            este árbol específico no se mide individualmente.
-          </p>
-        </section>
-      ) : null}
+        {conteoArr.length > 0 ? (
+          <section>
+            <Eyebrow>Intervenciones totales</Eyebrow>
+            <p className="mt-1 text-[12px] text-zelanda-verde-700">
+              Este árbol ha recibido{" "}
+              <strong className="text-zelanda-verde-900">
+                {totalIntervenciones}
+              </strong>{" "}
+              intervenciones
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {conteoArr.map(([nombre, info]) => {
+                const Icono = iconoPorTarea(nombre);
+                const dias = Math.floor(
+                  (Date.now() - info.ultima.getTime()) / 86400000,
+                );
+                const ultima =
+                  dias === 0
+                    ? "hoy"
+                    : dias === 1
+                      ? "ayer"
+                      : dias < 30
+                        ? `hace ${dias} d`
+                        : `hace ${Math.floor(dias / 30)} m`;
+                return (
+                  <div
+                    key={nombre}
+                    className="flex items-center gap-2.5 rounded-xl border border-zelanda-beige-200 bg-white px-3 py-2.5"
+                  >
+                    <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-zelanda-beige-100 text-zelanda-verde-600">
+                      <Icono className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-[22px] leading-none text-zelanda-verde-900">
+                          {info.total}
+                        </span>
+                        <span className="text-[10.5px] text-zelanda-verde-700">
+                          ×
+                        </span>
+                      </div>
+                      <p className="m-0 mt-0.5 text-[11px] font-semibold text-zelanda-verde-900">
+                        {nombre}
+                      </p>
+                      <p className="m-0 text-[10px] text-zelanda-verde-700">
+                        última: {ultima}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
-      <Link
-        href={`/trabajador/novedad/nueva?lote_id=${arbol.lote_id}&numero_placa=${arbol.numero_placa}`}
-        className="flex min-h-touch items-center justify-center gap-2 rounded-lg border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-4 py-3 text-sm font-medium text-zelanda-ocre-700 transition hover:bg-zelanda-ocre-100"
-      >
-        <Plus className="h-4 w-4" />
-        Reportar novedad sobre este árbol
-      </Link>
+        {novedades.length > 0 ? (
+          <section>
+            <Eyebrow>Historial de novedades</Eyebrow>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <NovedadStat
+                valor={novedades.length}
+                label="Total"
+                color="text-zelanda-verde-700"
+                bg="bg-zelanda-verde-50 border-zelanda-verde-200"
+              />
+              <NovedadStat
+                valor={novedadesResueltas}
+                label="Resueltas"
+                color="text-zelanda-verde-800"
+                bg="bg-zelanda-verde-100 border-zelanda-verde-200"
+              />
+              <NovedadStat
+                valor={novedadesAbiertas}
+                label="Activas"
+                color="text-[#7b2a23]"
+                bg="bg-[#fcefec] border-[#e8b3ad]"
+                destacado={novedadesAbiertas > 0}
+              />
+            </div>
+          </section>
+        ) : null}
 
-      {conteoArr.length > 0 ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
-            <Calendar className="h-4 w-4 text-zelanda-verde-700" />
-            Intervenciones acumuladas
-          </h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {conteoArr.map(([nombre, count]) => (
-              <li
-                key={nombre}
-                className="flex items-baseline justify-between rounded-lg border border-zelanda-beige-200 px-3 py-2"
-              >
-                <span className="text-sm text-zelanda-verde-900">{nombre}</span>
-                <span className="font-serif text-lg text-zelanda-verde-700">{count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
-          <History className="h-4 w-4 text-zelanda-verde-700" />
-          Historial de tareas
-          <span className="text-sm font-normal text-zelanda-verde-700">({registros.length})</span>
-        </h2>
-        {registros.length === 0 ? (
-          <p className="mt-2 text-sm text-zelanda-verde-700">
-            Aún no hay tareas registradas sobre este árbol.
-          </p>
-        ) : (
-          <ol className="mt-3 space-y-2">
-            {registros.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-lg border border-zelanda-beige-200 px-3 py-2"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium text-zelanda-verde-900">
-                    {r.tipo_tarea_nombre}
-                  </p>
-                  <p className="text-xs text-zelanda-verde-700">
-                    {formatearFechaCorta(r.fecha_registro)}
-                  </p>
-                </div>
-                <p className="mt-0.5 text-xs text-zelanda-verde-700">
-                  Por {r.persona_nombre} · {r.tipo_registro.toLowerCase()}
-                </p>
-                {r.observaciones ? (
-                  <p className="mt-1.5 whitespace-pre-wrap text-xs text-zelanda-verde-800">
-                    {r.observaciones}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
-            <AlertCircle className="h-4 w-4 text-zelanda-ocre-600" />
-            Novedades
-            <span className="text-sm font-normal text-zelanda-verde-700">({novedades.length})</span>
-          </h2>
-        </div>
-        {novedades.length === 0 ? (
-          <p className="mt-2 text-sm text-zelanda-verde-700">
-            Sin novedades registradas.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {novedades.map((n) => (
-              <li key={String(n.id)}>
-                <Link
-                  href={`/jefe/novedades/${n.id}`}
-                  className="block rounded-lg border border-zelanda-beige-200 px-3 py-2 transition hover:bg-zelanda-beige-50"
+        {registros.length > 0 ? (
+          <section>
+            <Eyebrow>Línea de vida</Eyebrow>
+            <div className="relative mt-3 pl-[18px]">
+              <span
+                className="absolute bottom-2 left-[7px] top-2 w-0.5"
+                style={{
+                  background:
+                    "linear-gradient(180deg, var(--tw-color-zelanda-beige-300, #e1cba0), var(--tw-color-zelanda-verde-300, #92b29f))",
+                }}
+              />
+              {registros.slice(0, 8).map((r, i) => (
+                <div
+                  key={r.id}
+                  className={`relative pl-[18px] ${i === registros.slice(0, 8).length - 1 ? "" : "pb-4"}`}
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <BadgeBase tono={n.resuelta ? "neutro" : "alerta"}>
-                      {ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo}
-                    </BadgeBase>
-                    {n.resuelta ? <BadgeBase tono="info">Resuelta</BadgeBase> : null}
-                    <span className="text-xs text-zelanda-verde-700">
-                      {formatearFechaCorta(n.fecha)}
+                  <span
+                    className="absolute -left-[10px] top-1.5 h-[11px] w-[11px] rounded-full border-2 border-zelanda-verde-500 bg-white"
+                    aria-hidden
+                  />
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="m-0 font-serif text-[13.5px] text-zelanda-verde-900">
+                      {r.tipo_tarea_nombre}
+                    </p>
+                    <span className="whitespace-nowrap text-[10.5px] text-zelanda-verde-700">
+                      {formatearFechaCorta(r.fecha_registro)}
                     </span>
                   </div>
-                  <p className="mt-1.5 line-clamp-2 text-sm text-zelanda-verde-900">
-                    {n.descripcion}
+                  <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
+                    Por {r.persona_nombre}
+                    {r.observaciones ? ` · ${r.observaciones}` : ""}
                   </p>
-                  <p className="mt-0.5 text-xs text-zelanda-verde-700">
-                    Reportado por {n.persona.nombre_completo}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                </div>
+              ))}
+              {registros.length > 8 ? (
+                <p className="mt-1 pl-[18px] text-[11px] text-zelanda-verde-700/70">
+                  y {registros.length - 8} registros anteriores
+                </p>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
-      {fotosValidas.length > 0 ? (
-        <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-          <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
-            <Camera className="h-4 w-4 text-zelanda-verde-700" />
-            Galería
-            <span className="text-sm font-normal text-zelanda-verde-700">({fotosValidas.length})</span>
-          </h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {fotosValidas.map((f) => (
-              <Link
-                key={f.id}
-                href={`/jefe/novedades/${f.id}`}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-zelanda-beige-200"
-              >
-                <Image
-                  src={f.url}
-                  alt={`Foto ${ETIQUETA_NOVEDAD[f.tipo] ?? f.tipo}`}
-                  fill
-                  sizes="(max-width: 640px) 50vw, 33vw"
-                  className="object-cover transition group-hover:opacity-90"
-                  unoptimized
-                />
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {novedades.length > 0 ? (
+          <section>
+            <Eyebrow>Novedades</Eyebrow>
+            <ul className="mt-2 space-y-2">
+              {novedades.map((n) => (
+                <li key={String(n.id)}>
+                  <Link
+                    href={`/jefe/novedades/${n.id}`}
+                    className="block rounded-xl border border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave transition hover:border-zelanda-verde-300"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge estado={n.resuelta ? "aldia" : "vencida"}>
+                        {n.resuelta ? (
+                          <>
+                            <Check className="h-3 w-3" /> Resuelta
+                          </>
+                        ) : (
+                          ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo
+                        )}
+                      </Badge>
+                      <span className="text-[11.5px] text-zelanda-verde-700">
+                        {formatearFechaCorta(n.fecha)}
+                      </span>
+                    </div>
+                    <p className="m-0 mt-1.5 line-clamp-2 text-[13.5px] text-zelanda-verde-900">
+                      {n.descripcion}
+                    </p>
+                    <p className="m-0 mt-0.5 text-[11px] text-zelanda-verde-700">
+                      Por {n.persona.nombre_completo}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {fotosValidas.length > 0 ? (
+          <section>
+            <Eyebrow>Galería · {fotosValidas.length} fotos</Eyebrow>
+            <div className="mt-2 grid grid-cols-4 gap-1.5">
+              {fotosValidas.map((f, i) => (
+                <Link
+                  key={f.id}
+                  href={`/jefe/novedades/${f.id}`}
+                  className={`relative aspect-[1/1.2] overflow-hidden rounded-[9px] border border-zelanda-beige-200 ${
+                    i === fotosValidas.length - 1 && novedadesAbiertas > 0
+                      ? "outline outline-2 -outline-offset-2 outline-estado-vencida"
+                      : ""
+                  }`}
+                >
+                  <Image
+                    src={f.url}
+                    alt={`Foto ${ETIQUETA_NOVEDAD[f.tipo] ?? f.tipo}`}
+                    fill
+                    sizes="25vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <div className="flex gap-2 pb-2 pt-2">
+          <Link
+            href={`/trabajador/novedad/nueva?lote_id=${arbol.lote_id}&numero_placa=${arbol.numero_placa}`}
+            className="flex min-h-touch flex-[1.4] items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
+          >
+            <AlertCircle className="h-[18px] w-[18px]" />
+            Reportar novedad
+          </Link>
+          <Link
+            href={`/jefe/novedades`}
+            className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+          >
+            <Camera className="h-[18px] w-[18px]" />
+            Histórico
+          </Link>
+          <Plus aria-hidden className="hidden" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroMini({
+  valor,
+  unidad,
+  sub,
+}: {
+  valor: React.ReactNode;
+  unidad: string;
+  sub: string;
+}) {
+  return (
+    <div
+      className="rounded-[10px] border border-white/20 px-2 py-1.5 text-center text-zelanda-beige-50"
+      style={{ background: "rgba(251,247,240,0.10)" }}
+    >
+      <p className="m-0 font-serif text-[18px] leading-none">{valor}</p>
+      <p className="m-0 mt-0.5 text-[9.5px] uppercase tracking-[0.04em] text-zelanda-beige-100/70">
+        {unidad}
+      </p>
+      <p className="m-0 mt-0.5 text-[9px] text-zelanda-beige-100/55">{sub}</p>
+    </div>
+  );
+}
+
+function NovedadStat({
+  valor,
+  label,
+  color,
+  bg,
+  destacado,
+}: {
+  valor: number;
+  label: string;
+  color: string;
+  bg: string;
+  destacado?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-[11px] border px-2.5 py-2.5 text-center ${bg} ${destacado ? "border-[1.5px]" : ""}`}
+    >
+      <p className={`m-0 font-serif text-[20px] leading-none ${color}`}>
+        {valor}
+      </p>
+      <p
+        className={`m-0 mt-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${color}`}
+      >
+        {label}
+      </p>
     </div>
   );
 }

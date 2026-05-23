@@ -81,19 +81,23 @@ export default async function PaginaDespachos({
   const tituloCerrados = hayFiltros ? "Cerrados (filtrados)" : "Cerrados hoy";
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between">
+    <div className="space-y-5">
+      <header className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+          <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
             Bodega
           </p>
           <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
             Despachos
           </h1>
+          <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+            {abiertos.length} abiertos · {cerrados.length}{" "}
+            {hayFiltros ? "filtrados" : "cerrados hoy"}
+          </p>
         </div>
         <Link
           href="/bodega/despachos/nuevo"
-          className="inline-flex min-h-touch items-center gap-1 rounded-lg bg-zelanda-verde-700 px-3 py-2 text-sm text-white"
+          className="inline-flex min-h-touch items-center gap-1.5 rounded-xl bg-zelanda-verde-700 px-3.5 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
         >
           <Plus className="h-4 w-4" /> Nuevo
         </Link>
@@ -101,7 +105,7 @@ export default async function PaginaDespachos({
 
       <form
         method="get"
-        className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
+        className="rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave"
       >
         <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
           <div>
@@ -162,9 +166,12 @@ export default async function PaginaDespachos({
         </div>
       </form>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <PackageOpen className="h-5 w-5" /> Abiertos ({abiertos.length})
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+          <PackageOpen className="h-5 w-5 text-zelanda-verde-700" /> Abiertos{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({abiertos.length})
+          </span>
         </h2>
         {abiertos.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">
@@ -194,9 +201,13 @@ export default async function PaginaDespachos({
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <CheckCircle2 className="h-5 w-5" /> {tituloCerrados} ({cerrados.length})
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="flex items-center gap-2 font-serif text-base text-zelanda-verde-900">
+          <CheckCircle2 className="h-5 w-5 text-zelanda-verde-700" />{" "}
+          {tituloCerrados}{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({cerrados.length})
+          </span>
         </h2>
         {cerrados.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">

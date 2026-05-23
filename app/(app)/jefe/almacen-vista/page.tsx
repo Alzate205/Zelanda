@@ -1,6 +1,8 @@
-import { Warehouse, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Warehouse } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { KPI } from "@/components/ui/KPI";
 
 export const metadata = { title: "Almacén" };
 
@@ -14,25 +16,41 @@ const TONO_TIPO: Record<string, string> = {
 export default async function PaginaAlmacenJefe() {
   await requerirUsuario("JEFE");
 
-  const [stockRows, cosechas, salidas] = await Promise.all([
-    prisma.$queryRaw<{ stock_kg: string }[]>`
+  const inicioDia = new Date();
+  inicioDia.setHours(0, 0, 0, 0);
+
+  const [stockRows, cosechas, salidas, cosechasHoy, salidasHoy] =
+    await Promise.all([
+      prisma.$queryRaw<{ stock_kg: string }[]>`
       SELECT stock_kg::text FROM v_stock_almacen
     `,
-    prisma.cosechas.findMany({
-      take: 30,
-      orderBy: { fecha: "desc" },
-      include: {
-        persona: { select: { nombre_completo: true } },
-        lotes: { select: { nombre: true } },
-      },
-    }),
-    prisma.salidas_cosecha.findMany({
-      take: 30,
-      orderBy: { fecha: "desc" },
-    }),
-  ]);
+      prisma.cosechas.findMany({
+        take: 30,
+        orderBy: { fecha: "desc" },
+        include: {
+          persona: { select: { nombre_completo: true } },
+          lotes: { select: { nombre: true } },
+        },
+      }),
+      prisma.salidas_cosecha.findMany({
+        take: 30,
+        orderBy: { fecha: "desc" },
+      }),
+      prisma.cosechas.aggregate({
+        where: { fecha: { gte: inicioDia } },
+        _sum: { peso_kg: true },
+        _count: { _all: true },
+      }),
+      prisma.salidas_cosecha.aggregate({
+        where: { fecha: { gte: inicioDia } },
+        _sum: { cantidad_kg: true },
+        _count: { _all: true },
+      }),
+    ]);
 
   const stock = Number(stockRows[0]?.stock_kg ?? 0);
+  const ingresosHoyKg = Number(cosechasHoy._sum.peso_kg ?? 0);
+  const salidasHoyKg = Number(salidasHoy._sum.cantidad_kg ?? 0);
   const fmt = (d: Date) =>
     d.toLocaleString("es-CO", {
       day: "2-digit",
@@ -42,102 +60,137 @@ export default async function PaginaAlmacenJefe() {
     });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Jefe · Almacén
-        </p>
+        <Eyebrow>Jefe · Almacén</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Almacén de cosecha
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          Stock actual{" "}
+          <strong className="text-zelanda-verde-900">
+            {stock.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg
+          </strong>
+        </p>
       </header>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-6 shadow-card">
+      <div className="rounded-2xl border border-zelanda-verde-200 bg-zelanda-verde-50 p-4 shadow-suave">
         <div className="flex items-center gap-2 text-zelanda-verde-700">
-          <Warehouse className="h-5 w-5" />
-          <p className="text-xs uppercase tracking-wider">Stock actual</p>
+          <Warehouse className="h-4 w-4" />
+          <span className="text-[10.5px] uppercase tracking-[0.14em]">
+            Stock actual
+          </span>
         </div>
-        <p className="mt-2 font-serif text-4xl text-zelanda-verde-900">
-          {stock.toLocaleString("es-CO", { maximumFractionDigits: 2 })} kg
+        <p className="mt-1 font-serif text-[36px] leading-none text-zelanda-verde-900">
+          {stock.toLocaleString("es-CO", { maximumFractionDigits: 0 })}{" "}
+          <span className="text-base text-zelanda-verde-700">kg</span>
         </p>
-      </section>
+      </div>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <TrendingUp className="h-5 w-5" /> Últimas cosechas
+      <div className="grid grid-cols-2 gap-2.5">
+        <KPI
+          etiqueta="Ingresos hoy"
+          valor={`${ingresosHoyKg.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg`}
+          pie={`${cosechasHoy._count._all} ${cosechasHoy._count._all === 1 ? "cosecha" : "cosechas"}`}
+        />
+        <KPI
+          etiqueta="Salidas hoy"
+          valor={`${salidasHoyKg.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg`}
+          pie={`${salidasHoy._count._all} ${salidasHoy._count._all === 1 ? "salida" : "salidas"}`}
+          acento="ocre"
+        />
+      </div>
+
+      <section>
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
+          Últimas cosechas{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({cosechas.length})
+          </span>
         </h2>
         {cosechas.length === 0 ? (
-          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+          <p className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-8 text-center text-sm text-zelanda-verde-700">
             Aún no hay cosechas registradas.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+          <div className="flex flex-col gap-2">
             {cosechas.map((c) => (
-              <li
+              <div
                 key={c.id.toString()}
-                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                className="flex items-center gap-3 rounded-xl border border-l-[3px] border-l-zelanda-verde-500 border-zelanda-beige-200 bg-white px-3 py-2.5"
               >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-zelanda-verde-900">
-                    {c.persona.nombre_completo} · {c.lotes.nombre}
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-zelanda-verde-50 text-zelanda-verde-700">
+                  <ArrowDownRight className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-[13.5px] text-zelanda-verde-900">
+                    {c.lotes.nombre} · {c.persona.nombre_completo}
                   </p>
-                  <p className="text-xs text-zelanda-verde-700/70">
+                  <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
                     {fmt(c.fecha)}
                   </p>
                 </div>
-                <p className="text-right font-serif">
+                <span className="font-serif text-[18px] text-zelanda-verde-900">
+                  +
                   {Number(c.peso_kg).toLocaleString("es-CO", {
-                    maximumFractionDigits: 2,
+                    maximumFractionDigits: 0,
                   })}{" "}
-                  kg
-                </p>
-              </li>
+                  <span className="text-[11px] text-zelanda-verde-700">kg</span>
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
-      <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <TrendingDown className="h-5 w-5" /> Últimas salidas
+      <section>
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
+          Últimas salidas{" "}
+          <span className="text-sm font-normal text-zelanda-verde-700">
+            ({salidas.length})
+          </span>
         </h2>
         {salidas.length === 0 ? (
-          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+          <p className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-8 text-center text-sm text-zelanda-verde-700">
             Aún no hay salidas registradas.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-zelanda-beige-200">
+          <div className="flex flex-col gap-2">
             {salidas.map((s) => (
-              <li
+              <div
                 key={s.id.toString()}
-                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                className="flex items-center gap-3 rounded-xl border border-l-[3px] border-l-zelanda-ocre-500 border-zelanda-beige-200 bg-white px-3 py-2.5"
               >
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-zelanda-ocre-50 text-zelanda-ocre-700">
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${TONO_TIPO[s.tipo] ?? ""}`}
+                      className={`rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.04em] ${TONO_TIPO[s.tipo] ?? ""}`}
                     >
                       {s.tipo}
                     </span>
-                    {s.cliente_detalle && (
-                      <span className="truncate text-zelanda-verde-900">
+                    {s.cliente_detalle ? (
+                      <span className="truncate text-[13px] text-zelanda-verde-900">
                         {s.cliente_detalle}
                       </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-zelanda-verde-700/70">
+                    ) : null}
+                  </div>
+                  <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
                     {fmt(s.fecha)}
                   </p>
                 </div>
-                <p className="text-right font-serif">
+                <span className="font-serif text-[18px] text-zelanda-verde-900">
+                  −
                   {Number(s.cantidad_kg).toLocaleString("es-CO", {
-                    maximumFractionDigits: 2,
+                    maximumFractionDigits: 0,
                   })}{" "}
-                  kg
-                </p>
-              </li>
+                  <span className="text-[11px] text-zelanda-verde-700">kg</span>
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </section>
     </div>

@@ -41,7 +41,7 @@ export default async function PaginaEditorPoligono({
         <ArrowLeft className="h-4 w-4" /> Volver al lote
       </Link>
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Polígono
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">

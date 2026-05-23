@@ -1,5 +1,6 @@
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ListaNovedadesCliente, type NovedadResumen } from "./_lista-cliente";
 
 export const metadata = { title: "Novedades" };
@@ -43,14 +44,16 @@ export default async function PaginaNovedades({
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Reportes de campo
-        </p>
+        <Eyebrow>Reportes de campo</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           Novedades
         </h1>
+        <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
+          {resumen.length}{" "}
+          {verResueltas ? "resueltas" : "sin resolver"}
+        </p>
       </header>
 
       <ListaNovedadesCliente novedades={resumen} verResueltas={verResueltas} />

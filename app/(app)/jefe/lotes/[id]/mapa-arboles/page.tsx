@@ -83,7 +83,7 @@ export default async function MapaArbolesLote({
       </Link>
 
       <header>
-        <p className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Mapa de árboles
         </p>
         <h1 className="mt-1 flex items-center gap-2 font-serif text-2xl text-zelanda-verde-900">
@@ -107,7 +107,7 @@ export default async function MapaArbolesLote({
                 className={`h-3 w-3 rounded ${COLOR_ESTADO[est]}`}
                 aria-hidden
               />
-              <span className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+              <span className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                 {ETIQUETA_ESTADO[est]}
               </span>
             </div>
