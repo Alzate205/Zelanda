@@ -1,12 +1,14 @@
 import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, BarChart3, FlaskConical } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DescargarCSVButton } from "@/components/jefe/DescargarCSVButton";
 
 export const metadata = { title: "Reportes" };
 export const dynamic = "force-dynamic";
 
 export default async function PaginaReportes() {
   await requerirUsuario("JEFE");
+  const hoy = new Date().toISOString().slice(0, 10);
 
   const [
     cosechasTotal,
@@ -231,9 +233,20 @@ export default async function PaginaReportes() {
 
       {/* Sección 2: Cosecha últimos 12 meses */}
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <BarChart3 className="h-5 w-5" /> Cosecha — últimos 12 meses
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
+            <BarChart3 className="h-5 w-5" /> Cosecha — últimos 12 meses
+          </h2>
+          <DescargarCSVButton
+            filename={`cosecha-12m-${hoy}.csv`}
+            headers={["Mes", "Total kg", "Cosechas"]}
+            rows={cosechasMes.map((r) => [
+              r.ym,
+              Number(r.total_kg).toFixed(2),
+              r.n_cosechas,
+            ])}
+          />
+        </div>
         {cosechasMes.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">
             Sin cosechas en los últimos 12 meses.
@@ -267,9 +280,34 @@ export default async function PaginaReportes() {
 
       {/* Sección 3: Ranking de lotes */}
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="font-serif text-lg text-zelanda-verde-900">
-          Ranking de lotes
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-serif text-lg text-zelanda-verde-900">
+            Ranking de lotes
+          </h2>
+          <DescargarCSVButton
+            filename={`ranking-lotes-${hoy}.csv`}
+            headers={[
+              "Lote",
+              "Total árboles",
+              "Hectáreas",
+              "Cosecha total (kg)",
+              "kg/árbol",
+              "kg/ha",
+            ]}
+            rows={rankingLotes.map((l) => {
+              const kg = Number(l.kg_total);
+              const hect = l.hectareas ? Number(l.hectareas) : 0;
+              return [
+                l.nombre,
+                l.total_arboles,
+                l.hectareas ?? "",
+                kg.toFixed(2),
+                l.total_arboles > 0 ? (kg / l.total_arboles).toFixed(2) : "",
+                hect > 0 ? (kg / hect).toFixed(2) : "",
+              ];
+            })}
+          />
+        </div>
         <p className="mt-1 text-xs text-zelanda-verde-700/70">
           Ordenados por cosecha acumulada. Métricas derivadas cuando hay árboles y hectáreas.
         </p>
@@ -309,9 +347,20 @@ export default async function PaginaReportes() {
 
       {/* Sección 4: Top recolectores de la finca */}
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="font-serif text-lg text-zelanda-verde-900">
-          Top recolectores
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-serif text-lg text-zelanda-verde-900">
+            Top recolectores
+          </h2>
+          <DescargarCSVButton
+            filename={`top-recolectores-${hoy}.csv`}
+            headers={["Persona", "Cosechas", "Total kg"]}
+            rows={topRecolectores.map((r) => [
+              r.nombre_completo,
+              r.n_cosechas,
+              Number(r.total_kg).toFixed(2),
+            ])}
+          />
+        </div>
         {topRecolectores.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">
             Sin recolectores registrados.
@@ -342,9 +391,20 @@ export default async function PaginaReportes() {
 
       {/* Sección 5: Insumos consumidos (finca) */}
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-          <FlaskConical className="h-5 w-5" /> Insumos consumidos
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
+            <FlaskConical className="h-5 w-5" /> Insumos consumidos
+          </h2>
+          <DescargarCSVButton
+            filename={`insumos-consumidos-${hoy}.csv`}
+            headers={["Insumo", "Unidad", "Total consumido"]}
+            rows={insumosConsumidos.map((c) => [
+              c.nombre,
+              c.unidad,
+              Number(c.total).toFixed(3),
+            ])}
+          />
+        </div>
         <p className="mt-1 text-xs text-zelanda-verde-700/70">
           Suma de <code>cantidad_consumida</code> en todos los despachos cerrados.
         </p>
@@ -389,9 +449,19 @@ export default async function PaginaReportes() {
 
           {rankingApiarios.length > 0 ? (
             <div className="mt-4">
-              <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-                Por apiario
-              </h3>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                  Por apiario
+                </h3>
+                <DescargarCSVButton
+                  filename={`miel-por-apiario-${hoy}.csv`}
+                  headers={["Apiario", "Total kg"]}
+                  rows={rankingApiarios.map((a) => [
+                    a.nombre,
+                    Number(a.total_kg).toFixed(2),
+                  ])}
+                />
+              </div>
               <ul className="mt-2 divide-y divide-zelanda-beige-200">
                 {rankingApiarios.map((a) => (
                   <li
@@ -412,9 +482,19 @@ export default async function PaginaReportes() {
 
           {topRecolectoresMiel.length > 0 ? (
             <div className="mt-4">
-              <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-                Top recolectores de miel
-              </h3>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-xs uppercase tracking-wider text-zelanda-verde-700">
+                  Top recolectores de miel
+                </h3>
+                <DescargarCSVButton
+                  filename={`top-recolectores-miel-${hoy}.csv`}
+                  headers={["Persona", "Total kg"]}
+                  rows={topRecolectoresMiel.map((r) => [
+                    r.nombre_completo,
+                    Number(r.total_kg).toFixed(2),
+                  ])}
+                />
+              </div>
               <ul className="mt-2 divide-y divide-zelanda-beige-200">
                 {topRecolectoresMiel.map((r) => (
                   <li
@@ -437,9 +517,20 @@ export default async function PaginaReportes() {
 
       {/* Sección 7: Salidas por tipo (últimos 12 meses) */}
       <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
-        <h2 className="font-serif text-lg text-zelanda-verde-900">
-          Salidas del almacén — últimos 12 meses
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-serif text-lg text-zelanda-verde-900">
+            Salidas del almacén — últimos 12 meses
+          </h2>
+          <DescargarCSVButton
+            filename={`salidas-12m-${hoy}.csv`}
+            headers={["Tipo", "Total kg", "Salidas"]}
+            rows={salidasPorTipo.map((s) => [
+              s.tipo,
+              Number(s.total_kg).toFixed(2),
+              s.n_salidas,
+            ])}
+          />
+        </div>
         {salidasPorTipo.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">
             Sin salidas registradas en los últimos 12 meses.
