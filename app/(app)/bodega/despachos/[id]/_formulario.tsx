@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff, Wrench } from "lucide-react";
+import { CloudOff, Check } from "lucide-react";
 import { enviarDespachoCerrar } from "@/lib/offline/api-cliente";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
@@ -14,19 +14,18 @@ type ItemRow = {
   cantidad: string;
 };
 
-type EstadoHerramienta = {
-  danada: boolean;
-  sucia: boolean;
-  notas: string;
+type Condicion = "buena" | "usada" | "danada";
+
+const ETIQUETA_COND: Record<Condicion, string> = {
+  buena: "Buen estado",
+  usada: "Usada",
+  danada: "Dañada",
 };
 
-function construirCondicion(e: EstadoHerramienta): string | null {
-  const partes: string[] = [];
-  if (e.danada) partes.push("dañada");
-  if (e.sucia) partes.push("sucia");
-  const notas = e.notas.trim();
-  if (notas) partes.push(notas);
-  return partes.length > 0 ? partes.join(" · ") : null;
+function condicionAString(c: Condicion): string | null {
+  if (c === "buena") return null;
+  if (c === "usada") return "usada";
+  return "dañada";
 }
 
 export function FormularioCierreDespacho({
@@ -40,26 +39,30 @@ export function FormularioCierreDespacho({
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [estadosHerr, setEstadosHerr] = useState<Record<string, EstadoHerramienta>>(
+
+  const [condiciones, setCondiciones] = useState<Record<string, Condicion>>(
     () => {
-      const o: Record<string, EstadoHerramienta> = {};
+      const o: Record<string, Condicion> = {};
       for (const it of items) {
-        if (it.tipo === "HERRAMIENTA") {
-          o[it.id] = { danada: false, sucia: false, notas: "" };
-        }
+        if (it.tipo === "HERRAMIENTA") o[it.id] = "buena";
       }
       return o;
     },
   );
 
-  function actualizarEstadoHerr(id: string, patch: Partial<EstadoHerramienta>) {
-    setEstadosHerr((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
-  }
+  const [consumos, setConsumos] = useState<Record<string, number>>(() => {
+    const o: Record<string, number> = {};
+    for (const it of items) {
+      if (it.tipo === "INSUMO") o[it.id] = Number(it.cantidad);
+    }
+    return o;
+  });
+
+  const [observaciones, setObservaciones] = useState("");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const formData = new FormData(e.currentTarget);
 
     const payload: Array<{
       despacho_item_id: string;
@@ -71,15 +74,19 @@ export function FormularioCierreDespacho({
 
     for (const it of items) {
       if (it.tipo === "HERRAMIENTA") {
+        const c = condiciones[it.id] ?? "buena";
+        const partes: string[] = [];
+        const cond = condicionAString(c);
+        if (cond) partes.push(cond);
+        if (observaciones.trim()) partes.push(observaciones.trim());
         payload.push({
           despacho_item_id: it.id,
           tipo: "HERRAMIENTA",
           devuelto: true,
-          condicion_devolucion: construirCondicion(estadosHerr[it.id]),
+          condicion_devolucion: partes.length > 0 ? partes.join(" · ") : null,
         });
       } else {
-        const raw = String(formData.get(`consumido_${it.id}`) ?? "").trim();
-        const consumido = Number(raw);
+        const consumido = consumos[it.id] ?? 0;
         const original = Number(it.cantidad);
         if (!Number.isFinite(consumido) || consumido < 0) {
           setError("Cantidad consumida inválida en un item.");
@@ -110,136 +117,228 @@ export function FormularioCierreDespacho({
     });
   }
 
+  const herramientas = items.filter((it) => it.tipo === "HERRAMIENTA");
+  const insumos = items.filter((it) => it.tipo === "INSUMO");
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h3 className="font-serif text-lg text-zelanda-verde-900">Devoluciones</h3>
-        <p className="mt-1 text-xs text-zelanda-verde-700">
-          Al cerrar el despacho, todas las herramientas quedan registradas como
-          devueltas. Marcá si alguna llegó dañada o sucia.
-        </p>
-        <ul className="mt-4 space-y-3">
-          {items.map((it) => {
-            if (it.tipo === "HERRAMIENTA") {
-              const e = estadosHerr[it.id];
-              return (
-                <li
-                  key={it.id}
-                  className="rounded-lg border border-zelanda-beige-200 p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <Wrench className="h-4 w-4 shrink-0 text-zelanda-verde-700" />
-                    <p className="text-sm font-medium text-zelanda-verde-900">
-                      {it.nombre}
-                    </p>
-                  </div>
-                  <p className="mt-0.5 text-xs text-zelanda-verde-700/70">
-                    {it.cantidad} {Number(it.cantidad) === 1 ? "unidad" : "unidades"}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <label
-                      className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition ${
-                        e?.danada
-                          ? "border-estado-vencida bg-estado-vencida/10 text-estado-vencida"
-                          : "border-zelanda-beige-300 text-zelanda-verde-700"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={e?.danada ?? false}
-                        onChange={(ev) =>
-                          actualizarEstadoHerr(it.id, { danada: ev.target.checked })
-                        }
-                        className="sr-only"
-                      />
-                      Dañada
-                    </label>
-                    <label
-                      className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition ${
-                        e?.sucia
-                          ? "border-zelanda-ocre-500 bg-zelanda-ocre-50 text-zelanda-ocre-700"
-                          : "border-zelanda-beige-300 text-zelanda-verde-700"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={e?.sucia ?? false}
-                        onChange={(ev) =>
-                          actualizarEstadoHerr(it.id, { sucia: ev.target.checked })
-                        }
-                        className="sr-only"
-                      />
-                      Sucia
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Otras observaciones (opcional)"
-                    value={e?.notas ?? ""}
-                    onChange={(ev) =>
-                      actualizarEstadoHerr(it.id, { notas: ev.target.value })
-                    }
-                    className="mt-2 block w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2 text-sm"
-                  />
-                </li>
-              );
-            }
-            return (
-              <li
+    <form onSubmit={onSubmit} className="space-y-5 pb-24" noValidate>
+      {herramientas.length > 0 ? (
+        <section>
+          <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+            Devolución de herramientas
+          </p>
+          <div className="flex flex-col gap-2">
+            {herramientas.map((it) => (
+              <FilaCondicion
                 key={it.id}
-                className="rounded-lg border border-zelanda-beige-200 p-3"
-              >
-                <p className="text-sm font-medium text-zelanda-verde-900">
-                  {it.nombre}
-                </p>
-                <p className="text-xs text-zelanda-verde-700/70">
-                  Despachado: {it.cantidad} {it.unidad}
-                </p>
-                <div className="mt-2">
-                  <label className="block text-xs text-zelanda-verde-700">
-                    Cantidad consumida ({it.unidad})
-                  </label>
-                  <input
-                    type="number"
-                    name={`consumido_${it.id}`}
-                    inputMode="decimal"
-                    min="0"
-                    max={it.cantidad}
-                    step="0.001"
-                    defaultValue={it.cantidad}
-                    required
-                    className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+                nombre={`${it.nombre}${Number(it.cantidad) > 1 ? ` × ${it.cantidad}` : ""}`}
+                valor={condiciones[it.id] ?? "buena"}
+                onChange={(v) =>
+                  setCondiciones((p) => ({ ...p, [it.id]: v }))
+                }
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {insumos.length > 0 ? (
+        <section>
+          <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+            Consumo real de insumos
+          </p>
+          <div className="flex flex-col gap-2">
+            {insumos.map((it) => (
+              <FilaConsumo
+                key={it.id}
+                nombre={it.nombre}
+                despachado={Number(it.cantidad)}
+                unidad={it.unidad}
+                valor={consumos[it.id] ?? 0}
+                onChange={(v) => setConsumos((p) => ({ ...p, [it.id]: v }))}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div>
+        <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
+          Observaciones del cierre
+        </label>
+        <textarea
+          rows={3}
+          placeholder="Ej. quedaron restos de insecticida en el tanque; lavada antes de guardar."
+          value={observaciones}
+          onChange={(e) => setObservaciones(e.target.value)}
+          className="block min-h-[76px] w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2.5 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+        />
+      </div>
 
       {!online ? (
-        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
+        <p className="flex items-center gap-2 rounded-[10px] border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
           <CloudOff className="h-3.5 w-3.5" />
           Sin señal — el cierre se guardará y subirá al volver la conexión.
         </p>
       ) : null}
 
-      {error && (
+      {error ? (
         <p
           role="alert"
-          className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+          className="rounded-[10px] bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
         >
           {error}
         </p>
-      )}
+      ) : null}
 
-      <button
-        type="submit"
-        disabled={pendiente}
-        className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
+      <div
+        className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
+        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
       >
-        {pendiente ? "Cerrando..." : "Cerrar despacho"}
-      </button>
+        <div className="mx-auto flex max-w-screen-md items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex min-h-touch min-w-[80px] items-center justify-center rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={pendiente}
+            className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
+          >
+            <Check className="h-[18px] w-[18px]" />
+            {pendiente ? "Cerrando…" : "Cerrar despacho"}
+          </button>
+        </div>
+      </div>
     </form>
+  );
+}
+
+function FilaCondicion({
+  nombre,
+  valor,
+  onChange,
+}: {
+  nombre: string;
+  valor: Condicion;
+  onChange: (v: Condicion) => void;
+}) {
+  const opciones: Condicion[] = ["buena", "usada", "danada"];
+  return (
+    <div className="rounded-xl border border-zelanda-beige-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">
+          {nombre}
+        </p>
+        <span className="text-[10.5px] text-zelanda-verde-700">
+          salida: Buen estado
+        </span>
+      </div>
+      <div className="grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
+        {opciones.map((op) => (
+          <button
+            key={op}
+            type="button"
+            onClick={() => onChange(op)}
+            className={`rounded-lg px-2 py-2 text-[12px] font-semibold transition ${
+              valor === op
+                ? op === "danada"
+                  ? "bg-[#f4dad7] text-[#7b2a23] shadow-suave"
+                  : op === "usada"
+                    ? "bg-[#fbf3df] text-zelanda-ocre-700 shadow-suave"
+                    : "bg-white text-zelanda-verde-900 shadow-suave"
+                : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
+            }`}
+          >
+            {ETIQUETA_COND[op]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FilaConsumo({
+  nombre,
+  despachado,
+  unidad,
+  valor,
+  onChange,
+}: {
+  nombre: string;
+  despachado: number;
+  unidad: string;
+  valor: number;
+  onChange: (v: number) => void;
+}) {
+  const pct = despachado > 0 ? Math.min(100, (valor / despachado) * 100) : 0;
+  const paso = unidad.toLowerCase().includes("kg") || unidad.toLowerCase() === "l" ? 0.1 : 1;
+
+  function inc(delta: number) {
+    const nuevo = Math.max(0, Math.min(despachado, valor + delta));
+    const redondeado = Math.round(nuevo * 1000) / 1000;
+    onChange(redondeado);
+  }
+
+  return (
+    <div className="rounded-xl border border-zelanda-beige-200 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">
+          {nombre}
+        </p>
+        <span className="text-[10.5px] text-zelanda-verde-700">
+          despachado: {despachado} {unidad}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center overflow-hidden rounded-[10px] border border-zelanda-verde-300">
+          <button
+            type="button"
+            onClick={() => inc(-paso)}
+            className="flex h-9 w-9 items-center justify-center bg-white text-[18px] text-zelanda-verde-800 hover:bg-zelanda-beige-50"
+            aria-label="Restar"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            max={despachado}
+            step={paso}
+            value={valor}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) onChange(Math.max(0, Math.min(despachado, n)));
+            }}
+            className="h-9 w-[60px] border-x border-zelanda-verde-200 bg-white px-1 text-center font-serif text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+          />
+          <button
+            type="button"
+            onClick={() => inc(paso)}
+            className="flex h-9 w-9 items-center justify-center bg-white text-[18px] text-zelanda-verde-800 hover:bg-zelanda-beige-50"
+            aria-label="Sumar"
+          >
+            +
+          </button>
+        </div>
+        <span className="text-[12px] text-zelanda-verde-700">{unidad}</span>
+        <span className="ml-auto font-serif text-[13px] text-zelanda-verde-900">
+          {pct.toFixed(0)}%
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zelanda-beige-200">
+        <div
+          className="h-full rounded-full bg-zelanda-verde-600 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-[10.5px] text-zelanda-verde-700">
+        Lo no consumido vuelve al stock disponible.
+      </p>
+    </div>
   );
 }

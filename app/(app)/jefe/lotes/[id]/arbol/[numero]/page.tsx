@@ -144,7 +144,7 @@ export default async function FichaArbol({
 
   if (!arbol) notFound();
 
-  const [arbolesGenerados, cosechaAgg] = await Promise.all([
+  const [arbolesGenerados, cosechaAgg, cosechasPorAnio] = await Promise.all([
     prisma.arboles.count({
       where: { lote_id: loteId, deleted_at: null },
     }),
@@ -152,10 +152,43 @@ export default async function FichaArbol({
       where: { lote_id: loteId },
       _sum: { peso_kg: true },
     }),
+    prisma.$queryRaw<
+      { anio: string; kg_total: string; n_cosechas: number }[]
+    >`
+      SELECT
+        EXTRACT(YEAR FROM fecha)::text AS anio,
+        SUM(peso_kg)::text                 AS kg_total,
+        COUNT(*)::int                       AS n_cosechas
+      FROM cosechas
+      WHERE lote_id = ${loteId}
+      GROUP BY EXTRACT(YEAR FROM fecha)
+      ORDER BY anio ASC
+    `,
   ]);
   const cosechaTotalLote = Number(cosechaAgg._sum.peso_kg ?? 0);
   const promedioKg =
     arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
+
+  const anioActual = new Date().getFullYear();
+  const cosechasHistorial = cosechasPorAnio.map((c) => {
+    const kgArbolEstimado =
+      arbolesGenerados > 0 ? Number(c.kg_total) / arbolesGenerados : 0;
+    return {
+      anio: c.anio,
+      kg: Number(c.kg_total),
+      kg_arbol: kgArbolEstimado,
+      n_cosechas: c.n_cosechas,
+      parcial: Number(c.anio) === anioActual,
+    };
+  });
+  const maxKgArbol = cosechasHistorial.reduce(
+    (m, c) => Math.max(m, c.kg_arbol),
+    0,
+  );
+  const mejorAnio = cosechasHistorial.reduce<typeof cosechasHistorial[number] | null>(
+    (a, c) => (a === null || c.kg_arbol > a.kg_arbol ? c : a),
+    null,
+  );
 
   const fechaSiembraEfectiva = arbol.fecha_siembra ?? arbol.lotes.fecha_siembra;
   const fechaSiembraOrigen = arbol.fecha_siembra
@@ -391,14 +424,14 @@ export default async function FichaArbol({
 
         {cosechaTotalLote > 0 ? (
           <section>
-            <Eyebrow>Producción estimada</Eyebrow>
+            <Eyebrow>Cosecha acumulada</Eyebrow>
             <Card lift className="mt-2 border-zelanda-ocre-200 p-4">
               <div className="flex items-baseline gap-2">
                 <span className="font-serif text-[32px] leading-none text-zelanda-verde-900">
                   {promedioKg.toFixed(1)}
                 </span>
                 <span className="text-[13px] text-zelanda-verde-700">
-                  kg / árbol (promedio del lote)
+                  kg estimados (promedio del lote)
                 </span>
               </div>
               <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">
@@ -408,12 +441,87 @@ export default async function FichaArbol({
                     maximumFractionDigits: 0,
                   })}
                 </strong>{" "}
-                kg cosechados ÷{" "}
-                {arbolesGenerados.toLocaleString("es-CO")} árboles
+                kg ÷ {arbolesGenerados.toLocaleString("es-CO")} árboles
+                {mejorAnio !== null
+                  ? ` · mejor año ${mejorAnio.anio} (${mejorAnio.kg_arbol.toFixed(1)} kg/árbol)`
+                  : ""}
               </p>
-              <p className="mt-1 text-[10.5px] text-zelanda-verde-700/70">
-                La producción individual no se mide; estimamos con el promedio
-                del lote.
+
+              {cosechasHistorial.length > 0 ? (
+                <>
+                  <div
+                    className="mt-3.5 grid items-end gap-2"
+                    style={{
+                      gridTemplateColumns: `repeat(${cosechasHistorial.length}, 1fr)`,
+                      height: "70px",
+                    }}
+                  >
+                    {cosechasHistorial.map((c) => {
+                      const altura =
+                        maxKgArbol > 0
+                          ? Math.max(
+                              4,
+                              Math.round((c.kg_arbol / maxKgArbol) * 60),
+                            )
+                          : 4;
+                      const esMejor = mejorAnio?.anio === c.anio;
+                      return (
+                        <div
+                          key={c.anio}
+                          className="flex flex-col items-center justify-end gap-1"
+                          title={`${c.anio}: ${c.kg_arbol.toFixed(1)} kg/árbol`}
+                        >
+                          <span className="text-[10px] font-semibold text-zelanda-verde-900">
+                            {c.kg_arbol.toFixed(1)}
+                          </span>
+                          <div
+                            className={`relative w-full rounded-t-[4px] ${
+                              esMejor
+                                ? "bg-zelanda-ocre-500"
+                                : c.parcial
+                                  ? "bg-zelanda-verde-300"
+                                  : "bg-zelanda-verde-600"
+                            }`}
+                            style={{ height: `${altura}px` }}
+                          >
+                            {c.parcial ? (
+                              <span
+                                className="absolute inset-0 rounded-t-[4px]"
+                                style={{
+                                  background:
+                                    "repeating-linear-gradient(45deg, transparent 0 4px, rgba(255,255,255,0.25) 4px 6px)",
+                                }}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="mt-1.5 grid gap-2 text-center text-[10.5px] text-zelanda-verde-700"
+                    style={{
+                      gridTemplateColumns: `repeat(${cosechasHistorial.length}, 1fr)`,
+                    }}
+                  >
+                    {cosechasHistorial.map((c) => (
+                      <span key={c.anio}>
+                        {c.anio.slice(2)}
+                        {c.parcial ? "*" : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {cosechasHistorial.some((c) => c.parcial) ? (
+                    <p className="mt-1.5 text-right text-[10px] text-zelanda-verde-700">
+                      * Año en curso
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+
+              <p className="mt-2 text-[10.5px] text-zelanda-verde-700/70">
+                La producción individual no se mide; mostramos el promedio por
+                árbol del lote para cada año.
               </p>
             </Card>
           </section>

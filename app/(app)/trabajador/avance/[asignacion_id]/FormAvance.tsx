@@ -86,7 +86,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(j.error ?? `Error ${res.status}`);
           return;
         }
-        router.push("/trabajador");
+        router.push(`/trabajador/exito/${asignacion.id}`);
       });
       return;
     }
@@ -110,7 +110,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(r.error);
           return;
         }
-        router.push("/trabajador");
+        router.push(`/trabajador/exito/${asignacion.id}`);
       });
       return;
     }
@@ -144,7 +144,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(r.error);
           return;
         }
-        router.push("/trabajador");
+        router.push(`/trabajador/exito/${asignacion.id}`);
       });
     } else {
       const lista = parsearListaNumeros(String(formData.get("lista") ?? ""));
@@ -173,7 +173,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(r.error);
           return;
         }
-        router.push("/trabajador");
+        router.push(`/trabajador/exito/${asignacion.id}`);
       });
     }
   }
