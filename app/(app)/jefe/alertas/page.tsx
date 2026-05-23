@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import {
-  Bell,
-  AlertTriangle,
-  Clock,
-  PackageOpen,
-  AlertCircle,
-  Hexagon,
-  ChevronRight,
-} from "lucide-react";
+import { Bell } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcularResumen, formatearDias } from "@/lib/fechas-tarea";
-import { BadgeBase } from "@/components/shared/BadgeRol";
 import { formatearFechaCorta } from "@/lib/utils";
+import {
+  AlertasFiltrables,
+  type Alerta,
+  type Severidad,
+  type IconoAlertaTipo,
+} from "./_alertas-cliente";
 
 export const metadata: Metadata = { title: "Alertas" };
 export const dynamic = "force-dynamic";
@@ -28,39 +24,7 @@ const ETIQUETA_NOVEDAD: Record<string, string> = {
 
 const NOVEDADES_CRITICAS = new Set(["PLAGA", "DANO_FISICO", "ENFERMEDAD"]);
 
-type Severidad = "critica" | "importante" | "informativa";
-
-type Alerta = {
-  id: string;
-  severidad: Severidad;
-  icono: "task" | "stock" | "novedad" | "despacho" | "apiario";
-  titulo: string;
-  detalle: string;
-  fecha: Date | null;
-  url: string;
-};
-
-function tonoSeveridad(s: Severidad): "alerta" | "neutro" | "info" {
-  if (s === "critica") return "alerta";
-  if (s === "importante") return "neutro";
-  return "info";
-}
-
-function IconoAlerta({ tipo }: { tipo: Alerta["icono"] }) {
-  const clase = "h-4 w-4 shrink-0";
-  switch (tipo) {
-    case "task":
-      return <Clock className={`${clase} text-estado-vencida`} />;
-    case "stock":
-      return <PackageOpen className={`${clase} text-estado-vencida`} />;
-    case "novedad":
-      return <AlertCircle className={`${clase} text-zelanda-ocre-600`} />;
-    case "despacho":
-      return <PackageOpen className={`${clase} text-zelanda-ocre-600`} />;
-    case "apiario":
-      return <Hexagon className={`${clase} text-zelanda-ocre-600`} />;
-  }
-}
+type AlertaConFecha = Alerta & { fecha: Date | null };
 
 export default async function PaginaAlertas() {
   await requerirUsuario("JEFE");
@@ -179,76 +143,75 @@ export default async function PaginaAlertas() {
     }
   }
 
-  const alertas: Alerta[] = [];
+  const alertas: AlertaConFecha[] = [];
 
-  // --- Tareas de cultivo (vencidas + próximas) ---
   for (const l of lotes) {
     for (const t of tiposCultivo) {
       const key = `${l.id}_${t.id}`;
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
       const resumen = calcularResumen(ultima, freq);
+      const base: Pick<AlertaConFecha, "icono" | "titulo" | "url"> = {
+        icono: "task",
+        titulo: `${t.nombre} · Lote ${l.nombre}`,
+        url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
+      };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
+          ...base,
           id: `tarea-cultivo-${l.id}-${t.id}`,
           severidad: "importante",
-          icono: "task",
-          titulo: `${t.nombre} · Lote ${l.nombre}`,
           detalle:
             resumen.estado === "sin_historial"
               ? "Nunca hecho"
               : `Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
-          url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
         });
       } else if (resumen.estado === "proxima") {
         alertas.push({
+          ...base,
           id: `tarea-cultivo-prox-${l.id}-${t.id}`,
           severidad: "informativa",
-          icono: "task",
-          titulo: `${t.nombre} · Lote ${l.nombre}`,
           detalle: formatearDias(resumen.dias_para_proxima),
           fecha: resumen.proxima,
-          url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
         });
       }
     }
   }
 
-  // --- Tareas de apicultura ---
   for (const a of apiarios) {
     for (const t of tiposApicultura) {
       const key = `${a.id}_${t.id}`;
       const ultima = mapaUltimaApiario.get(key) ?? null;
       const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
+      const base: Pick<AlertaConFecha, "icono" | "titulo" | "url"> = {
+        icono: "apiario",
+        titulo: `${t.nombre} · Apiario ${a.nombre}`,
+        url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
+      };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
+          ...base,
           id: `tarea-api-${a.id}-${t.id}`,
           severidad: "importante",
-          icono: "apiario",
-          titulo: `${t.nombre} · Apiario ${a.nombre}`,
           detalle:
             resumen.estado === "sin_historial"
               ? "Nunca hecho"
               : `Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
-          url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
         });
       } else if (resumen.estado === "proxima") {
         alertas.push({
+          ...base,
           id: `tarea-api-prox-${a.id}-${t.id}`,
           severidad: "informativa",
-          icono: "apiario",
-          titulo: `${t.nombre} · Apiario ${a.nombre}`,
           detalle: formatearDias(resumen.dias_para_proxima),
           fecha: resumen.proxima,
-          url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
         });
       }
     }
   }
 
-  // --- Novedades sin resolver ---
   for (const n of novedades) {
     const esCritica = NOVEDADES_CRITICAS.has(n.tipo);
     alertas.push({
@@ -262,7 +225,6 @@ export default async function PaginaAlertas() {
     });
   }
 
-  // --- Apiarios con problemas (de su última visita) ---
   for (const v of visitasApiarioCriticas) {
     const esCritico = v.estado_apiario === "CRITICO";
     alertas.push({
@@ -278,7 +240,6 @@ export default async function PaginaAlertas() {
     });
   }
 
-  // --- Stock bajo ---
   for (const s of stockBajoRows) {
     alertas.push({
       id: `stock-${s.id}`,
@@ -291,7 +252,6 @@ export default async function PaginaAlertas() {
     });
   }
 
-  // --- Despachos abiertos antiguos ---
   for (const d of despachosAbiertos) {
     alertas.push({
       id: `despacho-${d.id}`,
@@ -304,24 +264,34 @@ export default async function PaginaAlertas() {
     });
   }
 
-  // Ordenar dentro de cada categoría: fecha más vieja primero (más urgente)
-  const orden = (a: Alerta, b: Alerta) => {
+  const orden = (a: AlertaConFecha, b: AlertaConFecha) => {
     if (a.fecha && b.fecha) return a.fecha.getTime() - b.fecha.getTime();
     if (a.fecha) return -1;
     if (b.fecha) return 1;
     return 0;
   };
 
-  const criticas = alertas.filter((a) => a.severidad === "critica").sort(orden);
-  const importantes = alertas.filter((a) => a.severidad === "importante").sort(orden);
+  const limpiar = (a: AlertaConFecha): Alerta => ({
+    id: a.id,
+    severidad: a.severidad,
+    icono: a.icono,
+    titulo: a.titulo,
+    detalle: a.detalle,
+    url: a.url,
+  });
+
+  const criticas = alertas
+    .filter((a) => a.severidad === "critica")
+    .sort(orden)
+    .map(limpiar);
+  const importantes = alertas
+    .filter((a) => a.severidad === "importante")
+    .sort(orden)
+    .map(limpiar);
   const informativas = alertas
     .filter((a) => a.severidad === "informativa")
-    .sort((a, b) => {
-      if (a.fecha && b.fecha) return a.fecha.getTime() - b.fecha.getTime();
-      return 0;
-    });
-
-  const total = criticas.length + importantes.length + informativas.length;
+    .sort(orden)
+    .map(limpiar);
 
   return (
     <div className="space-y-6 pb-12">
@@ -333,101 +303,15 @@ export default async function PaginaAlertas() {
           <Bell className="h-6 w-6 text-zelanda-ocre-600" />
           Alertas
         </h1>
-        <p className="mt-1 text-sm text-zelanda-verde-700">
-          {total === 0
-            ? "Todo en orden. No hay alertas activas."
-            : `${total} alerta${total === 1 ? "" : "s"} activa${total === 1 ? "" : "s"}.`}
-        </p>
       </header>
 
-      {total === 0 ? (
-        <section className="rounded-xl border border-dashed border-zelanda-verde-300 bg-zelanda-verde-50/40 px-6 py-12 text-center">
-          <p className="font-serif text-lg text-zelanda-verde-900">Sin alertas</p>
-          <p className="mt-1 text-sm text-zelanda-verde-700">
-            Cuando aparezcan tareas vencidas, novedades, stock bajo u otros eventos
-            importantes, los vas a ver acá.
-          </p>
-        </section>
-      ) : null}
-
-      <BloqueAlertas
-        titulo="Críticas"
-        descripcion="Requieren atención inmediata"
-        icono={<AlertTriangle className="h-5 w-5 text-estado-vencida" />}
-        items={criticas}
-      />
-
-      <BloqueAlertas
-        titulo="Importantes"
-        descripcion="Tareas vencidas, novedades y despachos sin cerrar"
-        icono={<AlertCircle className="h-5 w-5 text-zelanda-ocre-600" />}
-        items={importantes}
-      />
-
-      <BloqueAlertas
-        titulo="Próximas"
-        descripcion="Vencen en menos de 7 días"
-        icono={<Clock className="h-5 w-5 text-zelanda-verde-700" />}
-        items={informativas}
+      <AlertasFiltrables
+        criticas={criticas}
+        importantes={importantes}
+        informativas={informativas}
       />
     </div>
   );
 }
 
-function BloqueAlertas({
-  titulo,
-  descripcion,
-  icono,
-  items,
-}: {
-  titulo: string;
-  descripcion: string;
-  icono: React.ReactNode;
-  items: Alerta[];
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="space-y-3">
-      <div className="flex items-baseline gap-2">
-        {icono}
-        <h2 className="font-serif text-lg text-zelanda-verde-900">
-          {titulo}
-          <span className="ml-2 text-sm font-normal text-zelanda-verde-700">
-            ({items.length})
-          </span>
-        </h2>
-      </div>
-      <p className="text-xs text-zelanda-verde-700">{descripcion}</p>
-      <ul className="space-y-2">
-        {items.map((a) => (
-          <li key={a.id}>
-            <Link
-              href={a.url}
-              className="flex items-center gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave transition hover:bg-zelanda-beige-50"
-            >
-              <IconoAlerta tipo={a.icono} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-zelanda-verde-900">
-                  {a.titulo}
-                </p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
-                  {a.detalle}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <BadgeBase tono={tonoSeveridad(a.severidad)}>
-                  {a.severidad === "critica"
-                    ? "Crítica"
-                    : a.severidad === "importante"
-                      ? "Importante"
-                      : "Próxima"}
-                </BadgeBase>
-                <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
+export type { Alerta, Severidad, IconoAlertaTipo };
