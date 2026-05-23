@@ -337,7 +337,7 @@ Tap → detalle con foto grande y descripción completa + botón "Marcar resuelt
 ### 5.10 Dashboard del jefe `/jefe`
 
 ```
-Buenos días, Alber
+Buenos días, Samuel
 
 ⚠ Vencidas (3)
 ──────────────

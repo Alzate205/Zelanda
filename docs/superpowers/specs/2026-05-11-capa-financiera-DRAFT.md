@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-05-11
 **Estado:** Borrador para Fase 2. NO implementar todavía. Se refina cuando llegue su turno (después de tener el núcleo `personas + vinculaciones` funcionando y usable en producción).
-**Autor:** Claude + Alber
+**Autor:** Claude + dueño
 
 ## Por qué este doc es DRAFT
 

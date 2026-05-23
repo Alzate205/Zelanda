@@ -8,7 +8,7 @@
 
 **FincApp** es un sistema de gestión integral para la **Hacienda La Zelanda**, una finca familiar de **aguacate Hass** en el Quindío, Colombia. Es una **PWA (Progressive Web App)** con capacidad offline, accesible desde celular sin instalación de tienda.
 
-El usuario es **Alber**, estudiante de Ingeniería de Software (6º semestre). Maneja conceptos técnicos. No hay que explicarle qué es una FK, un trigger, un endpoint, etc.
+El usuario maneja conceptos técnicos (estudiante de Ingeniería de Software). No hay que explicarle qué es una FK, un trigger, un endpoint, etc.
 
 El proyecto se desarrolla **en tiempos libres, sin presión de plazos**. No es comercial. No se va a vender a otras fincas (al menos por ahora).
 
@@ -348,8 +348,8 @@ Capa financiera (pagos, jornales, servicios contratados — ver `docs/superpower
 9. **Commits descriptivos** en español: `feat: agregar pantalla de asignaciones`, `fix: corregir cálculo de stock`.
 10. **Al terminar una tarea**, lista qué hiciste y qué falta para cerrar la fase actual.
 
-### Para Alber:
-- Cuando arranques con Claude Code, lo primero es decirle: *"Lee CLAUDE.md y esquema.sql, luego empezamos la Fase 1"*.
+### Para el dueño del proyecto:
+- Cuando arranques con Claude Code, lo primero es decirle: *"Lee CLAUDE.md y esquema.sql, luego seguimos"*.
 - Si Claude Code propone algo que se desvía de este doc, decirle: *"Eso no está en CLAUDE.md, ¿deberíamos actualizarlo o seguir el plan?"*.
 - Actualiza este archivo cuando tomen decisiones nuevas. Es la fuente de verdad.
 

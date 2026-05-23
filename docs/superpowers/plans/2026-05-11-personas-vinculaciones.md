@@ -440,7 +440,7 @@ Modificar `package.json` en la sección `"scripts"`:
 Run: `npm run verificar:migracion`
 Expected:
 - "Estado: Pre-migración (trabajadores existe, personas no)"
-- trabajadores rows = 1 (Alber)
+- trabajadores rows = 1 (el jefe)
 - Columnas: `*.trabajador_id` existen, no `persona_id`
 - Función `trabajador_id_actual` existe; `persona_id_actual` no
 - Enums: ninguno todavía

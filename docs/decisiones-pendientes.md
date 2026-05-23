@@ -34,7 +34,7 @@ Documento vivo. Acumula preguntas, decisiones menores y refinamientos que no blo
 
 ## D-005 — `ausencias.descontable`: default según tipo?
 **Estado:** `[ ]` abierta
-**Contexto:** ¿`VACACIONES` e `INCAPACIDAD` por ley no descuentan? ¿O Alber prefiere decidirlo cada vez manualmente?
+**Contexto:** ¿`VACACIONES` e `INCAPACIDAD` por ley no descuentan? ¿O se prefiere decidirlo cada vez manualmente?
 **Propuesta tentativa:** Default por tipo: `FALSE` para VACACIONES e INCAPACIDAD; `TRUE` para FALTA_INJUSTIFICADA, LICENCIA, PERMISO. El jefe puede overrride en la UI.
 
 ## D-006 — `vinculaciones.fecha_inicio`: default `CURRENT_DATE`?
@@ -70,12 +70,12 @@ Documento vivo. Acumula preguntas, decisiones menores y refinamientos que no blo
 
 ## D-012 — CLAUDE.md: subrol APICULTOR
 **Estado:** `[~]` propuesta tentativa
-**Contexto:** CLAUDE.md §4.4 dice "Sub-rol APICULTOR: trabajador con flag es_apicultor=true. Solo a estos se les asignan tareas de apicultura". En el brainstorm 2026-05-11, Alber aclaró que no hay apicultor designado — las tareas se reparten.
+**Contexto:** CLAUDE.md §4.4 dice "Sub-rol APICULTOR: trabajador con flag es_apicultor=true. Solo a estos se les asignan tareas de apicultura". En el brainstorm 2026-05-11, se aclaró que no hay apicultor designado — las tareas se reparten.
 **Propuesta tentativa:** Eliminar la mención del sub-rol APICULTOR de CLAUDE.md. Las tareas de apicultura se asignan a cualquier trabajador.
 **Cómo aplicar cuando se resuelva:** Editar CLAUDE.md §4.4, §5.5; quitar `es_apicultor` del schema/Prisma.
 
 ## D-013 — Captura de polígonos (delim)
 **Estado:** `[ ]` diferida intencionalmente
-**Contexto:** Pendiente para el final (decisión de Alber). Dibujo sobre satelital, sin GPS en sitio.
+**Contexto:** Pendiente para el final (decisión pendiente). Dibujo sobre satelital, sin GPS en sitio.
 **Propuesta tentativa:** Usar `leaflet-draw` cuando llegue el momento.
 **Cómo aplicar cuando se resuelva:** Spec aparte cuando se vaya a implementar.

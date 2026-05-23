@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-05-11
 **Estado:** Borrador para revisión y luego implementación
-**Autor:** Claude + Alber
+**Autor:** Claude + dueño
 **Scope:** Núcleo general y usable. La capa financiera (pagos, tarifas, servicios contratados, jornales, ausencias) es un spec separado (`2026-05-11-capa-financiera-DRAFT.md`) que se implementa en una fase posterior.
 
 ## 1. Contexto
@@ -153,7 +153,7 @@ Nuevas policies para tablas nuevas:
 |---|---|
 | `/jefe/equipo` (lista) | Mostrar el `tipo` de vinculación activo + `rol_finca`. Filtros por tipo. |
 | `/jefe/equipo/nuevo` | Formulario rediseñado: datos de persona + vinculación inicial. Campos condicionales según `tipo` seleccionado (FIJO pide `salario_base` + `periodo_pago`; JORNALERO pide `tarifa_jornal`; CONTRATISTA/FAMILIAR sin esos). |
-| `scripts/crear-primer-jefe.mjs` | Insertar `persona` + `vinculacion` (tipo `FAMILIAR` por defecto, o `FIJO` si Alber quiere recibir sueldo via app). |
+| `scripts/crear-primer-jefe.mjs` | Insertar `persona` + `vinculacion` (tipo `FAMILIAR` por defecto, o `FIJO` si quiere recibir sueldo via app). |
 | `lib/auth.ts`, layouts | Resolver `usuario → persona → vinculación activa` para mostrar el `rol_finca` correctamente. |
 
 ### 5.2 Nuevas pantallas mínimas
@@ -177,7 +177,7 @@ La app está recién desplegada con 1 jefe creado y 0 trabajadores reales. **No 
    - Ejecutar en Supabase SQL Editor.
 2. **Migrar datos existentes** (única fila: el jefe):
    - `INSERT INTO personas` desde `trabajadores` (mapeo de columnas).
-   - `INSERT INTO vinculaciones` con `tipo='FAMILIAR'` (o `FIJO` si Alber prefiere). Resolver al momento.
+   - `INSERT INTO vinculaciones` con `tipo='FAMILIAR'` (o `FIJO` si así prefiere). Resolver al momento.
 3. **Renombrar columnas FK**:
    - `ALTER TABLE usuarios RENAME COLUMN trabajador_id TO persona_id`.
    - Idem en `asignaciones`, `registros_avance`, `novedades`, `despachos`, `cosechas`.

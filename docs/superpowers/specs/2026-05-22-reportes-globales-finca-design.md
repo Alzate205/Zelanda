@@ -231,5 +231,5 @@ No hay suite de tests automatizados en el proyecto. Verificación manual:
 
 - No requiere migración SQL.
 - No requiere cambios en `schema.prisma`.
-- Despliegue: PR/merge a `main` + auto-deploy en Vercel (consistente con el flujo de Alber, sin colaboradores).
+- Despliegue: PR/merge a `main` + auto-deploy en Vercel (flujo individual, sin colaboradores).
 - Performance esperada: las queries se ejecutan en paralelo (`Promise.all`), todas con índices existentes (`idx_cosechas_fecha`, `idx_cosechas_lote`, `idx_salidas_fecha`). Tiempo estimado < 500ms con los volúmenes actuales.
