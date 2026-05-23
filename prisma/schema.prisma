@@ -737,6 +737,7 @@ model novedades {
   foto_path        String?
   resuelta         Boolean      @default(false)
   fecha_resolucion DateTime?    @db.Timestamptz(6)
+  notas_resolucion String?
   fecha            DateTime     @default(now()) @db.Timestamptz(6)
   id_local         String?      @unique @db.Uuid
   arboles          arboles      @relation(fields: [arbol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

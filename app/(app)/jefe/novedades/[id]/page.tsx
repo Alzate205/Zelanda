@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, Plus } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { urlFotoFirmada } from "@/lib/supabase/storage";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { formatearFechaCorta } from "@/lib/utils";
-import { marcarResuelta } from "./acciones";
+import { reabrirNovedad } from "./acciones";
+import { FormularioResolverNovedad } from "./_resolver";
 
 export const metadata: Metadata = { title: "Novedad" };
 
@@ -108,19 +109,53 @@ export default async function DetalleNovedad({
       ) : null}
 
       {n.resuelta ? (
-        <p className="text-xs text-zelanda-verde-700">
-          Resuelta el {formatearFechaCorta(n.fecha_resolucion!)}.
-        </p>
+        <section className="rounded-xl border border-zelanda-verde-300 bg-zelanda-verde-50/40 p-4 shadow-card">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-zelanda-verde-700" />
+            <p className="text-sm font-medium text-zelanda-verde-900">
+              Resuelta el {formatearFechaCorta(n.fecha_resolucion!)}
+            </p>
+          </div>
+          {n.notas_resolucion ? (
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zelanda-verde-800">
+              {n.notas_resolucion}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs italic text-zelanda-verde-700/70">
+              Sin notas de resolución.
+            </p>
+          )}
+          <form action={reabrirNovedad} className="mt-3">
+            <input type="hidden" name="novedad_id" value={String(n.id)} />
+            <button
+              type="submit"
+              className="text-xs text-zelanda-verde-700 underline hover:text-zelanda-verde-900"
+            >
+              Reabrir novedad
+            </button>
+          </form>
+        </section>
       ) : (
-        <form action={marcarResuelta}>
-          <input type="hidden" name="novedad_id" value={String(n.id)} />
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-zelanda-verde-700 px-4 py-3 text-base font-medium text-zelanda-beige-50 shadow-suave transition hover:bg-zelanda-verde-800"
+        <>
+          <Link
+            href={`/jefe/asignaciones/nueva?lote_id=${n.arboles.lote_id}`}
+            className="flex items-center justify-center gap-2 rounded-lg border border-zelanda-ocre-400 bg-zelanda-ocre-50 px-4 py-3 text-sm font-medium text-zelanda-ocre-800 transition hover:bg-zelanda-ocre-100"
           >
-            Marcar resuelta
-          </button>
-        </form>
+            <Plus className="h-4 w-4" />
+            Crear asignación para atender en el lote
+          </Link>
+          <section className="rounded-xl border border-zelanda-beige-200 bg-white p-5 shadow-card">
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Marcar como resuelta
+            </h2>
+            <p className="mt-1 text-xs text-zelanda-verde-700">
+              Dejá nota de qué se hizo para que el histórico quede claro.
+            </p>
+            <div className="mt-3">
+              <FormularioResolverNovedad novedadId={String(n.id)} />
+            </div>
+          </section>
+        </>
       )}
     </div>
   );

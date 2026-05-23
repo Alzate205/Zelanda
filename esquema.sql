@@ -219,6 +219,7 @@ CREATE TABLE novedades (
   foto_path         TEXT,
   resuelta          BOOLEAN NOT NULL DEFAULT FALSE,
   fecha_resolucion  TIMESTAMPTZ,
+  notas_resolucion  TEXT,
   fecha             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   id_local          UUID UNIQUE
 );
