@@ -5,6 +5,7 @@ import { PushPrompt } from "@/components/shared/PushPrompt";
 import { SyncEngineInit } from "@/components/shared/SyncEngineInit";
 import { BannerOffline } from "@/components/shared/BannerOffline";
 import { GuardarRolLocal } from "@/components/shared/GuardarRolLocal";
+import { InstalarPWABanner } from "@/components/shared/InstalarPWABanner";
 
 export default async function LayoutApp({
   children,
@@ -24,6 +25,7 @@ export default async function LayoutApp({
       <SyncEngineInit />
       <GuardarRolLocal rol={usuario.rol} />
       <BannerOffline />
+      <InstalarPWABanner />
     </div>
   );
 }

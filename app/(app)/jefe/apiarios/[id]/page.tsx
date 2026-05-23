@@ -5,6 +5,7 @@ import { ChevronLeft, Pencil, Hexagon, MapPin, Droplet } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BadgeBase } from "@/components/shared/BadgeRol";
+import { Badge } from "@/components/ui/Badge";
 import { calcularResumen, formatearDias, etiquetaEstado } from "@/lib/fechas-tarea";
 
 const ETIQUETA_ESTADO_APIARIO: Record<string, string> = {
@@ -132,46 +133,86 @@ export default async function DetalleApiario({
     return { id: String(t.id), nombre: t.nombre, ...resumen };
   });
 
-  return (
-    <div className="space-y-5">
-      <Link
-        href="/jefe/lotes"
-        className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Lotes y apiarios
-      </Link>
+  const ultimaVisita = visitasRecientes[0] ?? null;
+  const estadoHero =
+    ultimaVisita?.estado_apiario === "CRITICO"
+      ? "vencida"
+      : ultimaVisita?.estado_apiario === "CON_PROBLEMAS"
+        ? "proxima"
+        : ultimaVisita?.estado_apiario === "BIEN"
+          ? "aldia"
+          : "neutro";
 
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-            Apiario
-          </p>
-          <h1 className="mt-1 flex items-center gap-2 font-serif text-3xl text-zelanda-verde-900">
-            <Hexagon className="h-6 w-6 shrink-0 text-zelanda-ocre-500" />
-            {apiario.nombre}
-          </h1>
-          <div className="mt-2">
-            {apiario.activo ? null : <BadgeBase tono="alerta">Inactivo</BadgeBase>}
+  return (
+    <div className="-mx-4 -mt-4 space-y-5">
+      <div
+        className="px-4 pb-4 pt-3 text-zelanda-beige-50"
+        style={{
+          background:
+            "radial-gradient(circle at 85% -10%, rgba(193,150,88,0.32), transparent 55%)," +
+            "linear-gradient(180deg, #2d4a35, #1f3a26)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <Link
+            href="/jefe/lotes"
+            aria-label="Volver"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-zelanda-beige-50 hover:bg-white/15"
+          >
+            <ChevronLeft className="h-[18px] w-[18px]" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-[10.5px] uppercase tracking-[0.16em] text-zelanda-beige-100/72">
+              Apiario · Quindío
+            </p>
+            <h1 className="m-0 mt-0.5 flex items-center gap-2 font-serif text-[22px] font-medium leading-tight">
+              <Hexagon className="h-5 w-5 shrink-0 text-zelanda-ocre-300" />
+              {apiario.nombre}
+            </h1>
           </div>
+          <Badge estado={estadoHero}>
+            {ultimaVisita?.estado_apiario
+              ? ETIQUETA_ESTADO_APIARIO[ultimaVisita.estado_apiario]
+              : "Sin visitas"}
+          </Badge>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/jefe/apiarios/${idStr}/ubicacion`}
-            className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
-          >
-            <MapPin className="h-4 w-4" />
-            Ubicación
-          </Link>
-          <Link
-            href={`/jefe/apiarios/${idStr}/editar`}
-            className="inline-flex min-h-touch items-center gap-1.5 rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
-          >
-            <Pencil className="h-4 w-4" />
-            Editar
-          </Link>
+        <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-zelanda-beige-100/85">
+          <span>
+            <strong className="font-serif text-sm text-white">
+              {apiario.total_colmenas}
+            </strong>{" "}
+            colmenas
+          </span>
+          {apiario.ubicacion_descripcion ? (
+            <span className="truncate">
+              <strong className="font-serif text-sm text-white">📍</strong>{" "}
+              {apiario.ubicacion_descripcion}
+            </span>
+          ) : null}
         </div>
-      </header>
+      </div>
+
+      <div className="flex flex-wrap gap-2 px-4">
+        <Link
+          href={`/jefe/apiarios/${idStr}/ubicacion`}
+          className="inline-flex min-h-touch items-center gap-1.5 rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+        >
+          <MapPin className="h-4 w-4" />
+          Ubicación
+        </Link>
+        <Link
+          href={`/jefe/apiarios/${idStr}/editar`}
+          className="inline-flex min-h-touch items-center gap-1.5 rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2 text-sm font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
+        >
+          <Pencil className="h-4 w-4" />
+          Editar
+        </Link>
+        {!apiario.activo ? (
+          <BadgeBase tono="alerta">Inactivo</BadgeBase>
+        ) : null}
+      </div>
+
+      <div className="px-4">
 
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-base text-zelanda-verde-900">
@@ -302,6 +343,7 @@ export default async function DetalleApiario({
           </ul>
         )}
       </section>
+      </div>
     </div>
   );
 }
