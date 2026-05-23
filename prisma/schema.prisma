@@ -608,19 +608,19 @@ model cosechas {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model despacho_items {
-  id                 BigInt               @id @default(autoincrement())
-  despacho_id        BigInt
-  tipo_item          tipo_item
-  herramienta_id     BigInt?
-  insumo_id          BigInt?
-  cantidad           Decimal              @db.Decimal(12, 3)
+  id                   BigInt               @id @default(autoincrement())
+  despacho_id          BigInt
+  tipo_item            tipo_item
+  herramienta_id       BigInt?
+  insumo_id            BigInt?
+  cantidad             Decimal              @db.Decimal(12, 3)
   cantidad_consumida   Decimal?             @db.Decimal(12, 3)
   devuelto             Boolean              @default(false)
   condicion_devolucion String?
   despachos            despachos            @relation(fields: [despacho_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  herramientas       herramientas?        @relation(fields: [herramienta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  insumos            insumos?             @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  movimientos_insumo movimientos_insumo[]
+  herramientas         herramientas?        @relation(fields: [herramienta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  insumos              insumos?             @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  movimientos_insumo   movimientos_insumo[]
 
   @@schema("public")
 }
@@ -704,6 +704,7 @@ model lotes {
   asignaciones     asignaciones[]
   cosechas         cosechas[]
   frecuencias_lote frecuencias_lote[]
+  tarifas_tarea    tarifas_tarea[]
 
   @@index([poligono], map: "idx_lotes_poligono", type: Gist)
   @@schema("public")
@@ -750,7 +751,7 @@ model novedades {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model registros_avance {
-  id               BigInt           @id @default(autoincrement())
+  id               BigInt          @id @default(autoincrement())
   asignacion_id    BigInt
   persona_id       BigInt
   tipo_registro    tipo_registro
@@ -760,11 +761,11 @@ model registros_avance {
   cantidad_arboles Int
   observaciones    String?
   foto_path        String?
-  fecha_registro   DateTime         @default(now()) @db.Timestamptz(6)
-  id_local         String?          @unique @db.Uuid
+  fecha_registro   DateTime        @default(now()) @db.Timestamptz(6)
+  id_local         String?         @unique @db.Uuid
   estado_apiario   estado_apiario?
-  asignaciones     asignaciones     @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  persona          personas         @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asignaciones     asignaciones    @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona          personas        @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([asignacion_id], map: "idx_registros_asignacion")
   @@schema("public")
@@ -830,31 +831,85 @@ model tipos_tarea {
   created_at              DateTime           @default(now()) @db.Timestamptz(6)
   asignaciones            asignaciones[]
   frecuencias_lote        frecuencias_lote[]
+  tarifas_tarea           tarifas_tarea[]
 
   @@schema("public")
 }
 
-model personas {
-  id               BigInt             @id
-  nombre_completo  String
-  cedula           String?            @unique
-  telefono         String?
-  fecha_nacimiento DateTime?          @db.Date
-  foto_path        String?
-  notas            String?
-  activo           Boolean            @default(true)
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
-  deleted_at       DateTime?          @db.Timestamptz(6)
-  asignaciones     asignaciones[]
-  cosechas         cosechas[]
-  cosechas_miel    cosechas_miel[]
-  despachos        despachos[]
-  novedades        novedades[]
-  registros_avance registros_avance[]
-  usuarios         usuarios[]
-  vinculaciones    vinculaciones[]
+model tarifas_tarea {
+  id                        BigInt                 @id @default(autoincrement())
+  tipo_tarea_id             BigInt
+  esquema_pago              esquema_pago_actividad
+  monto                     Decimal                @db.Decimal(12, 2)
+  unidad                    String?
+  vigente_desde             DateTime               @default(dbgenerated("CURRENT_DATE")) @db.Date
+  vigente_hasta             DateTime?              @db.Date
+  lote_id                   BigInt?
+  notas                     String?
+  registrado_por_usuario_id String                 @db.Uuid
+  created_at                DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime               @default(now()) @db.Timestamptz(6)
 
+  tipos_tarea               tipos_tarea            @relation(fields: [tipo_tarea_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lotes                     lotes?                 @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usuarios                  usuarios               @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([tipo_tarea_id], map: "idx_tarifas_tarea_tipo")
+  @@index([tipo_tarea_id, vigente_desde(sort: Desc)], map: "idx_tarifas_tarea_vigentes")
+  @@index([lote_id], map: "idx_tarifas_tarea_lote")
+  @@schema("public")
+}
+
+model personas {
+  id                        BigInt             @id
+  nombre_completo           String
+  cedula                    String?            @unique
+  telefono                  String?
+  fecha_nacimiento          DateTime?          @db.Date
+  foto_path                 String?
+  notas                     String?
+  activo                    Boolean            @default(true)
+  created_at                DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at                DateTime?          @db.Timestamptz(6)
+  asignaciones              asignaciones[]
+  cosechas                  cosechas[]
+  cosechas_miel             cosechas_miel[]
+  despachos                 despachos[]
+  novedades                 novedades[]
+  registros_avance          registros_avance[]
+  usuarios                  usuarios[]
+  vinculaciones             vinculaciones[]
+  recordatorios_asignados   recordatorios[]    @relation("recordatorios_asignado")
+  recordatorios_creados     recordatorios[]    @relation("recordatorios_creador")
+  recordatorios_completados recordatorios[]    @relation("recordatorios_completado_por")
+
+  @@schema("public")
+}
+
+model recordatorios {
+  id                        BigInt    @id @default(autoincrement())
+  titulo                    String
+  descripcion               String?
+  fecha                     DateTime  @db.Date
+  asignado_a_persona_id     BigInt
+  creado_por_persona_id     BigInt?
+  creado_por_usuario_id     String    @db.Uuid
+  completado_en             DateTime? @db.Timestamptz(6)
+  completado_por_persona_id BigInt?
+  notas_completado          String?
+  push_enviado_en           DateTime? @db.Timestamptz(6)
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
+
+  asignado_a         personas  @relation("recordatorios_asignado", fields: [asignado_a_persona_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  creado_por         personas? @relation("recordatorios_creador", fields: [creado_por_persona_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  completado_por     personas? @relation("recordatorios_completado_por", fields: [completado_por_persona_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  creado_por_usuario usuarios  @relation(fields: [creado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([asignado_a_persona_id, fecha], map: "idx_recordatorios_asignado_fecha")
+  @@index([fecha], map: "idx_recordatorios_fecha_pendientes")
+  @@index([creado_por_persona_id], map: "idx_recordatorios_creador")
   @@schema("public")
 }
 
@@ -896,6 +951,8 @@ model usuarios {
   movimientos_insumo movimientos_insumo[]
   salidas_cosecha    salidas_cosecha[]
   push_subscriptions push_subscriptions[]
+  recordatorios      recordatorios[]
+  tarifas_tarea      tarifas_tarea[]
   users              users                @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   persona            personas?            @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -903,14 +960,14 @@ model usuarios {
 }
 
 model push_subscriptions {
-  id          BigInt   @id @default(autoincrement())
-  usuario_id  String   @db.Uuid
-  endpoint    String   @unique
-  p256dh      String
-  auth        String
-  user_agent  String?
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  usuarios    usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id         BigInt   @id @default(autoincrement())
+  usuario_id String   @db.Uuid
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  user_agent String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([usuario_id], map: "idx_push_usuario")
   @@schema("public")
@@ -989,6 +1046,17 @@ enum one_time_token_type {
 enum area_tarea {
   CULTIVO
   APICULTURA
+
+  @@schema("public")
+}
+
+enum esquema_pago_actividad {
+  POR_JORNAL
+  POR_KG
+  POR_ARBOL
+  POR_HECTAREA
+  POR_HORA
+  OTRO
 
   @@schema("public")
 }

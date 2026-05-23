@@ -10,8 +10,9 @@ import {
   Plus,
   Map as MapIcon,
   Users,
-  Leaf,
   Hexagon,
+  Bell,
+  DollarSign,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -114,6 +115,7 @@ export function DashboardJefeCliente({
   }, [online, snapshotInicial]);
 
   const { vencidas, proximas, novedades_pendientes, contadores } = snapshot;
+  const recordatorios = snapshot.recordatorios ?? [];
 
   const fechaHoy = useMemo(() => tituloFecha(new Date()), []);
 
@@ -238,6 +240,23 @@ export function DashboardJefeCliente({
                 href={`/jefe/novedades/${n.id}`}
               />
             ))}
+            {recordatorios
+              .filter((r) => r.estado !== "proximo")
+              .slice(0, 3)
+              .map((r) => (
+                <AlertaItem
+                  key={`rec_${r.id}`}
+                  estado={r.estado === "vencido" ? "vencida" : "proxima"}
+                  icono={Bell}
+                  titulo={r.titulo}
+                  sub={
+                    r.estado === "hoy"
+                      ? `Hoy · Para ${r.asignado_a_nombre}`
+                      : `Vencido · Para ${r.asignado_a_nombre}`
+                  }
+                  href="/recordatorios"
+                />
+              ))}
           </div>
         )}
       </section>
@@ -266,10 +285,14 @@ export function DashboardJefeCliente({
             sub={`${snapshot.personas.length} personas`}
           />
           <Atajo
-            href="/jefe/almacen-vista"
-            icono={Leaf}
-            titulo="Cosecha"
-            sub="Inventario almacén"
+            href="/recordatorios"
+            icono={Bell}
+            titulo="Recordatorios"
+            sub={
+              recordatorios.length > 0
+                ? `${recordatorios.length} ${recordatorios.length === 1 ? "pendiente" : "pendientes"}`
+                : "Notas con fecha"
+            }
           />
         </div>
       </section>
@@ -292,16 +315,28 @@ export function DashboardJefeCliente({
             sub={`${contadores.despachos_abiertos} abiertos`}
           />
           <Atajo
-            href="/jefe/apiarios/1"
-            icono={Hexagon}
-            titulo="Apiarios"
-            sub="Visitas y miel"
+            href="/jefe/equipo"
+            icono={Users}
+            titulo="Equipo"
+            sub={`${snapshot.personas.length} personas`}
+          />
+          <Atajo
+            href="/jefe/tarifas"
+            icono={DollarSign}
+            titulo="Tarifas"
+            sub="Catálogo de pagos"
           />
           <Atajo
             href="/jefe/reportes"
             icono={ChevronRight}
             titulo="Reportes"
             sub="Cosecha y lotes"
+          />
+          <Atajo
+            href="/jefe/apiarios/1"
+            icono={Hexagon}
+            titulo="Apiarios"
+            sub="Visitas y miel"
           />
         </div>
       </section>

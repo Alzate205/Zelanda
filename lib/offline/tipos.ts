@@ -161,10 +161,20 @@ export type NovedadJefeResumen = {
   fecha: string;
 };
 
+export type RecordatorioResumen = {
+  id: string;
+  titulo: string;
+  fecha: string;
+  asignado_a_nombre: string;
+  asignado_a_id: string;
+  estado: "vencido" | "hoy" | "proximo";
+};
+
 export type SnapshotJefe = {
   vencidas: AlertaTareaJefe[];
   proximas: AlertaTareaJefe[];
   novedades_pendientes: NovedadJefeResumen[];
+  recordatorios: RecordatorioResumen[];
   contadores: {
     stock_bajo: number;
     despachos_abiertos: number;

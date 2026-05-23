@@ -12,6 +12,7 @@ import {
   Sprout,
   Bug,
   Apple,
+  Bell,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Eyebrow } from "@/components/ui/Eyebrow";
@@ -40,12 +41,22 @@ function iconoTarea(nombre: string, area: string): LucideIcon {
   return Leaf;
 }
 
+type RecordatorioTrabajador = {
+  id: string;
+  titulo: string;
+  fecha: string;
+  estado: "vencido" | "hoy" | "proximo";
+  dias: number;
+};
+
 export function ListaTareasCliente({
   nombrePila,
   snapshotInicial,
+  recordatorios = [],
 }: {
   nombrePila: string;
   snapshotInicial: SnapshotTrabajador | null;
+  recordatorios?: RecordatorioTrabajador[];
 }) {
   const online = useOnlineStatus();
   const [asignaciones, setAsignaciones] = useState<AsignacionCacheada[]>([]);
@@ -238,6 +249,64 @@ export function ListaTareasCliente({
                 </Link>
               );
             })}
+          </div>
+        </section>
+      ) : null}
+
+      {recordatorios.length > 0 ? (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 font-serif text-base text-zelanda-verde-900">
+              <Bell className="h-4 w-4 text-zelanda-ocre-600" />
+              Recordatorios
+            </h2>
+            <Link
+              href="/recordatorios"
+              className="text-xs text-zelanda-verde-700 hover:text-zelanda-verde-900"
+            >
+              Ver todos
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recordatorios.slice(0, 3).map((r) => (
+              <Link
+                key={r.id}
+                href="/recordatorios"
+                className={`flex items-center gap-3 rounded-xl border border-l-[3px] border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave transition hover:border-zelanda-verde-300 ${
+                  r.estado === "vencido"
+                    ? "border-l-estado-vencida"
+                    : r.estado === "hoy"
+                      ? "border-l-zelanda-ocre-400"
+                      : "border-l-zelanda-verde-300"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${
+                    r.estado === "vencido"
+                      ? "bg-[#fcefec] text-[#7b2a23]"
+                      : r.estado === "hoy"
+                        ? "bg-[#fbf3df] text-zelanda-ocre-700"
+                        : "bg-zelanda-verde-50 text-zelanda-verde-700"
+                  }`}
+                >
+                  <Bell className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">
+                    {r.titulo}
+                  </p>
+                  <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
+                    {r.estado === "hoy"
+                      ? "Hoy"
+                      : r.estado === "vencido"
+                        ? `Vencido hace ${Math.abs(r.dias)} ${Math.abs(r.dias) === 1 ? "día" : "días"}`
+                        : r.dias === 1
+                          ? "Mañana"
+                          : `En ${r.dias} días`}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
       ) : null}

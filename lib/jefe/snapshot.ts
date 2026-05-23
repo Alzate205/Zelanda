@@ -114,6 +114,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     tareasCerradasHoy,
     cosechaMes,
     cosechaMesAnterior,
+    recordatoriosRaw,
   ] = await Promise.all([
     prisma.novedades.findMany({
       where: { resuelta: false },
@@ -156,7 +157,34 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       where: { fecha: { gte: inicioMesAnterior, lt: inicioMes } },
       _sum: { peso_kg: true },
     }),
+    prisma.recordatorios.findMany({
+      where: {
+        completado_en: null,
+        fecha: { lte: new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000) },
+      },
+      orderBy: { fecha: "asc" },
+      take: 10,
+      include: {
+        asignado_a: { select: { id: true, nombre_completo: true } },
+      },
+    }),
   ]);
+
+  const recordatorios = recordatoriosRaw.map((r) => {
+    const d = Math.round(
+      (r.fecha.getTime() - inicioDia.getTime()) / 86400000,
+    );
+    const estado: "vencido" | "hoy" | "proximo" =
+      d < 0 ? "vencido" : d === 0 ? "hoy" : "proximo";
+    return {
+      id: String(r.id),
+      titulo: r.titulo,
+      fecha: r.fecha.toISOString(),
+      asignado_a_nombre: r.asignado_a.nombre_completo,
+      asignado_a_id: String(r.asignado_a.id),
+      estado,
+    };
+  });
 
   const totalLotes = lotesTotales.length;
   const totalArboles = lotesTotales.reduce((a, l) => a + l.total_arboles, 0);
@@ -199,6 +227,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     vencidas,
     proximas,
     novedades_pendientes,
+    recordatorios,
     contadores: {
       stock_bajo: stockBajoRows[0]?.count ?? 0,
       despachos_abiertos: despachosAbiertos,
