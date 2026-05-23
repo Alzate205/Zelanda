@@ -13,6 +13,9 @@ import {
 } from "@/lib/offline/cache";
 import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
 import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
+import { AsignarMasivoBox } from "@/components/jefe/AsignarMasivoBox";
+
+type Persona = { id: string; nombre: string };
 
 function formatearDias(dias: number | null): string {
   if (dias === null) return "—";
@@ -69,11 +72,13 @@ function GrupoTareaItem({
   tono,
   expandido,
   onToggle,
+  personas,
 }: {
   grupo: GrupoAlerta;
   tono: "vencida" | "proxima";
   expandido: boolean;
   onToggle: () => void;
+  personas: Persona[];
 }) {
   const colorTexto =
     tono === "vencida" ? "text-estado-vencida" : "text-estado-proxima";
@@ -83,6 +88,7 @@ function GrupoTareaItem({
       ? "nunca hecho"
       : formatearDias(masUrgente.dias_para_proxima);
   const cantidad = grupo.lotes.length;
+  const destinoIds = grupo.lotes.map((l) => l.lote_id);
 
   return (
     <li>
@@ -104,26 +110,34 @@ function GrupoTareaItem({
         />
       </button>
       {expandido && (
-        <ul className="ml-3 mt-1.5 space-y-1 border-l border-zelanda-beige-200 pl-3">
-          {grupo.lotes.map((l) => (
-            <li key={`${l.lote_id}_${l.tipo_id}`}>
-              <Link
-                href={`/jefe/asignaciones/nueva?lote_id=${l.lote_id}&tipo_tarea_id=${l.tipo_id}`}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition hover:bg-zelanda-beige-50"
-              >
-                <span className="flex-1 text-zelanda-verde-900">
-                  Lote {l.lote_nombre}
-                </span>
-                <span className={`text-xs ${colorTexto}`}>
-                  {l.estado === "sin_historial"
-                    ? "nunca hecho"
-                    : formatearDias(l.dias_para_proxima)}
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="ml-3 mt-2 space-y-2 border-l border-zelanda-beige-200 pl-3">
+          <AsignarMasivoBox
+            tipoTareaId={grupo.tipo_id}
+            kind="lote"
+            destinoIds={destinoIds}
+            personas={personas}
+          />
+          <ul className="space-y-1">
+            {grupo.lotes.map((l) => (
+              <li key={`${l.lote_id}_${l.tipo_id}`}>
+                <Link
+                  href={`/jefe/asignaciones/nueva?lote_id=${l.lote_id}&tipo_tarea_id=${l.tipo_id}`}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition hover:bg-zelanda-beige-50"
+                >
+                  <span className="flex-1 text-zelanda-verde-900">
+                    Lote {l.lote_nombre}
+                  </span>
+                  <span className={`text-xs ${colorTexto}`}>
+                    {l.estado === "sin_historial"
+                      ? "nunca hecho"
+                      : formatearDias(l.dias_para_proxima)}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </li>
   );
@@ -185,7 +199,8 @@ export function DashboardJefeCliente({
     };
   }, [online, snapshotInicial]);
 
-  const { vencidas, proximas, novedades_pendientes, contadores } = snapshot;
+  const { vencidas, proximas, novedades_pendientes, contadores, personas } =
+    snapshot;
   const gruposVencidas = agruparPorTipo(vencidas);
   const gruposProximas = agruparPorTipo(proximas);
 
@@ -232,6 +247,7 @@ export function DashboardJefeCliente({
                 tono="vencida"
                 expandido={expandidasVencidas.has(g.tipo_id)}
                 onToggle={() => alternarVencida(g.tipo_id)}
+                personas={personas}
               />
             ))}
           </ul>
@@ -254,6 +270,7 @@ export function DashboardJefeCliente({
                 tono="proxima"
                 expandido={expandidasProximas.has(g.tipo_id)}
                 onToggle={() => alternarProxima(g.tipo_id)}
+                personas={personas}
               />
             ))}
           </ul>

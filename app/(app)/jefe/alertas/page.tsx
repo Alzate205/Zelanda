@@ -9,6 +9,7 @@ import {
   type Alerta,
   type Severidad,
   type IconoAlertaTipo,
+  type BulkInfo,
 } from "./_alertas-cliente";
 
 export const metadata: Metadata = { title: "Alertas" };
@@ -44,6 +45,7 @@ export default async function PaginaAlertas() {
     stockBajoRows,
     despachosAbiertos,
     visitasApiarioCriticas,
+    personasRaw,
   ] = await Promise.all([
     prisma.lotes.findMany({
       where: { deleted_at: null },
@@ -123,6 +125,11 @@ export default async function PaginaAlertas() {
       SELECT * FROM ultimas
       WHERE estado_apiario IN ('CRITICO', 'CON_PROBLEMAS')
     `,
+    prisma.personas.findMany({
+      where: { activo: true },
+      orderBy: { nombre_completo: "asc" },
+      select: { id: true, nombre_completo: true },
+    }),
   ]);
 
   const mapaFreq = new Map<string, number>();
@@ -151,14 +158,20 @@ export default async function PaginaAlertas() {
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
       const resumen = calcularResumen(ultima, freq);
+      const bulkInfo: BulkInfo = {
+        tipo_tarea_id: String(t.id),
+        kind: "lote",
+        destino_id: String(l.id),
+      };
       const base: Pick<
         AlertaConFecha,
-        "icono" | "titulo" | "url" | "clave_grupo"
+        "icono" | "titulo" | "url" | "clave_grupo" | "bulk_info"
       > = {
         icono: "task",
         titulo: `${t.nombre} · Lote ${l.nombre}`,
         url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
         clave_grupo: t.nombre,
+        bulk_info: bulkInfo,
       };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
@@ -188,14 +201,20 @@ export default async function PaginaAlertas() {
       const key = `${a.id}_${t.id}`;
       const ultima = mapaUltimaApiario.get(key) ?? null;
       const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
+      const bulkInfo: BulkInfo = {
+        tipo_tarea_id: String(t.id),
+        kind: "apiario",
+        destino_id: String(a.id),
+      };
       const base: Pick<
         AlertaConFecha,
-        "icono" | "titulo" | "url" | "clave_grupo"
+        "icono" | "titulo" | "url" | "clave_grupo" | "bulk_info"
       > = {
         icono: "apiario",
         titulo: `${t.nombre} · Apiario ${a.nombre}`,
         url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
         clave_grupo: t.nombre,
+        bulk_info: bulkInfo,
       };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
@@ -232,6 +251,7 @@ export default async function PaginaAlertas() {
       fecha: n.fecha,
       url: `/jefe/novedades/${n.id}`,
       clave_grupo: etiqueta,
+      bulk_info: null,
     });
   }
 
@@ -248,6 +268,7 @@ export default async function PaginaAlertas() {
       fecha: v.fecha_registro,
       url: `/jefe/apiarios/${v.apiario_id}`,
       clave_grupo: null,
+      bulk_info: null,
     });
   }
 
@@ -261,6 +282,7 @@ export default async function PaginaAlertas() {
       fecha: null,
       url: `/bodega/inventario/insumos/${s.id}/ingresar`,
       clave_grupo: null,
+      bulk_info: null,
     });
   }
 
@@ -274,6 +296,7 @@ export default async function PaginaAlertas() {
       fecha: d.fecha,
       url: `/bodega/despachos/${d.id}`,
       clave_grupo: null,
+      bulk_info: null,
     });
   }
 
@@ -292,6 +315,7 @@ export default async function PaginaAlertas() {
     detalle: a.detalle,
     url: a.url,
     clave_grupo: a.clave_grupo,
+    bulk_info: a.bulk_info,
   });
 
   const criticas = alertas
@@ -323,6 +347,10 @@ export default async function PaginaAlertas() {
         criticas={criticas}
         importantes={importantes}
         informativas={informativas}
+        personas={personasRaw.map((p) => ({
+          id: String(p.id),
+          nombre: p.nombre_completo,
+        }))}
       />
     </div>
   );

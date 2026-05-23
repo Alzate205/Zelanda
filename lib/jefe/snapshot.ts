@@ -103,6 +103,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     stockBajoRows,
     despachosAbiertos,
     stockAlmacenRows,
+    personasRaw,
   ] = await Promise.all([
     prisma.novedades.findMany({
       where: { resuelta: false },
@@ -122,6 +123,11 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     prisma.$queryRaw<{ stock_kg: string }[]>`
       SELECT stock_kg::text FROM v_stock_almacen
     `,
+    prisma.personas.findMany({
+      where: { activo: true },
+      orderBy: { nombre_completo: "asc" },
+      select: { id: true, nombre_completo: true },
+    }),
   ]);
 
   const novedades_pendientes = novedadesPendientesRaw.map((n) => ({
@@ -130,6 +136,11 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     arbol_numero: n.arboles.numero_placa,
     lote_nombre: n.arboles.lotes.nombre,
     fecha: n.fecha.toISOString(),
+  }));
+
+  const personas = personasRaw.map((p) => ({
+    id: String(p.id),
+    nombre: p.nombre_completo,
   }));
 
   return {
@@ -141,6 +152,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       despachos_abiertos: despachosAbiertos,
       stock_almacen_kg: Number(stockAlmacenRows[0]?.stock_kg ?? 0),
     },
+    personas,
     ts: new Date().toISOString(),
   };
 }

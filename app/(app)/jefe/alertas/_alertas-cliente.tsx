@@ -12,6 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import { BadgeBase } from "@/components/shared/BadgeRol";
+import { AsignarMasivoBox } from "@/components/jefe/AsignarMasivoBox";
 
 export type Severidad = "critica" | "importante" | "informativa";
 
@@ -22,6 +23,12 @@ export type IconoAlertaTipo =
   | "despacho"
   | "apiario";
 
+export type BulkInfo = {
+  tipo_tarea_id: string;
+  kind: "lote" | "apiario";
+  destino_id: string;
+};
+
 export type Alerta = {
   id: string;
   severidad: Severidad;
@@ -30,7 +37,10 @@ export type Alerta = {
   detalle: string;
   url: string;
   clave_grupo: string | null;
+  bulk_info: BulkInfo | null;
 };
+
+type Persona = { id: string; nombre: string };
 
 type FiltroTipo = "TODOS" | IconoAlertaTipo;
 
@@ -140,14 +150,26 @@ function GrupoEntradaAlerta({
   alertas,
   expandido,
   onToggle,
+  personas,
 }: {
   clave: string;
   alertas: Alerta[];
   expandido: boolean;
   onToggle: () => void;
+  personas: Persona[];
 }) {
   const cantidad = alertas.length;
   const iconoTipo = alertas[0].icono;
+
+  const bulkInfos = alertas
+    .map((a) => a.bulk_info)
+    .filter((b): b is BulkInfo => b !== null);
+  const tipoTareaIds = new Set(bulkInfos.map((b) => b.tipo_tarea_id));
+  const kinds = new Set(bulkInfos.map((b) => b.kind));
+  const puedeBulk =
+    bulkInfos.length === alertas.length &&
+    tipoTareaIds.size === 1 &&
+    kinds.size === 1;
 
   return (
     <li>
@@ -168,24 +190,36 @@ function GrupoEntradaAlerta({
         />
       </button>
       {expandido ? (
-        <ul className="ml-3 mt-2 space-y-1.5 border-l border-zelanda-beige-200 pl-3">
-          {alertas.map((a) => (
-            <li key={a.id}>
-              <Link
-                href={a.url}
-                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-zelanda-beige-50"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-zelanda-verde-900">{a.titulo}</p>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
-                    {a.detalle}
-                  </p>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="ml-3 mt-2 space-y-2 border-l border-zelanda-beige-200 pl-3">
+          {puedeBulk ? (
+            <AsignarMasivoBox
+              tipoTareaId={bulkInfos[0].tipo_tarea_id}
+              kind={bulkInfos[0].kind}
+              destinoIds={bulkInfos.map((b) => b.destino_id)}
+              personas={personas}
+            />
+          ) : null}
+          <ul className="space-y-1.5">
+            {alertas.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={a.url}
+                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-zelanda-beige-50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zelanda-verde-900">
+                      {a.titulo}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
+                      {a.detalle}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </li>
   );
@@ -196,11 +230,13 @@ function BloqueAlertas({
   descripcion,
   icono,
   items,
+  personas,
 }: {
   titulo: string;
   descripcion: string;
   icono: React.ReactNode;
   items: Alerta[];
+  personas: Persona[];
 }) {
   const listado = useMemo(() => construirListado(items), [items]);
   const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
@@ -238,6 +274,7 @@ function BloqueAlertas({
               alertas={e.alertas}
               expandido={expandidas.has(e.clave)}
               onToggle={() => alternar(e.clave)}
+              personas={personas}
             />
           ),
         )}
@@ -250,10 +287,12 @@ export function AlertasFiltrables({
   criticas,
   importantes,
   informativas,
+  personas,
 }: {
   criticas: Alerta[];
   importantes: Alerta[];
   informativas: Alerta[];
+  personas: Persona[];
 }) {
   const [query, setQuery] = useState("");
   const [tipo, setTipo] = useState<FiltroTipo>("TODOS");
@@ -377,6 +416,7 @@ export function AlertasFiltrables({
         descripcion="Requieren atención inmediata"
         icono={<AlertTriangle className="h-5 w-5 text-estado-vencida" />}
         items={criticasFiltradas}
+        personas={personas}
       />
 
       <BloqueAlertas
@@ -384,6 +424,7 @@ export function AlertasFiltrables({
         descripcion="Tareas vencidas, novedades y despachos sin cerrar"
         icono={<AlertCircle className="h-5 w-5 text-zelanda-ocre-600" />}
         items={importantesFiltradas}
+        personas={personas}
       />
 
       <BloqueAlertas
@@ -391,6 +432,7 @@ export function AlertasFiltrables({
         descripcion="Vencen en menos de 7 días"
         icono={<Clock className="h-5 w-5 text-zelanda-verde-700" />}
         items={informativasFiltradas}
+        personas={personas}
       />
     </div>
   );

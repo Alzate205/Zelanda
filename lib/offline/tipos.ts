@@ -170,6 +170,7 @@ export type SnapshotJefe = {
     despachos_abiertos: number;
     stock_almacen_kg: number;
   };
+  personas: PersonaCacheada[];
   ts: string;
 };
 
