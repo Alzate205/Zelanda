@@ -151,10 +151,14 @@ export default async function PaginaAlertas() {
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
       const resumen = calcularResumen(ultima, freq);
-      const base: Pick<AlertaConFecha, "icono" | "titulo" | "url"> = {
+      const base: Pick<
+        AlertaConFecha,
+        "icono" | "titulo" | "url" | "clave_grupo"
+      > = {
         icono: "task",
         titulo: `${t.nombre} · Lote ${l.nombre}`,
         url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
+        clave_grupo: t.nombre,
       };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
@@ -163,8 +167,8 @@ export default async function PaginaAlertas() {
           severidad: "importante",
           detalle:
             resumen.estado === "sin_historial"
-              ? "Nunca hecho"
-              : `Vencida ${formatearDias(resumen.dias_para_proxima)}`,
+              ? `Lote ${l.nombre} · Nunca hecho`
+              : `Lote ${l.nombre} · Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
       } else if (resumen.estado === "proxima") {
@@ -172,7 +176,7 @@ export default async function PaginaAlertas() {
           ...base,
           id: `tarea-cultivo-prox-${l.id}-${t.id}`,
           severidad: "informativa",
-          detalle: formatearDias(resumen.dias_para_proxima),
+          detalle: `Lote ${l.nombre} · ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
       }
@@ -184,10 +188,14 @@ export default async function PaginaAlertas() {
       const key = `${a.id}_${t.id}`;
       const ultima = mapaUltimaApiario.get(key) ?? null;
       const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
-      const base: Pick<AlertaConFecha, "icono" | "titulo" | "url"> = {
+      const base: Pick<
+        AlertaConFecha,
+        "icono" | "titulo" | "url" | "clave_grupo"
+      > = {
         icono: "apiario",
         titulo: `${t.nombre} · Apiario ${a.nombre}`,
         url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
+        clave_grupo: t.nombre,
       };
       if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
         alertas.push({
@@ -196,8 +204,8 @@ export default async function PaginaAlertas() {
           severidad: "importante",
           detalle:
             resumen.estado === "sin_historial"
-              ? "Nunca hecho"
-              : `Vencida ${formatearDias(resumen.dias_para_proxima)}`,
+              ? `Apiario ${a.nombre} · Nunca hecho`
+              : `Apiario ${a.nombre} · Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
       } else if (resumen.estado === "proxima") {
@@ -205,7 +213,7 @@ export default async function PaginaAlertas() {
           ...base,
           id: `tarea-api-prox-${a.id}-${t.id}`,
           severidad: "informativa",
-          detalle: formatearDias(resumen.dias_para_proxima),
+          detalle: `Apiario ${a.nombre} · ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
       }
@@ -214,14 +222,16 @@ export default async function PaginaAlertas() {
 
   for (const n of novedades) {
     const esCritica = NOVEDADES_CRITICAS.has(n.tipo);
+    const etiqueta = ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo;
     alertas.push({
       id: `novedad-${n.id}`,
       severidad: esCritica ? "critica" : "importante",
       icono: "novedad",
-      titulo: `${ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo} · Árbol ${n.arboles.numero_placa}`,
+      titulo: `${etiqueta} · Árbol ${n.arboles.numero_placa}`,
       detalle: `Lote ${n.arboles.lotes.nombre} · ${n.descripcion.slice(0, 80)}${n.descripcion.length > 80 ? "…" : ""}`,
       fecha: n.fecha,
       url: `/jefe/novedades/${n.id}`,
+      clave_grupo: etiqueta,
     });
   }
 
@@ -237,6 +247,7 @@ export default async function PaginaAlertas() {
         (v.observaciones ? ` · ${v.observaciones.slice(0, 80)}${v.observaciones.length > 80 ? "…" : ""}` : ""),
       fecha: v.fecha_registro,
       url: `/jefe/apiarios/${v.apiario_id}`,
+      clave_grupo: null,
     });
   }
 
@@ -249,6 +260,7 @@ export default async function PaginaAlertas() {
       detalle: `${Number(s.stock_disponible).toFixed(2)} ${s.unidad} disponibles · mínimo ${Number(s.stock_minimo).toFixed(2)} ${s.unidad}`,
       fecha: null,
       url: `/bodega/inventario/insumos/${s.id}/ingresar`,
+      clave_grupo: null,
     });
   }
 
@@ -261,6 +273,7 @@ export default async function PaginaAlertas() {
       detalle: `Sin cerrar desde ${formatearFechaCorta(d.fecha)}`,
       fecha: d.fecha,
       url: `/bodega/despachos/${d.id}`,
+      clave_grupo: null,
     });
   }
 
@@ -278,6 +291,7 @@ export default async function PaginaAlertas() {
     titulo: a.titulo,
     detalle: a.detalle,
     url: a.url,
+    clave_grupo: a.clave_grupo,
   });
 
   const criticas = alertas

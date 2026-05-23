@@ -29,6 +29,7 @@ export type Alerta = {
   titulo: string;
   detalle: string;
   url: string;
+  clave_grupo: string | null;
 };
 
 type FiltroTipo = "TODOS" | IconoAlertaTipo;
@@ -57,6 +58,12 @@ function tonoSeveridad(s: Severidad): "alerta" | "neutro" | "info" {
   return "info";
 }
 
+function etiquetaSeveridad(s: Severidad): string {
+  if (s === "critica") return "Crítica";
+  if (s === "importante") return "Importante";
+  return "Próxima";
+}
+
 function IconoAlerta({ tipo }: { tipo: IconoAlertaTipo }) {
   const clase = "h-4 w-4 shrink-0";
   switch (tipo) {
@@ -73,6 +80,117 @@ function IconoAlerta({ tipo }: { tipo: IconoAlertaTipo }) {
   }
 }
 
+type EntradaListado =
+  | { kind: "individual"; alerta: Alerta }
+  | { kind: "grupo"; clave: string; alertas: Alerta[] };
+
+function construirListado(items: Alerta[]): EntradaListado[] {
+  const listado: EntradaListado[] = [];
+  const indicePorClave = new Map<string, number>();
+  for (const a of items) {
+    if (a.clave_grupo === null) {
+      listado.push({ kind: "individual", alerta: a });
+      continue;
+    }
+    const existente = indicePorClave.get(a.clave_grupo);
+    if (existente !== undefined) {
+      const grupo = listado[existente];
+      if (grupo.kind === "grupo") grupo.alertas.push(a);
+      continue;
+    }
+    indicePorClave.set(a.clave_grupo, listado.length);
+    listado.push({ kind: "grupo", clave: a.clave_grupo, alertas: [a] });
+  }
+  return listado.map((e) =>
+    e.kind === "grupo" && e.alertas.length === 1
+      ? { kind: "individual" as const, alerta: e.alertas[0] }
+      : e,
+  );
+}
+
+function AlertaIndividualItem({ alerta }: { alerta: Alerta }) {
+  return (
+    <li>
+      <Link
+        href={alerta.url}
+        className="flex items-center gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave transition hover:bg-zelanda-beige-50"
+      >
+        <IconoAlerta tipo={alerta.icono} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-zelanda-verde-900">
+            {alerta.titulo}
+          </p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
+            {alerta.detalle}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <BadgeBase tono={tonoSeveridad(alerta.severidad)}>
+            {etiquetaSeveridad(alerta.severidad)}
+          </BadgeBase>
+          <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+function GrupoEntradaAlerta({
+  clave,
+  alertas,
+  expandido,
+  onToggle,
+}: {
+  clave: string;
+  alertas: Alerta[];
+  expandido: boolean;
+  onToggle: () => void;
+}) {
+  const cantidad = alertas.length;
+  const iconoTipo = alertas[0].icono;
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 text-left shadow-suave transition hover:bg-zelanda-beige-50"
+      >
+        <IconoAlerta tipo={iconoTipo} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-zelanda-verde-900">{clave}</p>
+          <p className="mt-0.5 text-xs text-zelanda-verde-700">
+            {cantidad} alerta{cantidad === 1 ? "" : "s"}
+          </p>
+        </div>
+        <ChevronRight
+          className={`h-4 w-4 text-zelanda-verde-700/40 transition-transform ${expandido ? "rotate-90" : ""}`}
+        />
+      </button>
+      {expandido ? (
+        <ul className="ml-3 mt-2 space-y-1.5 border-l border-zelanda-beige-200 pl-3">
+          {alertas.map((a) => (
+            <li key={a.id}>
+              <Link
+                href={a.url}
+                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-zelanda-beige-50"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-zelanda-verde-900">{a.titulo}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
+                    {a.detalle}
+                  </p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-zelanda-verde-700/40" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
 function BloqueAlertas({
   titulo,
   descripcion,
@@ -84,7 +202,19 @@ function BloqueAlertas({
   icono: React.ReactNode;
   items: Alerta[];
 }) {
+  const listado = useMemo(() => construirListado(items), [items]);
+  const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
+
   if (items.length === 0) return null;
+
+  const alternar = (clave: string) =>
+    setExpandidas((prev) => {
+      const nuevo = new Set(prev);
+      if (nuevo.has(clave)) nuevo.delete(clave);
+      else nuevo.add(clave);
+      return nuevo;
+    });
+
   return (
     <section className="space-y-3">
       <div className="flex items-baseline gap-2">
@@ -98,34 +228,19 @@ function BloqueAlertas({
       </div>
       <p className="text-xs text-zelanda-verde-700">{descripcion}</p>
       <ul className="space-y-2">
-        {items.map((a) => (
-          <li key={a.id}>
-            <Link
-              href={a.url}
-              className="flex items-center gap-3 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave transition hover:bg-zelanda-beige-50"
-            >
-              <IconoAlerta tipo={a.icono} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-zelanda-verde-900">
-                  {a.titulo}
-                </p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-zelanda-verde-700">
-                  {a.detalle}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <BadgeBase tono={tonoSeveridad(a.severidad)}>
-                  {a.severidad === "critica"
-                    ? "Crítica"
-                    : a.severidad === "importante"
-                      ? "Importante"
-                      : "Próxima"}
-                </BadgeBase>
-                <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
-              </div>
-            </Link>
-          </li>
-        ))}
+        {listado.map((e) =>
+          e.kind === "individual" ? (
+            <AlertaIndividualItem key={e.alerta.id} alerta={e.alerta} />
+          ) : (
+            <GrupoEntradaAlerta
+              key={`${titulo}__${e.clave}`}
+              clave={e.clave}
+              alertas={e.alertas}
+              expandido={expandidas.has(e.clave)}
+              onToggle={() => alternar(e.clave)}
+            />
+          ),
+        )}
       </ul>
     </section>
   );
@@ -153,7 +268,10 @@ export function AlertasFiltrables({
       if (q !== "") {
         const matchTitulo = a.titulo.toLowerCase().includes(q);
         const matchDetalle = a.detalle.toLowerCase().includes(q);
-        if (!matchTitulo && !matchDetalle) return false;
+        const matchGrupo =
+          a.clave_grupo !== null &&
+          a.clave_grupo.toLowerCase().includes(q);
+        if (!matchTitulo && !matchDetalle && !matchGrupo) return false;
       }
       return true;
     });
