@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  AlertCircle,
+  ChevronRight,
+  Package,
+  ClipboardList,
+  BarChart3,
+  Warehouse,
+} from "lucide-react";
 import { BadgeBase } from "@/components/shared/BadgeRol";
 import { formatearFechaCorta } from "@/lib/utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -14,6 +23,9 @@ import {
 import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
 import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
 import { AsignarMasivoBox } from "@/components/jefe/AsignarMasivoBox";
+import { KPI } from "@/components/ui/KPI";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Atajo } from "@/components/shared/Atajo";
 
 type Persona = { id: string; nombre: string };
 
@@ -311,109 +323,63 @@ export function DashboardJefeCliente({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Operación
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
+        <Eyebrow>Operación</Eyebrow>
+        <div className="grid grid-cols-2 gap-2.5">
+          <KPI
             href="/jefe/inventario"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Stock bajo
-            </p>
-            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-              {contadores.stock_bajo}
-            </p>
-          </Link>
-          <Link
+            etiqueta="Stock bajo"
+            valor={contadores.stock_bajo}
+            pie="Insumos en alerta"
+            acento={contadores.stock_bajo > 0 ? "ocre" : "verde"}
+          />
+          <KPI
             href="/bodega/despachos"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Despachos abiertos
-            </p>
-            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-              {contadores.despachos_abiertos}
-            </p>
-          </Link>
-          <Link
+            etiqueta="Despachos"
+            valor={contadores.despachos_abiertos}
+            pie="Abiertos hoy"
+          />
+          <KPI
             href="/jefe/almacen-vista"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Almacén
-            </p>
-            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-              {contadores.stock_almacen_kg.toLocaleString("es-CO", {
-                maximumFractionDigits: 0,
-              })}{" "}
-              kg
-            </p>
-          </Link>
-          <Link
+            etiqueta="Almacén"
+            valor={`${contadores.stock_almacen_kg.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg`}
+            pie="Stock cosecha"
+          />
+          <KPI
             href="/jefe/instalaciones"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Mapa
-            </p>
-            <p className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-              Capturar
-            </p>
-          </Link>
+            etiqueta="Mapa"
+            valor="+"
+            pie="Capturar polígonos"
+          />
         </div>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Más secciones
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
+        <Eyebrow>Más secciones</Eyebrow>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Atajo
             href="/jefe/tareas"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Tipos de tarea
-            </p>
-            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
-              Frecuencias y catálogo
-            </p>
-          </Link>
-          <Link
+            icono={ClipboardList}
+            titulo="Tipos de tarea"
+            sub="Frecuencias y catálogo"
+          />
+          <Atajo
             href="/jefe/reportes"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Reportes
-            </p>
-            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
-              Cosecha, lotes, recolectores
-            </p>
-          </Link>
-          <Link
+            icono={BarChart3}
+            titulo="Reportes"
+            sub="Cosecha, lotes, recolectores"
+          />
+          <Atajo
             href="/jefe/inventario"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Inventario
-            </p>
-            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
-              Insumos y herramientas
-            </p>
-          </Link>
-          <Link
+            icono={Package}
+            titulo="Inventario"
+            sub="Insumos y herramientas"
+          />
+          <Atajo
             href="/jefe/almacen-vista"
-            className="rounded-xl border border-zelanda-beige-200 bg-white p-4 shadow-card"
-          >
-            <p className="text-xs uppercase tracking-wider text-zelanda-verde-700">
-              Almacén
-            </p>
-            <p className="mt-1 font-serif text-base text-zelanda-verde-900">
-              Cosecha y salidas
-            </p>
-          </Link>
+            icono={Warehouse}
+            titulo="Almacén"
+            sub="Cosecha y salidas"
+          />
         </div>
       </section>
 
