@@ -8,9 +8,9 @@ import { actualizarApiario, type EstadoEdicionApiario } from "../acciones";
 const ESTADO_INICIAL: EstadoEdicionApiario = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20";
+  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
 
-const labelBase = "block text-sm font-medium text-zelanda-verde-800";
+const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
 
 type Apiario = {
   id: string;

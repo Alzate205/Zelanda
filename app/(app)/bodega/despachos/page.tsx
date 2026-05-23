@@ -109,35 +109,35 @@ export default async function PaginaDespachos({
       >
         <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
           <div>
-            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+            <label className="block text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
               Desde
             </label>
             <input
               type="date"
               name="desde"
               defaultValue={aIso(rango.desde)}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[14px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             />
           </div>
           <div>
-            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+            <label className="block text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
               Hasta
             </label>
             <input
               type="date"
               name="hasta"
               defaultValue={aIso(rango.hasta)}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[14px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             />
           </div>
           <div>
-            <label className="block text-[11px] uppercase tracking-wider text-zelanda-verde-700">
+            <label className="block text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
               Persona
             </label>
             <select
               name="persona"
               defaultValue={personaIdRaw}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm"
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[14px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             >
               <option value="">Todas</option>
               {personas.map((p) => (
@@ -150,14 +150,14 @@ export default async function PaginaDespachos({
           <div className="flex items-end gap-2">
             <button
               type="submit"
-              className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 text-sm text-white"
+              className="min-h-touch rounded-xl bg-zelanda-verde-700 px-3.5 text-sm font-semibold text-zelanda-beige-50 hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
             >
               Aplicar
             </button>
             {hayFiltros && (
               <Link
                 href="/bodega/despachos"
-                className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm text-zelanda-verde-700"
+                className="min-h-touch rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-3.5 text-sm font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
               >
                 Limpiar
               </Link>

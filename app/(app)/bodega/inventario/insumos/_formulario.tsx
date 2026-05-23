@@ -41,7 +41,7 @@ export function FormularioInsumo({
           name="nombre"
           required
           defaultValue={valores?.nombre ?? ""}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -54,7 +54,7 @@ export function FormularioInsumo({
           name="categoria"
           required
           defaultValue={valores?.categoria ?? "CULTIVO"}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         >
           <option value="CULTIVO">Cultivo</option>
           <option value="COSECHA">Cosecha</option>
@@ -72,7 +72,7 @@ export function FormularioInsumo({
           required
           placeholder="L, kg, unidades, m..."
           defaultValue={valores?.unidad ?? ""}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -88,7 +88,7 @@ export function FormularioInsumo({
           step="0.001"
           required
           defaultValue={valores?.stock_minimo ?? "0"}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -103,7 +103,7 @@ export function FormularioInsumo({
           min="0.01"
           step="0.01"
           defaultValue={valores?.costo_unitario ?? ""}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 

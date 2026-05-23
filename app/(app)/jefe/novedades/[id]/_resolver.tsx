@@ -17,7 +17,7 @@ export function FormularioResolverNovedad({ novedadId }: { novedadId: string }) 
       <div>
         <label
           htmlFor="notas_resolucion"
-          className="block text-sm font-medium text-zelanda-verde-800"
+          className="block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
         >
           ¿Cómo se resolvió? (opcional)
         </label>

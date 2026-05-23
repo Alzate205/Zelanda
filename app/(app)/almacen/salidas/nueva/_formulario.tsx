@@ -113,7 +113,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
           required
           value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -129,7 +129,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
               value={cliente}
               onChange={(e) => setCliente(e.target.value)}
               placeholder="Nombre exportador / comprador"
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             />
           </div>
           <div>
@@ -145,7 +145,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
               step="1"
               value={precio}
               onChange={(e) => setPrecio(e.target.value)}
-              className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             />
           </div>
         </>
@@ -161,7 +161,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
             value={cliente}
             onChange={(e) => setCliente(e.target.value)}
             placeholder="ej: consumo casa principal"
-            className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+            className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
           />
         </div>
       )}

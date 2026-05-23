@@ -20,7 +20,7 @@ export function FormularioUsername({
       <div>
         <label
           htmlFor="username"
-          className="block text-sm font-medium text-zelanda-verde-800"
+          className="block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
         >
           Nombre de usuario
         </label>
@@ -32,7 +32,7 @@ export function FormularioUsername({
           spellCheck={false}
           defaultValue={usernameInicial ?? ""}
           placeholder="ej. alber"
-          className="mt-1.5 block min-h-touch w-full rounded-lg border border-zelanda-beige-300 bg-white px-3 py-2.5 text-base text-zelanda-verde-900 shadow-suave outline-none transition focus:border-zelanda-verde-600 focus:ring-2 focus:ring-zelanda-verde-600/20"
+          className="mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
         <p className="mt-1 text-xs text-zelanda-verde-700">
           Letras minúsculas, números y los símbolos _ . - (3 a 30 caracteres).

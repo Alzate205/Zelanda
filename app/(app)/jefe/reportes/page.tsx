@@ -1,7 +1,9 @@
-import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, BarChart3, FlaskConical } from "lucide-react";
+import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, Hexagon } from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DescargarCSVButton } from "@/components/jefe/DescargarCSVButton";
+import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 export const metadata = { title: "Reportes" };
 export const dynamic = "force-dynamic";
@@ -165,10 +167,6 @@ export default async function PaginaReportes() {
     (s, r) => s + Number(r.total_kg),
     0,
   );
-  const maxSalida = salidasPorTipo.reduce(
-    (m, r) => Math.max(m, Number(r.total_kg)),
-    0,
-  );
 
   const TONO_TIPO_SALIDA: Record<string, string> = {
     VENTA: "bg-zelanda-verde-700/10 text-zelanda-verde-800",
@@ -244,12 +242,21 @@ export default async function PaginaReportes() {
         </div>
       </section>
 
-      {/* Sección 2: Cosecha últimos 12 meses */}
+      {/* Sección 2: Cosecha últimos 12 meses — bar chart vertical estilo mockup */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-            <BarChart3 className="h-5 w-5" /> Cosecha — últimos 12 meses
-          </h2>
+          <div>
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Cosecha últimos 12 meses
+            </h2>
+            <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+              {(
+                cosechasMes.reduce((a, m) => a + Number(m.total_kg), 0) /
+                1000
+              ).toFixed(1)}{" "}
+              t totales
+            </p>
+          </div>
           <DescargarCSVButton
             filename={`cosecha-12m-${hoy}.csv`}
             headers={["Mes", "Total kg", "Cosechas"]}
@@ -265,38 +272,97 @@ export default async function PaginaReportes() {
             Sin cosechas en los últimos 12 meses.
           </p>
         ) : (
-          <ul className="mt-3 space-y-2">
-            {cosechasMes.map((r) => {
-              const v = Number(r.total_kg);
-              const pct = maxMes > 0 ? (v / maxMes) * 100 : 0;
-              return (
-                <li key={r.ym} className="text-sm">
-                  <div className="flex items-center justify-between text-xs text-zelanda-verde-700/70">
-                    <span>{fmtMes(r.ym)}</span>
-                    <span>
-                      {fmtKg(v)} kg · {r.n_cosechas} cosecha
-                      {r.n_cosechas === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
+          <>
+            <div
+              className="mt-4 grid items-end gap-1"
+              style={{
+                gridTemplateColumns: `repeat(${cosechasMes.length}, 1fr)`,
+                height: "110px",
+              }}
+            >
+              {[...cosechasMes].reverse().map((m, i, arr) => {
+                const v = Number(m.total_kg);
+                const altura = maxMes > 0 ? Math.round((v / maxMes) * 90) : 0;
+                const esUltimo = i === arr.length - 1;
+                return (
+                  <div
+                    key={m.ym}
+                    className="flex flex-col items-center justify-end"
+                    title={`${fmtMes(m.ym)}: ${fmtKg(v)} kg`}
+                  >
                     <div
-                      className="h-full rounded-full bg-zelanda-verde-700"
-                      style={{ width: `${pct}%` }}
+                      className={`w-full rounded-t-[3px] ${esUltimo ? "bg-zelanda-ocre-500" : "bg-zelanda-verde-600"}`}
+                      style={{ height: `${altura}px` }}
                     />
                   </div>
-                </li>
-              );
-            })}
-          </ul>
+                );
+              })}
+            </div>
+            <div
+              className="mt-1.5 grid gap-1 text-center text-[8.5px] text-zelanda-verde-700"
+              style={{
+                gridTemplateColumns: `repeat(${cosechasMes.length}, 1fr)`,
+              }}
+            >
+              {[...cosechasMes].reverse().map((m) => (
+                <span key={m.ym}>{fmtMes(m.ym).split(" ")[0]}</span>
+              ))}
+            </div>
+
+            <table className="mt-4 w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="bg-zelanda-beige-100 text-zelanda-verde-800">
+                  <th className="px-2 py-1.5 text-left font-semibold">Mes</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">Kg</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">
+                    Cosechas
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {cosechasMes.slice(0, 3).map((m) => (
+                  <tr
+                    key={m.ym}
+                    className="border-b border-zelanda-beige-200"
+                  >
+                    <td className="px-2 py-1.5 text-zelanda-verde-900">
+                      {fmtMes(m.ym)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-serif text-zelanda-verde-900">
+                      {fmtKg(Number(m.total_kg))}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-zelanda-verde-700">
+                      {m.n_cosechas}
+                    </td>
+                  </tr>
+                ))}
+                {cosechasMes.length > 3 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-2 py-1.5 text-center text-[11px] text-zelanda-verde-700"
+                    >
+                      · {cosechasMes.length - 3} meses más en CSV ·
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </>
         )}
       </section>
 
       {/* Sección 3: Ranking de lotes */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-serif text-lg text-zelanda-verde-900">
-            Ranking de lotes
-          </h2>
+          <div>
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Ranking de lotes por cosecha
+            </h2>
+            <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+              Año fiscal en curso · {rankingLotes.length} lotes
+            </p>
+          </div>
           <DescargarCSVButton
             filename={`ranking-lotes-${hoy}.csv`}
             headers={[
@@ -321,49 +387,63 @@ export default async function PaginaReportes() {
             })}
           />
         </div>
-        <p className="mt-1 text-xs text-zelanda-verde-700/70">
-          Ordenados por cosecha acumulada. Métricas derivadas cuando hay árboles y hectáreas.
-        </p>
-        <ul className="mt-3 space-y-2">
-          {rankingLotes.map((l) => {
-            const kg = Number(l.kg_total);
-            const pct = maxLote > 0 ? (kg / maxLote) * 100 : 0;
-            const kgArbol = l.total_arboles > 0 ? kg / l.total_arboles : null;
-            const hect = l.hectareas ? Number(l.hectareas) : 0;
-            const kgHa = hect > 0 ? kg / hect : null;
-            return (
-              <li key={l.id.toString()} className="text-sm">
-                <div className="flex items-center justify-between gap-2 text-zelanda-verde-900">
-                  <span className="font-medium">{l.nombre}</span>
-                  <span className="font-serif">{fmtKg(kg)} kg</span>
-                </div>
-                <div className="mt-0.5 text-xs text-zelanda-verde-700/70">
-                  {kgArbol !== null
-                    ? `${kgArbol.toFixed(2)} kg/árbol`
-                    : "— kg/árbol"}
-                  {" · "}
-                  {kgHa !== null
-                    ? `${kgHa.toFixed(2)} kg/ha`
-                    : "— kg/ha"}
-                </div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
-                  <div
-                    className="h-full rounded-full bg-zelanda-verde-700"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        {(() => {
+          const totalKg = rankingLotes.reduce(
+            (a, l) => a + Number(l.kg_total),
+            0,
+          );
+          return (
+            <ul className="mt-3 space-y-2.5">
+              {rankingLotes.slice(0, 8).map((l, i) => {
+                const kg = Number(l.kg_total);
+                const pct = maxLote > 0 ? (kg / maxLote) * 100 : 0;
+                const pctTotal = totalKg > 0 ? (kg / totalKg) * 100 : 0;
+                return (
+                  <li key={l.id.toString()}>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="font-serif text-[13.5px] text-zelanda-verde-900">
+                        <span className="mr-1.5 text-zelanda-verde-700">
+                          {i + 1}.
+                        </span>
+                        {l.nombre}
+                      </span>
+                      <span className="text-[12px] text-zelanda-verde-700">
+                        <strong className="text-zelanda-verde-900">
+                          {fmtKg(kg)}
+                        </strong>{" "}
+                        kg · {pctTotal.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-zelanda-beige-200">
+                      <div
+                        className="h-full rounded-full bg-zelanda-verde-600"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+              {rankingLotes.length > 8 ? (
+                <li className="pt-1 text-center text-[11px] text-zelanda-verde-700">
+                  · {rankingLotes.length - 8} lotes más en CSV ·
+                </li>
+              ) : null}
+            </ul>
+          );
+        })()}
       </section>
 
       {/* Sección 4: Top recolectores de la finca */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-serif text-lg text-zelanda-verde-900">
-            Top recolectores
-          </h2>
+          <div>
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Top recolectores
+            </h2>
+            <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+              Por kg totales
+            </p>
+          </div>
           <DescargarCSVButton
             filename={`top-recolectores-${hoy}.csv`}
             headers={["Persona", "Cosechas", "Total kg"]}
@@ -379,23 +459,30 @@ export default async function PaginaReportes() {
             Sin recolectores registrados.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-zelanda-beige-200">
-            {topRecolectores.map((r) => (
+          <ul className="mt-3">
+            {topRecolectores.map((r, i) => (
               <li
                 key={r.persona_id.toString()}
-                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                className={`flex items-center gap-2.5 py-2 text-sm ${i > 0 ? "border-t border-zelanda-beige-200" : ""}`}
               >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-zelanda-verde-900">
-                    {r.nombre_completo}
-                  </p>
-                  <p className="text-xs text-zelanda-verde-700/70">
-                    {r.n_cosechas} cosecha{r.n_cosechas === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <p className="text-right font-serif text-zelanda-verde-900">
-                  {fmtKg(Number(r.total_kg))} kg
-                </p>
+                <span className="w-5 text-center font-serif text-[14px] text-zelanda-verde-700">
+                  {i + 1}
+                </span>
+                <AvatarIniciales
+                  id={String(r.persona_id)}
+                  nombre={r.nombre_completo}
+                  tamano="sm"
+                />
+                <span className="min-w-0 flex-1 truncate text-[13.5px] text-zelanda-verde-900">
+                  {r.nombre_completo}
+                </span>
+                <span className="text-[11.5px] text-zelanda-verde-700">
+                  {r.n_cosechas} {r.n_cosechas === 1 ? "cosecha" : "cosechas"}
+                </span>
+                <span className="min-w-[60px] text-right font-serif text-[14px] text-zelanda-verde-900">
+                  {fmtKg(Number(r.total_kg))}{" "}
+                  <span className="text-[10px] text-zelanda-verde-700">kg</span>
+                </span>
               </li>
             ))}
           </ul>
@@ -405,9 +492,14 @@ export default async function PaginaReportes() {
       {/* Sección 5: Insumos consumidos (finca) */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="flex items-center gap-2 font-serif text-lg text-zelanda-verde-900">
-            <FlaskConical className="h-5 w-5" /> Insumos consumidos
-          </h2>
+          <div>
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Insumos consumidos
+            </h2>
+            <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+              Suma de despachos cerrados
+            </p>
+          </div>
           <DescargarCSVButton
             filename={`insumos-consumidos-${hoy}.csv`}
             headers={["Insumo", "Unidad", "Total consumido"]}
@@ -418,24 +510,21 @@ export default async function PaginaReportes() {
             ])}
           />
         </div>
-        <p className="mt-1 text-xs text-zelanda-verde-700/70">
-          Suma de <code>cantidad_consumida</code> en todos los despachos cerrados.
-        </p>
         {insumosConsumidos.length === 0 ? (
           <p className="mt-3 text-sm text-zelanda-verde-700/70">
             Sin insumos consumidos.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-zelanda-beige-200">
-            {insumosConsumidos.map((c) => (
+          <ul className="mt-3">
+            {insumosConsumidos.map((c, i) => (
               <li
                 key={c.insumo_id.toString()}
-                className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                className={`flex items-center justify-between gap-2 py-2 text-[13px] ${i > 0 ? "border-t border-zelanda-beige-200" : ""}`}
               >
-                <span className="truncate font-medium text-zelanda-verde-900">
+                <span className="truncate text-zelanda-verde-900">
                   {c.nombre}
                 </span>
-                <span className="text-right font-serif text-zelanda-verde-900">
+                <span className="font-serif text-zelanda-verde-900">
                   {Number(c.total).toLocaleString("es-CO", {
                     maximumFractionDigits: 3,
                   })}{" "}
@@ -450,22 +539,22 @@ export default async function PaginaReportes() {
       {/* Sección 6: Miel — solo si hay datos */}
       {hayMiel ? (
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-          <h2 className="font-serif text-lg text-zelanda-verde-900">
-            Apicultura — miel
-          </h2>
-          <p className="mt-2 font-serif text-3xl text-zelanda-verde-900">
-            {fmtKg(totalMielKg)} kg
-          </p>
-          <p className="text-xs text-zelanda-verde-700/70">
-            {mielTotal._count._all} cosecha{mielTotal._count._all === 1 ? "" : "s"} de miel
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="font-serif text-base text-zelanda-verde-900">
+                Apicultura — miel
+              </h2>
+              <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+                {fmtKg(totalMielKg)} kg en {mielTotal._count._all}{" "}
+                {mielTotal._count._all === 1 ? "cosecha" : "cosechas"}
+              </p>
+            </div>
+          </div>
 
           {rankingApiarios.length > 0 ? (
             <div className="mt-4">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
-                  Por apiario
-                </h3>
+                <Eyebrow>Por apiario</Eyebrow>
                 <DescargarCSVButton
                   filename={`miel-por-apiario-${hoy}.csv`}
                   headers={["Apiario", "Total kg"]}
@@ -475,30 +564,34 @@ export default async function PaginaReportes() {
                   ])}
                 />
               </div>
-              <ul className="mt-2 divide-y divide-zelanda-beige-200">
+              <div className="mt-2 flex flex-col gap-1.5">
                 {rankingApiarios.map((a) => (
-                  <li
+                  <div
                     key={a.nombre}
-                    className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                    className="flex items-center gap-2.5 rounded-[10px] border border-zelanda-ocre-200 bg-zelanda-ocre-50 px-3 py-2"
                   >
-                    <span className="truncate font-medium text-zelanda-verde-900">
-                      {a.nombre}
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-zelanda-ocre-200 text-zelanda-ocre-700">
+                      <Hexagon className="h-3.5 w-3.5" />
                     </span>
-                    <span className="text-right font-serif text-zelanda-verde-900">
-                      {fmtKg(Number(a.total_kg))} kg
+                    <span className="flex-1 truncate font-serif text-[14px] text-zelanda-verde-900">
+                      Apiario {a.nombre}
                     </span>
-                  </li>
+                    <span className="font-serif text-[15px] text-zelanda-verde-900">
+                      {fmtKg(Number(a.total_kg))}{" "}
+                      <span className="text-[10px] text-zelanda-verde-700">
+                        kg
+                      </span>
+                    </span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ) : null}
 
           {topRecolectoresMiel.length > 0 ? (
             <div className="mt-4">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
-                  Top recolectores de miel
-                </h3>
+                <Eyebrow>Top recolectores de miel</Eyebrow>
                 <DescargarCSVButton
                   filename={`top-recolectores-miel-${hoy}.csv`}
                   headers={["Persona", "Total kg"]}
@@ -508,17 +601,28 @@ export default async function PaginaReportes() {
                   ])}
                 />
               </div>
-              <ul className="mt-2 divide-y divide-zelanda-beige-200">
-                {topRecolectoresMiel.map((r) => (
+              <ul className="mt-2">
+                {topRecolectoresMiel.map((r, i) => (
                   <li
                     key={r.persona_id.toString()}
-                    className="grid grid-cols-[1fr_auto] gap-2 py-2 text-sm"
+                    className={`flex items-center gap-2.5 py-2 text-sm ${i > 0 ? "border-t border-zelanda-beige-200" : ""}`}
                   >
-                    <span className="truncate font-medium text-zelanda-verde-900">
+                    <span className="w-5 text-center font-serif text-[14px] text-zelanda-verde-700">
+                      {i + 1}
+                    </span>
+                    <AvatarIniciales
+                      id={String(r.persona_id)}
+                      nombre={r.nombre_completo}
+                      tamano="sm"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] text-zelanda-verde-900">
                       {r.nombre_completo}
                     </span>
-                    <span className="text-right font-serif text-zelanda-verde-900">
-                      {fmtKg(Number(r.total_kg))} kg
+                    <span className="font-serif text-[14px] text-zelanda-verde-900">
+                      {fmtKg(Number(r.total_kg))}{" "}
+                      <span className="text-[10px] text-zelanda-verde-700">
+                        kg
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -531,9 +635,14 @@ export default async function PaginaReportes() {
       {/* Sección 7: Salidas por tipo (últimos 12 meses) */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-serif text-lg text-zelanda-verde-900">
-            Salidas del almacén — últimos 12 meses
-          </h2>
+          <div>
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Salidas del almacén
+            </h2>
+            <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+              {fmtKg(totalSalidas12m)} kg en los últimos 12 meses
+            </p>
+          </div>
           <DescargarCSVButton
             filename={`salidas-12m-${hoy}.csv`}
             headers={["Tipo", "Total kg", "Salidas"]}
@@ -549,34 +658,38 @@ export default async function PaginaReportes() {
             Sin salidas registradas en los últimos 12 meses.
           </p>
         ) : (
-          <ul className="mt-3 space-y-3">
-            {salidasPorTipo.map((s) => {
+          <ul className="mt-3">
+            {salidasPorTipo.map((s, i) => {
               const kg = Number(s.total_kg);
-              const pct = maxSalida > 0 ? (kg / maxSalida) * 100 : 0;
               const pctTotal =
                 totalSalidas12m > 0 ? (kg / totalSalidas12m) * 100 : 0;
+              const color =
+                s.tipo === "PERDIDA"
+                  ? "text-estado-vencida"
+                  : s.tipo === "VENTA"
+                    ? "text-zelanda-ocre-700"
+                    : "text-zelanda-verde-700";
               return (
-                <li key={s.tipo} className="text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${TONO_TIPO_SALIDA[s.tipo] ?? ""}`}
-                    >
-                      {s.tipo}
+                <li
+                  key={s.tipo}
+                  className={`flex items-center justify-between gap-2 py-2 text-sm ${i > 0 ? "border-t border-zelanda-beige-200" : ""}`}
+                >
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.04em] ${TONO_TIPO_SALIDA[s.tipo] ?? ""}`}
+                  >
+                    {s.tipo}
+                  </span>
+                  <span className="text-[11.5px] text-zelanda-verde-700">
+                    {s.n_salidas} mov · {pctTotal.toFixed(1)}%
+                  </span>
+                  <span
+                    className={`min-w-[68px] text-right font-serif text-[14px] ${color}`}
+                  >
+                    {fmtKg(kg)}{" "}
+                    <span className="text-[10px] text-zelanda-verde-700">
+                      kg
                     </span>
-                    <span className="font-serif text-zelanda-verde-900">
-                      {fmtKg(kg)} kg
-                    </span>
-                  </div>
-                  <div className="mt-0.5 text-xs text-zelanda-verde-700/70">
-                    {pctTotal.toFixed(1)}% del total · {s.n_salidas} salida
-                    {s.n_salidas === 1 ? "" : "s"}
-                  </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-zelanda-beige-200">
-                    <div
-                      className="h-full rounded-full bg-zelanda-verde-700"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                  </span>
                 </li>
               );
             })}

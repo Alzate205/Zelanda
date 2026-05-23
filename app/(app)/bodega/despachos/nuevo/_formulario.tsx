@@ -120,7 +120,7 @@ export function FormularioDespacho({
             setPersonaId(e.target.value);
             setAsignacionId("");
           }}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         >
           <option value="">Selecciona...</option>
           {personas.map((p) => (
@@ -140,7 +140,7 @@ export function FormularioDespacho({
             name="asignacion_id"
             value={asignacionId}
             onChange={(e) => setAsignacionId(e.target.value)}
-            className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+            className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
           >
             <option value="">Sin asignación</option>
             {asignacionesFiltradas.map((a) => (

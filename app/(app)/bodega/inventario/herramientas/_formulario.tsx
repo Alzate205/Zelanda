@@ -39,7 +39,7 @@ export function FormularioHerramienta({
           name="nombre"
           required
           defaultValue={valores?.nombre ?? ""}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
@@ -52,7 +52,7 @@ export function FormularioHerramienta({
           name="categoria"
           required
           defaultValue={valores?.categoria ?? "CULTIVO"}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         >
           <option value="CULTIVO">Cultivo</option>
           <option value="COSECHA">Cosecha</option>
@@ -72,7 +72,7 @@ export function FormularioHerramienta({
           step="1"
           required
           defaultValue={valores?.total ?? 0}
-          className="mt-1 block w-full min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2"
+          className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
