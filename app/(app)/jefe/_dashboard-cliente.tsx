@@ -16,6 +16,7 @@ import {
   Briefcase,
   CalendarCheck,
   UserMinus,
+  Wallet,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -352,6 +353,12 @@ export function DashboardJefeCliente({
             icono={UserMinus}
             titulo="Ausencias"
             sub="Faltas y permisos"
+          />
+          <Atajo
+            href="/jefe/saldos"
+            icono={Wallet}
+            titulo="Saldos"
+            sub="Cuánto se debe"
           />
           <Atajo
             href="/jefe/reportes"

@@ -170,7 +170,7 @@ Datos por **persona**: nombre completo, cédula, teléfono, fecha de nacimiento,
 
 Datos por **vinculación**: tipo, rol_finca (texto libre), fecha_inicio, fecha_fin, salario_base + periodo_pago (solo FIJO), tarifa_jornal (solo JORNALERO), esquema_pago_destajo (solo FIJO/JORNALERO).
 
-La capa financiera (cálculo de saldos, pagos, tarifas configurables, servicios contratados con pagos parciales, jornales, ausencias) está diseñada como **Fase 2 futura** — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`.
+La capa financiera (pagos, tarifas configurables, servicios contratados con pagos parciales, jornales, ausencias, vista de saldos por persona) está implementada en Fase 6 — ver §9 más abajo. La lógica de destajo (cantidad × tarifa por kg/árbol/ha) está pendiente y requiere mapear `registros_avance` a `tarifas_tarea` con esquema POR_KG / POR_ARBOL / POR_HECTAREA.
 
 ### 5.7 Alertas
 - Tarea vencida
@@ -183,7 +183,7 @@ La capa financiera (cálculo de saldos, pagos, tarifas configurables, servicios 
 
 ## 6. Esquema de base de datos
 
-El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculaciones` (que reemplaza `trabajadores`) está en **`supabase/migracion-nucleo-personas.sql`**. Las RLS están en **`supabase/policies.sql`**. Estado actual: 18 tablas + 2 vistas (`v_insumos_stock`, `v_stock_almacen`), incluyendo `personas` y `vinculaciones`. La capa financiera (5 tablas adicionales: pagos, tarifas_tarea, servicios_contratados, jornales, ausencias) es **diseño futuro** — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`.
+El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculaciones` (que reemplaza `trabajadores`) está en **`supabase/migracion-nucleo-personas.sql`**. Las RLS están en **`supabase/policies.sql`**. Las migraciones de la capa financiera viven en `supabase/migracion-{tarifas-tarea,pagos,servicios-contratados,jornales,ausencias,recordatorios}.sql`. Estado actual: 24 tablas + 2 vistas (`v_insumos_stock`, `v_stock_almacen`), incluyendo `personas` y `vinculaciones` y las 6 tablas de Fase 6 (recordatorios, tarifas_tarea, pagos, servicios_contratados, jornales, ausencias).
 
 ### Decisiones de diseño clave
 
@@ -329,8 +329,20 @@ Pasos:
 - Pantalla de éxito `AsignacionCerradaSuccess` al cerrar la última avance que completa una asignación ✅
 - Cerrar despacho con `FilaCondicion` (Buen estado / Usada / Dañada) por herramienta y `FilaConsumo` con `+/-` y barra de % por insumo ✅
 
-### Fase 6 — Futuro (no hacer aún)
-Capa financiera (pagos, jornales, servicios contratados — ver `docs/superpowers/specs/2026-05-11-capa-financiera-DRAFT.md`), clima, compras, ventas, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
+### ✅ Fase 6 — Capa financiera (COMPLETADA)
+- **Recordatorios** ✅ (tabla `recordatorios`, lista en `/recordatorios`, push automático a las 7am Colombia vía Vercel cron, muestra en dashboard del jefe y del trabajador)
+- **Tarifas por tarea** ✅ (`/jefe/tarifas` — catálogo con vigencia temporal, esquema POR_JORNAL/POR_KG/POR_ARBOL/POR_HECTAREA/POR_HORA/OTRO, override opcional por lote)
+- **Pagos genéricos** ✅ (`/jefe/pagos` — tabla central de salidas de plata con tipos SALARIO/ADELANTO/JORNAL/SERVICIO/BONO/AJUSTE/OTRO, separador de miles en input)
+- **Servicios contratados** ✅ (`/jefe/servicios` — contratos puntuales con estado ACUERDO/EN_CURSO/TERMINADO/CANCELADO, saldo por contrato, pagos parciales conectados con `pagos.servicio_id`, opción de crear contratista nuevo sin cuenta)
+- **Jornales** ✅ (`/jefe/jornales` — un registro por persona/día con snapshot de tarifa, autosugerencia desde vinculación, UNIQUE(persona_id, fecha))
+- **Ausencias** ✅ (`/jefe/ausencias` — días no trabajados con tipos FALTA/INCAPACIDAD/VACACIONES/LICENCIA/PERMISO y flag `descontable` con default por tipo)
+- **Vista de saldos** ✅ (`/jefe/saldos` — calcula devengado – pagado por persona y mes, con navegación mes a mes; detalle por persona con desglose completo de jornales, contratos, ausencias y pagos del mes)
+- **Separador de miles** ✅ (util `lib/formatos.ts` aplicado a todos los inputs de plata: pagos, tarifas, salario_base, tarifa_jornal, monto_pactado de servicios, tarifa de jornales)
+
+**Pendiente de Fase 6** (no bloquea cierre): cálculo de destajo extra (mapear `registros_avance` × `tarifas_tarea` con esquema POR_KG/POR_ARBOL/POR_HECTAREA) — se suma al devengado de FIJOS según `esquema_pago_destajo` (NUNCA / ADICIONAL / REEMPLAZA_DIA / SOLO_DESTAJO) y de JORNALEROS.
+
+### Fase 7 — Futuro (no hacer aún)
+Destajo (extras de cosecha por kg/árbol/ha sumados al saldo), clima, compras, ventas, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
 
 ---
 
