@@ -246,6 +246,74 @@ export default async function PaginaSaldoPersona({
         </section>
       ) : null}
 
+      {saldo.detalles.extras_destajo_items.length > 0 ? (
+        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="font-serif text-base text-zelanda-verde-900">
+              Destajo del mes
+            </h2>
+            <span className="text-[11.5px] text-zelanda-verde-700">
+              {saldo.esquema_pago_destajo === "ADICIONAL"
+                ? "suma al salario"
+                : saldo.esquema_pago_destajo === "REEMPLAZA_DIA"
+                  ? "reemplaza días con destajo"
+                  : saldo.esquema_pago_destajo === "SOLO_DESTAJO"
+                    ? "único pago"
+                    : "no aplica"}
+            </span>
+          </div>
+          <ul className="space-y-1.5">
+            {saldo.detalles.extras_destajo_items.map((x, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between rounded-[10px] border border-zelanda-beige-200 bg-white px-3 py-2"
+              >
+                <div>
+                  <p className="text-[13.5px] text-zelanda-verde-900">
+                    {fmtFecha(x.fecha)} · {x.concepto}
+                  </p>
+                  <p className="text-[11.5px] text-zelanda-verde-700">
+                    {x.cantidad.toLocaleString("es-CO", {
+                      maximumFractionDigits: 1,
+                    })}{" "}
+                    {x.unidad} × {fmtMonto(x.tarifa)}
+                  </p>
+                </div>
+                <span className="font-serif text-[14px] text-zelanda-verde-900">
+                  {fmtMonto(x.monto)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 flex items-center justify-between border-t border-zelanda-beige-200 pt-2 text-[13.5px]">
+            <span className="font-semibold text-zelanda-verde-900">
+              Total destajo
+            </span>
+            <span className="font-serif text-[15px] text-zelanda-verde-900">
+              {fmtMonto(saldo.detalles.extras_destajo)}
+            </span>
+          </p>
+          {saldo.esquema_pago_destajo === "REEMPLAZA_DIA" &&
+          saldo.detalles.dias_con_destajo > 0 ? (
+            <p className="mt-1 text-[11.5px] text-zelanda-verde-700">
+              {saldo.detalles.dias_con_destajo} día(s) con destajo · base se
+              descuenta proporcional
+            </p>
+          ) : null}
+        </section>
+      ) : saldo.esquema_pago_destajo &&
+        saldo.esquema_pago_destajo !== "NUNCA" &&
+        (saldo.tipo_vinculacion === "FIJO" ||
+          saldo.tipo_vinculacion === "JORNALERO") ? (
+        <section className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-zelanda-beige-50 p-4 text-center">
+          <p className="text-[12.5px] text-zelanda-verde-700">
+            Esta persona tiene esquema de destajo configurado, pero no hubo
+            registros (árboles trabajados o kg cosechados) con tarifas vigentes
+            este mes.
+          </p>
+        </section>
+      ) : null}
+
       {jornales.length > 0 ? (
         <section>
           <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">

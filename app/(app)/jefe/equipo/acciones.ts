@@ -6,7 +6,26 @@ import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
 import { crearClienteSupabaseAdmin } from "@/lib/supabase/admin";
 import { sanitizarError } from "@/lib/errores";
-import type { RolUsuario, TipoVinculacion, TipoPeriodoPago } from "@/types";
+import type {
+  RolUsuario,
+  TipoVinculacion,
+  TipoPeriodoPago,
+  EsquemaPagoDestajo,
+} from "@/types";
+
+const ESQUEMAS_DESTAJO_VALIDOS = [
+  "NUNCA",
+  "ADICIONAL",
+  "REEMPLAZA_DIA",
+  "SOLO_DESTAJO",
+] as const;
+
+function parsearEsquemaDestajo(v: string): EsquemaPagoDestajo | null {
+  if (!v) return null;
+  return ESQUEMAS_DESTAJO_VALIDOS.includes(v as EsquemaPagoDestajo)
+    ? (v as EsquemaPagoDestajo)
+    : null;
+}
 
 export type EstadoFormulario = {
   error: string | null;
@@ -60,6 +79,7 @@ export async function crearMiembro(
   const salarioRaw = String(formData.get("salario_base") ?? "").trim();
   const periodoPagoRaw = String(formData.get("periodo_pago") ?? "");
   const tarifaJornalRaw = String(formData.get("tarifa_jornal") ?? "").trim();
+  const esquemaDestajoRaw = String(formData.get("esquema_pago_destajo") ?? "");
 
   // --- Acceso ---
   const crear_acceso = formData.get("crear_acceso") === "on";
@@ -157,6 +177,11 @@ export async function crearMiembro(
     }
   }
 
+  const esquema_pago_destajo =
+    tipo === "FIJO" || tipo === "JORNALERO"
+      ? (parsearEsquemaDestajo(esquemaDestajoRaw) ?? "NUNCA")
+      : null;
+
   // --- 2. Crear vinculación ---
   try {
     await prisma.vinculaciones.create({
@@ -167,6 +192,7 @@ export async function crearMiembro(
         salario_base,
         periodo_pago,
         tarifa_jornal,
+        esquema_pago_destajo,
       },
     });
   } catch (e) {

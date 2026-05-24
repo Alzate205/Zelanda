@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/auth";
-import type { TipoVinculacion, TipoPeriodoPago } from "@/types";
+import type {
+  TipoVinculacion,
+  TipoPeriodoPago,
+  EsquemaPagoDestajo,
+} from "@/types";
 
 export type EstadoEdicion = { error: string | null };
 
@@ -13,6 +17,11 @@ function esTipoValido(v: string): v is TipoVinculacion {
 }
 function esPeriodoValido(v: string): v is TipoPeriodoPago {
   return v === "MENSUAL" || v === "QUINCENAL" || v === "SEMANAL";
+}
+function parsearDestajo(v: string): EsquemaPagoDestajo {
+  return v === "ADICIONAL" || v === "REEMPLAZA_DIA" || v === "SOLO_DESTAJO"
+    ? (v as EsquemaPagoDestajo)
+    : "NUNCA";
 }
 function esModoValido(v: string): v is "dejar" | "cambiar" | "cerrar" | "editar" {
   return v === "dejar" || v === "cambiar" || v === "cerrar" || v === "editar";
@@ -108,10 +117,15 @@ export async function actualizarPersonaYVinculacion(
     const salarioRaw = String(formData.get("edit_salario_base") ?? "").trim();
     const periodoRaw = String(formData.get("edit_periodo_pago") ?? "");
     const tarifaRaw = String(formData.get("edit_tarifa_jornal") ?? "").trim();
+    const destajoRaw = String(formData.get("edit_esquema_pago_destajo") ?? "");
 
     let salario_base: number | null = null;
     let periodo_pago: TipoPeriodoPago | null = null;
     let tarifa_jornal: number | null = null;
+    const esquema_pago_destajo: EsquemaPagoDestajo | null =
+      tipoActual === "FIJO" || tipoActual === "JORNALERO"
+        ? parsearDestajo(destajoRaw)
+        : null;
 
     if (tipoActual === "FIJO") {
       const s = Number(salarioRaw.replace(/\./g, ""));
@@ -133,7 +147,13 @@ export async function actualizarPersonaYVinculacion(
 
     await prisma.vinculaciones.updateMany({
       where: { persona_id: personaId, fecha_fin: null },
-      data: { rol_finca, salario_base, periodo_pago, tarifa_jornal },
+      data: {
+        rol_finca,
+        salario_base,
+        periodo_pago,
+        tarifa_jornal,
+        esquema_pago_destajo,
+      },
     });
 
     revalidatePath(`/jefe/equipo/${personaId}`);
@@ -147,6 +167,7 @@ export async function actualizarPersonaYVinculacion(
   const salarioRaw = String(formData.get("nueva_salario_base") ?? "").trim();
   const periodoRaw = String(formData.get("nueva_periodo_pago") ?? "");
   const tarifaRaw = String(formData.get("nueva_tarifa_jornal") ?? "").trim();
+  const destajoRaw = String(formData.get("nueva_esquema_pago_destajo") ?? "");
 
   if (!esTipoValido(tipoRaw)) {
     return { error: "Tipo de vinculación inválido." };
@@ -156,6 +177,8 @@ export async function actualizarPersonaYVinculacion(
   let salario_base: number | null = null;
   let periodo_pago: TipoPeriodoPago | null = null;
   let tarifa_jornal: number | null = null;
+  const esquema_pago_destajo: EsquemaPagoDestajo | null =
+    tipo === "FIJO" || tipo === "JORNALERO" ? parsearDestajo(destajoRaw) : null;
 
   if (tipo === "FIJO") {
     const s = Number(salarioRaw.replace(/\./g, ""));
@@ -188,6 +211,7 @@ export async function actualizarPersonaYVinculacion(
         salario_base,
         periodo_pago,
         tarifa_jornal,
+        esquema_pago_destajo,
       },
     });
   });

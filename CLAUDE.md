@@ -339,10 +339,14 @@ Pasos:
 - **Vista de saldos** ✅ (`/jefe/saldos` — calcula devengado – pagado por persona y mes, con navegación mes a mes; detalle por persona con desglose completo de jornales, contratos, ausencias y pagos del mes)
 - **Separador de miles** ✅ (util `lib/formatos.ts` aplicado a todos los inputs de plata: pagos, tarifas, salario_base, tarifa_jornal, monto_pactado de servicios, tarifa de jornales)
 
-**Pendiente de Fase 6** (no bloquea cierre): cálculo de destajo extra (mapear `registros_avance` × `tarifas_tarea` con esquema POR_KG/POR_ARBOL/POR_HECTAREA) — se suma al devengado de FIJOS según `esquema_pago_destajo` (NUNCA / ADICIONAL / REEMPLAZA_DIA / SOLO_DESTAJO) y de JORNALEROS.
+### ✅ Fase 7 paso 1 — Destajo en saldos (COMPLETADA)
+- **Cálculo de destajo extra** ✅ (`lib/saldos.ts` ahora recorre `registros_avance` y `cosechas` en el período, busca la `tarifas_tarea` vigente al momento del evento — preferencia: tarifa específica por lote, luego global — y suma los extras al saldo)
+- **Aplicación del `esquema_pago_destajo`** ✅ (NUNCA / ADICIONAL / REEMPLAZA_DIA / SOLO_DESTAJO) tanto para FIJOS como para JORNALEROS. REEMPLAZA_DIA descuenta `salario_diario` (FIJO) o `tarifa_jornal` (JORNALERO) por cada día con destajo.
+- **UI de destajo** ✅ — en `/jefe/saldos` cada persona muestra el total de destajo si lo hay; en el detalle se ve cada evento con fecha, concepto, cantidad × tarifa = monto.
+- **Selector `esquema_pago_destajo`** ✅ en formularios de equipo (nuevo y editar), tanto en modo "editar vinculación activa" como en "cambiar vinculación".
 
 ### Fase 7 — Futuro (no hacer aún)
-Destajo (extras de cosecha por kg/árbol/ha sumados al saldo), clima, compras, ventas, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
+Clima por lote, compras / proveedores, ventas a clientes, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
 
 ---
 

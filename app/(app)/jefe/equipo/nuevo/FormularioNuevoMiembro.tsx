@@ -234,8 +234,32 @@ export function FormularioNuevoMiembro() {
               className={inputBase}
             />
             <p className="mt-1.5 text-xs text-zelanda-verde-700">
-              Tarifa default que cobra por día. Se puede ajustar por jornada
-              cuando se implemente la capa financiera.
+              Tarifa default que cobra por día.
+            </p>
+          </div>
+        ) : null}
+
+        {tipoVinculacion === "FIJO" || tipoVinculacion === "JORNALERO" ? (
+          <div className="border-t border-zelanda-beige-200 pt-4">
+            <label htmlFor="esquema_pago_destajo" className={labelBase}>
+              Destajo (extras por kg / árbol)
+            </label>
+            <select
+              id="esquema_pago_destajo"
+              name="esquema_pago_destajo"
+              defaultValue="NUNCA"
+              className={inputBase}
+            >
+              <option value="NUNCA">No cobra destajo</option>
+              <option value="ADICIONAL">Adicional al salario</option>
+              <option value="REEMPLAZA_DIA">
+                Reemplaza el día (cuando hace destajo)
+              </option>
+              <option value="SOLO_DESTAJO">Solo cobra destajo</option>
+            </select>
+            <p className="mt-1.5 text-xs text-zelanda-verde-700">
+              Define cómo se suman al saldo los pagos extra por kg cosechados o
+              árboles trabajados con tarifa POR_KG / POR_ARBOL.
             </p>
           </div>
         ) : null}

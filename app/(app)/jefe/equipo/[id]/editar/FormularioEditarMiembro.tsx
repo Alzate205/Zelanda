@@ -32,6 +32,7 @@ type VinculacionActiva = {
   salario_base: number | null;
   periodo_pago: string | null;
   tarifa_jornal: number | null;
+  esquema_pago_destajo: string | null;
 } | null;
 
 export function FormularioEditarMiembro({
@@ -332,6 +333,26 @@ export function FormularioEditarMiembro({
                 />
               </div>
             ) : null}
+            {nuevoTipo === "FIJO" || nuevoTipo === "JORNALERO" ? (
+              <div>
+                <label htmlFor="nueva_esquema_pago_destajo" className={labelBase}>
+                  Destajo (extras por kg / árbol)
+                </label>
+                <select
+                  id="nueva_esquema_pago_destajo"
+                  name="nueva_esquema_pago_destajo"
+                  defaultValue="NUNCA"
+                  className={inputBase}
+                >
+                  <option value="NUNCA">No cobra destajo</option>
+                  <option value="ADICIONAL">Adicional al salario</option>
+                  <option value="REEMPLAZA_DIA">
+                    Reemplaza el día (cuando hace destajo)
+                  </option>
+                  <option value="SOLO_DESTAJO">Solo cobra destajo</option>
+                </select>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -403,6 +424,26 @@ export function FormularioEditarMiembro({
                   }
                   className={inputBase}
                 />
+              </div>
+            ) : null}
+            {vincActiva.tipo === "FIJO" || vincActiva.tipo === "JORNALERO" ? (
+              <div>
+                <label htmlFor="edit_esquema_pago_destajo" className={labelBase}>
+                  Destajo (extras por kg / árbol)
+                </label>
+                <select
+                  id="edit_esquema_pago_destajo"
+                  name="edit_esquema_pago_destajo"
+                  defaultValue={vincActiva.esquema_pago_destajo ?? "NUNCA"}
+                  className={inputBase}
+                >
+                  <option value="NUNCA">No cobra destajo</option>
+                  <option value="ADICIONAL">Adicional al salario</option>
+                  <option value="REEMPLAZA_DIA">
+                    Reemplaza el día (cuando hace destajo)
+                  </option>
+                  <option value="SOLO_DESTAJO">Solo cobra destajo</option>
+                </select>
               </div>
             ) : null}
             {vincActiva.tipo === "CONTRATISTA" || vincActiva.tipo === "FAMILIAR" ? (

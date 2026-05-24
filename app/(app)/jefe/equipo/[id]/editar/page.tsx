@@ -34,6 +34,7 @@ export default async function PaginaEditarMiembro({
           salario_base: true,
           periodo_pago: true,
           tarifa_jornal: true,
+          esquema_pago_destajo: true,
         },
       },
     },
@@ -49,6 +50,7 @@ export default async function PaginaEditarMiembro({
         salario_base: v.salario_base ? Number(v.salario_base) : null,
         periodo_pago: v.periodo_pago,
         tarifa_jornal: v.tarifa_jornal ? Number(v.tarifa_jornal) : null,
+        esquema_pago_destajo: v.esquema_pago_destajo,
       }
     : null;
 

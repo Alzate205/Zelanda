@@ -208,34 +208,44 @@ export default async function PaginaSaldos({
                     )}
                   </div>
                   {aplicaSaldo ? (
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11.5px]">
-                      <div>
-                        <span className="block text-zelanda-verde-700">Dev.</span>
-                        <span className="font-semibold text-zelanda-verde-900">
-                          {fmtMonto(s.devengado)}
-                        </span>
+                    <>
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-[11.5px]">
+                        <div>
+                          <span className="block text-zelanda-verde-700">Dev.</span>
+                          <span className="font-semibold text-zelanda-verde-900">
+                            {fmtMonto(s.devengado)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-zelanda-verde-700">Pag.</span>
+                          <span className="font-semibold text-zelanda-verde-900">
+                            {fmtMonto(s.pagado)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-zelanda-verde-700">Saldo</span>
+                          <span
+                            className={`font-semibold ${
+                              s.saldo > 0
+                                ? "text-zelanda-verde-900"
+                                : s.saldo === 0
+                                  ? "text-estado-aldia"
+                                  : "text-estado-vencida"
+                            }`}
+                          >
+                            {fmtMonto(s.saldo)}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="block text-zelanda-verde-700">Pag.</span>
-                        <span className="font-semibold text-zelanda-verde-900">
-                          {fmtMonto(s.pagado)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-zelanda-verde-700">Saldo</span>
-                        <span
-                          className={`font-semibold ${
-                            s.saldo > 0
-                              ? "text-zelanda-verde-900"
-                              : s.saldo === 0
-                                ? "text-estado-aldia"
-                                : "text-estado-vencida"
-                          }`}
-                        >
-                          {fmtMonto(s.saldo)}
-                        </span>
-                      </div>
-                    </div>
+                      {s.detalles.extras_destajo > 0 ? (
+                        <p className="mt-2 rounded-[8px] bg-zelanda-beige-100 px-2.5 py-1 text-[11px] text-zelanda-verde-800">
+                          + {fmtMonto(s.detalles.extras_destajo)} en destajo
+                          {s.detalles.extras_destajo_items.length > 1
+                            ? ` (${s.detalles.extras_destajo_items.length} eventos)`
+                            : ""}
+                        </p>
+                      ) : null}
+                    </>
                   ) : null}
                 </Link>
               </li>
@@ -245,9 +255,10 @@ export default async function PaginaSaldos({
       )}
 
       <p className="px-2 text-center text-[11px] text-zelanda-verde-700/70">
-        Devengado: salario prorrateado (fijos) · jornales (jornaleros) · contratos
-        iniciados en el mes (contratistas). Pagado: suma de todos los pagos del
-        mes. No incluye destajo extra todavía.
+        Devengado: salario prorrateado (fijos) · jornales (jornaleros) ·
+        contratos iniciados en el mes (contratistas). Destajo (kg cosechados,
+        árboles trabajados) se aplica según el esquema configurado en la
+        vinculación. Pagado: suma de todos los pagos del mes.
       </p>
     </div>
   );
