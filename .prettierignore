@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+coverage
+public/icons/*
+.husky
+.vscode
+.idea
+.env
+.env.local

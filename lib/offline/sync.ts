@@ -14,6 +14,7 @@ import type {
   ItemColaCosecha,
   ItemColaSalida,
 } from "./tipos";
+import { captureException } from "@/lib/sentry";
 
 const BACKOFFS_MS = [1000, 5000, 30000, 300000];
 const MAX_INTENTOS = 5;
@@ -148,10 +149,18 @@ class SyncEngineImpl {
     if (typeof window === "undefined" || this.inicializado) return;
     this.inicializado = true;
     window.addEventListener("online", () => {
-      this.procesarCola().catch(() => undefined);
+      this.procesarCola().catch((e) => {
+        try {
+          captureException(e);
+        } catch {}
+      });
     });
     if (navigator.onLine) {
-      this.procesarCola().catch(() => undefined);
+      this.procesarCola().catch((e) => {
+        try {
+          captureException(e);
+        } catch {}
+      });
     }
   }
 
@@ -208,6 +217,9 @@ class SyncEngineImpl {
         await esperar(backoff(item.intentos));
       }
     } catch (e) {
+      try {
+        captureException(e);
+      } catch {}
       await marcarFallidoTemp(tipo, item.id_local, (e as Error).message);
       await esperar(backoff(item.intentos));
     }
