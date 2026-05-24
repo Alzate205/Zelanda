@@ -21,6 +21,22 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/icons/512x512-monochrome.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
   ],
+  "screenshots": [
+    {
+      "src": "/screenshots/1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Gestión integral de la finca · Funciona sin conexión"
+    },
+    {
+      "src": "/screenshots/2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cosecha · Equipo · Finanzas · Reportes en tiempo real"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Mis tareas",
