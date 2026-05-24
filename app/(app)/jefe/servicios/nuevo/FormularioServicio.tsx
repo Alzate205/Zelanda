@@ -30,6 +30,9 @@ export function FormularioServicio({
   );
   const [aplicaALote, setAplicaALote] = useState(false);
   const [montoPactado, setMontoPactado] = useState("");
+  const [modoContratista, setModoContratista] = useState<"existente" | "nuevo">(
+    "existente",
+  );
 
   const hoy = new Date().toISOString().slice(0, 10);
 
@@ -58,23 +61,62 @@ export function FormularioServicio({
 
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div>
-          <label htmlFor="persona_id" className={labelBase}>
-            Contratista
-          </label>
-          <select
-            id="persona_id"
-            name="persona_id"
-            required
-            className={inputBase}
-            defaultValue=""
-          >
-            <option value="">Selecciona persona…</option>
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+          <label className={labelBase}>Contratista</label>
+          <div className="mt-1.5 grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
+            <button
+              type="button"
+              onClick={() => setModoContratista("existente")}
+              className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                modoContratista === "existente"
+                  ? "bg-white text-zelanda-verde-900 shadow-suave"
+                  : "text-zelanda-verde-700"
+              }`}
+            >
+              Ya registrado
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoContratista("nuevo")}
+              className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                modoContratista === "nuevo"
+                  ? "bg-white text-zelanda-verde-900 shadow-suave"
+                  : "text-zelanda-verde-700"
+              }`}
+            >
+              Nuevo
+            </button>
+          </div>
+          {modoContratista === "existente" ? (
+            <select
+              id="persona_id"
+              name="persona_id"
+              required={modoContratista === "existente"}
+              className={`${inputBase} mt-2`}
+              defaultValue=""
+            >
+              <option value="">Selecciona persona…</option>
+              {personas.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <input
+                id="nuevo_contratista_nombre"
+                name="nuevo_contratista_nombre"
+                type="text"
+                required={modoContratista === "nuevo"}
+                placeholder="Nombre completo del contratista"
+                className={`${inputBase} mt-2`}
+              />
+              <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
+                Se crea como persona sin cuenta de acceso. Después podés agregarle
+                cédula y teléfono desde Equipo si querés.
+              </p>
+            </>
+          )}
         </div>
 
         <div>
@@ -110,7 +152,7 @@ export function FormularioServicio({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <div>
             <label htmlFor="fecha_inicio" className={labelBase}>
               Inicio

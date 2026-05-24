@@ -25,13 +25,49 @@ function parsearId(raw: string | null): bigint | null {
   }
 }
 
+async function crearPersonaBasica(nombreCompleto: string): Promise<bigint> {
+  const MAX_INTENTOS = 5;
+  let intentos = 0;
+  while (true) {
+    intentos++;
+    const filas = await prisma.$queryRaw<{ next_id: bigint }[]>`
+      SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM personas
+    `;
+    const nextId = filas[0].next_id;
+    try {
+      const p = await prisma.personas.create({
+        data: {
+          id: nextId,
+          nombre_completo: nombreCompleto,
+          activo: true,
+        },
+      });
+      return p.id;
+    } catch (e) {
+      const msg = (e as Error)?.message ?? "";
+      if (
+        /unique constraint.*pkey|unique constraint.*"personas_pkey"/i.test(msg) &&
+        intentos < MAX_INTENTOS
+      ) {
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 export async function crearServicio(
   _prev: EstadoServicio,
   formData: FormData,
 ): Promise<EstadoServicio> {
   const usuario = await requerirUsuario("JEFE");
 
-  const personaId = parsearId(String(formData.get("persona_id") ?? ""));
+  const personaIdExistente = parsearId(
+    String(formData.get("persona_id") ?? ""),
+  );
+  const nuevoContratistaNombre = String(
+    formData.get("nuevo_contratista_nombre") ?? "",
+  ).trim();
   const descripcion = String(formData.get("descripcion") ?? "").trim();
   const loteIdRaw = String(formData.get("lote_id") ?? "").trim();
   const montoRaw = String(formData.get("monto_pactado") ?? "").trim();
@@ -39,7 +75,9 @@ export async function crearServicio(
   const fechaFinRaw = String(formData.get("fecha_fin") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
 
-  if (!personaId) return { error: "Selecciona al contratista." };
+  if (!personaIdExistente && !nuevoContratistaNombre) {
+    return { error: "Elegí al contratista o escribí el nombre." };
+  }
   if (!descripcion) return { error: "Describí el servicio." };
 
   const monto = Number(montoRaw.replace(/\./g, ""));
@@ -68,6 +106,10 @@ export async function crearServicio(
   if (loteIdRaw && !loteId) return { error: "Lote inválido." };
 
   try {
+    const personaId = personaIdExistente
+      ? personaIdExistente
+      : await crearPersonaBasica(nuevoContratistaNombre);
+
     await prisma.servicios_contratados.create({
       data: {
         persona_id: personaId,
