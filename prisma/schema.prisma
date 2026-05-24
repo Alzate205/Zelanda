@@ -706,6 +706,7 @@ model lotes {
   frecuencias_lote      frecuencias_lote[]
   tarifas_tarea         tarifas_tarea[]
   servicios_contratados servicios_contratados[]
+  jornales              jornales[]
 
   @@index([poligono], map: "idx_lotes_poligono", type: Gist)
   @@schema("public")
@@ -886,6 +887,7 @@ model personas {
   recordatorios_completados recordatorios[]         @relation("recordatorios_completado_por")
   pagos                     pagos[]
   servicios_contratados     servicios_contratados[]
+  jornales                  jornales[]
 
   @@schema("public")
 }
@@ -969,6 +971,29 @@ model servicios_contratados {
   @@schema("public")
 }
 
+model jornales {
+  id                        BigInt   @id @default(autoincrement())
+  persona_id                BigInt
+  fecha                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  tarifa_aplicada           Decimal  @db.Decimal(12, 2)
+  lote_id                   BigInt?
+  descripcion_actividad     String?
+  notas                     String?
+  registrado_por_usuario_id String   @db.Uuid
+  created_at                DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime @default(now()) @db.Timestamptz(6)
+
+  persona  personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lotes    lotes?   @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usuarios usuarios @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([persona_id, fecha])
+  @@index([fecha(sort: Desc)], map: "idx_jornales_fecha")
+  @@index([persona_id, fecha(sort: Desc)], map: "idx_jornales_persona_fecha")
+  @@index([lote_id], map: "idx_jornales_lote")
+  @@schema("public")
+}
+
 model vinculaciones {
   id                   BigInt              @id @default(autoincrement())
   persona_id           BigInt
@@ -1011,6 +1036,7 @@ model usuarios {
   tarifas_tarea         tarifas_tarea[]
   pagos                 pagos[]
   servicios_contratados servicios_contratados[]
+  jornales              jornales[]
   users                 users                   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   persona               personas?               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 

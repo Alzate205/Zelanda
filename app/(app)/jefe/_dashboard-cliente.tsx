@@ -14,6 +14,7 @@ import {
   Bell,
   DollarSign,
   Briefcase,
+  CalendarCheck,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -338,6 +339,12 @@ export function DashboardJefeCliente({
             icono={Briefcase}
             titulo="Servicios"
             sub="Contratos puntuales"
+          />
+          <Atajo
+            href="/jefe/jornales"
+            icono={CalendarCheck}
+            titulo="Jornales"
+            sub="Días trabajados"
           />
           <Atajo
             href="/jefe/reportes"
