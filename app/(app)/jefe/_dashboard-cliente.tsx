@@ -327,6 +327,12 @@ export function DashboardJefeCliente({
             sub="Catálogo de pagos"
           />
           <Atajo
+            href="/jefe/pagos"
+            icono={DollarSign}
+            titulo="Pagos"
+            sub="Histórico de salidas"
+          />
+          <Atajo
             href="/jefe/reportes"
             icono={ChevronRight}
             titulo="Reportes"
