@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import { actualizarPersonaYVinculacion, type EstadoEdicion } from "../acciones";
 import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
 import type { TipoVinculacion } from "@/types";
+import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
 
@@ -46,6 +47,14 @@ export function FormularioEditarMiembro({
   );
   const [modo, setModo] = useState<ModoVinculacion>("dejar");
   const [nuevoTipo, setNuevoTipo] = useState<TipoVinculacion>("FIJO");
+  const [nuevoSalario, setNuevoSalario] = useState("");
+  const [nuevoTarifaJornal, setNuevoTarifaJornal] = useState("");
+  const [editSalario, setEditSalario] = useState(
+    vincActiva?.salario_base != null ? String(vincActiva.salario_base) : "",
+  );
+  const [editTarifaJornal, setEditTarifaJornal] = useState(
+    vincActiva?.tarifa_jornal != null ? String(vincActiva.tarifa_jornal) : "",
+  );
 
   return (
     <form action={accion} className="space-y-6" noValidate>
@@ -274,10 +283,14 @@ export function FormularioEditarMiembro({
                   <input
                     id="nueva_salario_base"
                     name="nueva_salario_base"
-                    type="number"
-                    min="0"
-                    step="1000"
+                    type="text"
+                    inputMode="numeric"
                     required={nuevoTipo === "FIJO"}
+                    placeholder="Ej. 1.300.000"
+                    value={formatearMiles(nuevoSalario)}
+                    onChange={(e) =>
+                      setNuevoSalario(normalizarEntradaNumerica(e.target.value))
+                    }
                     className={inputBase}
                   />
                 </div>
@@ -307,10 +320,14 @@ export function FormularioEditarMiembro({
                 <input
                   id="nueva_tarifa_jornal"
                   name="nueva_tarifa_jornal"
-                  type="number"
-                  min="0"
-                  step="1000"
+                  type="text"
+                  inputMode="numeric"
                   required={nuevoTipo === "JORNALERO"}
+                  placeholder="Ej. 50.000"
+                  value={formatearMiles(nuevoTarifaJornal)}
+                  onChange={(e) =>
+                    setNuevoTarifaJornal(normalizarEntradaNumerica(e.target.value))
+                  }
                   className={inputBase}
                 />
               </div>
@@ -341,11 +358,13 @@ export function FormularioEditarMiembro({
                   <input
                     id="edit_salario_base"
                     name="edit_salario_base"
-                    type="number"
-                    min="0"
-                    step="1000"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    defaultValue={vincActiva.salario_base ?? ""}
+                    value={formatearMiles(editSalario)}
+                    onChange={(e) =>
+                      setEditSalario(normalizarEntradaNumerica(e.target.value))
+                    }
                     className={inputBase}
                   />
                 </div>
@@ -375,11 +394,13 @@ export function FormularioEditarMiembro({
                 <input
                   id="edit_tarifa_jornal"
                   name="edit_tarifa_jornal"
-                  type="number"
-                  min="0"
-                  step="1000"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  defaultValue={vincActiva.tarifa_jornal ?? ""}
+                  value={formatearMiles(editTarifaJornal)}
+                  onChange={(e) =>
+                    setEditTarifaJornal(normalizarEntradaNumerica(e.target.value))
+                  }
                   className={inputBase}
                 />
               </div>

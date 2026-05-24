@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Check } from "lucide-react";
 import { crearTarifa, type EstadoTarifa } from "../acciones";
+import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
 
 const ESTADO_INICIAL: EstadoTarifa = { error: null };
 
@@ -46,6 +47,7 @@ export function FormularioTarifa({
   );
   const [esquema, setEsquema] = useState<Esquema>("POR_JORNAL");
   const [aplicaALote, setAplicaALote] = useState(false);
+  const [monto, setMonto] = useState("");
 
   const unidadSugerida = ESQUEMAS.find((e) => e.id === esquema)?.unidad ?? "";
   const hoy = new Date().toISOString().slice(0, 10);
@@ -140,12 +142,12 @@ export function FormularioTarifa({
             <input
               id="monto"
               name="monto"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min="0"
-              step="100"
               required
-              placeholder="80000"
+              placeholder="80.000"
+              value={formatearMiles(monto)}
+              onChange={(e) => setMonto(normalizarEntradaNumerica(e.target.value))}
               className={inputBase}
             />
           </div>

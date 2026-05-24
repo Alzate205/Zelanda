@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { crearMiembro, type EstadoFormulario } from "../acciones";
+import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
 
 const ESTADO_INICIAL: EstadoFormulario = { error: null, exito: null };
 
@@ -26,6 +27,8 @@ export function FormularioNuevoMiembro() {
     "FIJO" | "JORNALERO" | "CONTRATISTA" | "FAMILIAR"
   >("FIJO");
   const [crearAcceso, setCrearAcceso] = useState(true);
+  const [salarioBase, setSalarioBase] = useState("");
+  const [tarifaJornal, setTarifaJornal] = useState("");
 
   return (
     <form action={accion} className="space-y-6" noValidate>
@@ -182,12 +185,14 @@ export function FormularioNuevoMiembro() {
               <input
                 id="salario_base"
                 name="salario_base"
-                type="number"
+                type="text"
                 inputMode="numeric"
-                min="0"
-                step="1000"
                 required
-                placeholder="Ej. 1300000"
+                placeholder="Ej. 1.300.000"
+                value={formatearMiles(salarioBase)}
+                onChange={(e) =>
+                  setSalarioBase(normalizarEntradaNumerica(e.target.value))
+                }
                 className={inputBase}
               />
             </div>
@@ -218,12 +223,14 @@ export function FormularioNuevoMiembro() {
             <input
               id="tarifa_jornal"
               name="tarifa_jornal"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min="0"
-              step="1000"
               required
-              placeholder="Ej. 50000"
+              placeholder="Ej. 50.000"
+              value={formatearMiles(tarifaJornal)}
+              onChange={(e) =>
+                setTarifaJornal(normalizarEntradaNumerica(e.target.value))
+              }
               className={inputBase}
             />
             <p className="mt-1.5 text-xs text-zelanda-verde-700">

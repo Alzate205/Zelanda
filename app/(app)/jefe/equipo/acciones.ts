@@ -85,7 +85,7 @@ export async function crearMiembro(
     if (!salarioRaw) {
       return { ...ESTADO_INICIAL, error: "Salario base obligatorio para tipo FIJO." };
     }
-    const s = Number(salarioRaw);
+    const s = Number(salarioRaw.replace(/\./g, ""));
     if (!Number.isFinite(s) || s <= 0) {
       return { ...ESTADO_INICIAL, error: "Salario base debe ser un número positivo." };
     }
@@ -98,7 +98,7 @@ export async function crearMiembro(
     if (!tarifaJornalRaw) {
       return { ...ESTADO_INICIAL, error: "Tarifa por jornal obligatoria para tipo JORNALERO." };
     }
-    const t = Number(tarifaJornalRaw);
+    const t = Number(tarifaJornalRaw.replace(/\./g, ""));
     if (!Number.isFinite(t) || t <= 0) {
       return { ...ESTADO_INICIAL, error: "Tarifa por jornal debe ser un número positivo." };
     }

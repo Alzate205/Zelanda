@@ -46,7 +46,7 @@ export async function crearTarifa(
   if (!ESQUEMAS_VALIDOS.includes(esquemaRaw as esquema_pago_actividad)) {
     return { error: "Esquema de pago inválido." };
   }
-  const monto = Number(montoRaw);
+  const monto = Number(montoRaw.replace(/\./g, ""));
   if (!Number.isFinite(monto) || monto < 0) {
     return { error: "Monto inválido." };
   }

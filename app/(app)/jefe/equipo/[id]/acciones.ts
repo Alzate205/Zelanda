@@ -114,7 +114,7 @@ export async function actualizarPersonaYVinculacion(
     let tarifa_jornal: number | null = null;
 
     if (tipoActual === "FIJO") {
-      const s = Number(salarioRaw);
+      const s = Number(salarioRaw.replace(/\./g, ""));
       if (!Number.isFinite(s) || s <= 0) {
         return { error: "Salario base inválido para FIJO." };
       }
@@ -124,7 +124,7 @@ export async function actualizarPersonaYVinculacion(
       }
       periodo_pago = periodoRaw;
     } else if (tipoActual === "JORNALERO") {
-      const t = Number(tarifaRaw);
+      const t = Number(tarifaRaw.replace(/\./g, ""));
       if (!Number.isFinite(t) || t <= 0) {
         return { error: "Tarifa por jornal inválida para JORNALERO." };
       }
@@ -158,7 +158,7 @@ export async function actualizarPersonaYVinculacion(
   let tarifa_jornal: number | null = null;
 
   if (tipo === "FIJO") {
-    const s = Number(salarioRaw);
+    const s = Number(salarioRaw.replace(/\./g, ""));
     if (!Number.isFinite(s) || s <= 0) {
       return { error: "Salario base inválido para FIJO." };
     }
@@ -168,7 +168,7 @@ export async function actualizarPersonaYVinculacion(
     }
     periodo_pago = periodoRaw;
   } else if (tipo === "JORNALERO") {
-    const t = Number(tarifaRaw);
+    const t = Number(tarifaRaw.replace(/\./g, ""));
     if (!Number.isFinite(t) || t <= 0) {
       return { error: "Tarifa por jornal inválida para JORNALERO." };
     }

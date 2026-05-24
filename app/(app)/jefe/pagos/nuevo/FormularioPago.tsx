@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Check } from "lucide-react";
 import { crearPago, type EstadoPago } from "../acciones";
+import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
 
 const ESTADO_INICIAL: EstadoPago = { error: null };
 
@@ -26,15 +27,6 @@ const TIPOS: { id: Tipo; etiqueta: string; descripcion: string }[] = [
   { id: "AJUSTE", etiqueta: "Ajuste", descripcion: "Corrección (+/–)" },
   { id: "OTRO", etiqueta: "Otro", descripcion: "Sin categoría" },
 ];
-
-function formatearMonto(valor: string): string {
-  if (!valor) return "";
-  const negativo = valor.startsWith("-");
-  const digitos = valor.replace(/[^\d]/g, "");
-  if (!digitos) return negativo ? "-" : "";
-  const conPuntos = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return negativo ? `-${conPuntos}` : conPuntos;
-}
 
 export function FormularioPago({ personas }: { personas: Persona[] }) {
   const [estado, accion, pendiente] = useActionState(crearPago, ESTADO_INICIAL);
@@ -127,13 +119,10 @@ export function FormularioPago({ personas }: { personas: Persona[] }) {
               inputMode={esAjuste ? "text" : "numeric"}
               required
               placeholder={esAjuste ? "puede ser negativo" : "80.000"}
-              value={formatearMonto(monto)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                const negativo = esAjuste && raw.trim().startsWith("-");
-                const digitos = raw.replace(/[^\d]/g, "");
-                setMonto(negativo && digitos ? `-${digitos}` : digitos);
-              }}
+              value={formatearMiles(monto)}
+              onChange={(e) =>
+                setMonto(normalizarEntradaNumerica(e.target.value, esAjuste))
+              }
               className={inputBase}
             />
             {esAjuste ? (
