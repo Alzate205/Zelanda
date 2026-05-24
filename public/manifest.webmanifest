@@ -35,6 +35,13 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Cosecha · Equipo · Finanzas · Reportes en tiempo real"
+    },
+    {
+      "src": "/screenshots/wide-1.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Hacienda La Zelanda · Gestión integral de la finca"
     }
   ],
   "shortcuts": [
