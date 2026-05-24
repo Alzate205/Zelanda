@@ -243,6 +243,7 @@ export type ItemColaSalida = {
   tipo: "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
   cantidad_kg: number;
   cliente_detalle: string | null;
+  cliente_id: string | null;
   precio_total: number | null;
   notas: string | null;
   estado: EstadoCola;

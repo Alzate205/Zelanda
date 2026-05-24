@@ -345,8 +345,16 @@ Pasos:
 - **UI de destajo** ✅ — en `/jefe/saldos` cada persona muestra el total de destajo si lo hay; en el detalle se ve cada evento con fecha, concepto, cantidad × tarifa = monto.
 - **Selector `esquema_pago_destajo`** ✅ en formularios de equipo (nuevo y editar), tanto en modo "editar vinculación activa" como en "cambiar vinculación".
 
+### ✅ Fase 7 paso 2 — Ventas y clientes (COMPLETADA)
+- **Tabla `clientes`** ✅ (entidad reusable: nombre, contacto, teléfono, notas, flag `activo`). RLS jefe + almacén.
+- **FK `salidas_cosecha.cliente_id`** ✅ opcional (mantiene `cliente_detalle` texto libre como fallback para retrocompatibilidad).
+- **`/jefe/clientes`** ✅ — lista activos/inactivos con stats por cliente (n° ventas, kg, ingresos), CRUD con activar/desactivar para preservar histórico.
+- **`/jefe/ventas`** ✅ — dashboard mes a mes con KPIs (ingresos, kg vendidos, ticket promedio, precio promedio/kg, n° clientes distintos), ranking por cliente y lista detallada de ventas del mes.
+- **`/almacen/salidas/nueva`** ✅ extendido con segmentado "Ya registrado / Texto libre" para elegir cliente (manteniendo soporte offline vía `enviarSalida`); precio total con separador de miles.
+- **Atajos "Ventas" y "Clientes"** ✅ en el dashboard del jefe.
+
 ### Fase 7 — Futuro (no hacer aún)
-Clima por lote, compras / proveedores, ventas a clientes, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
+Compras / proveedores, clima por lote, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
 
 ---
 

@@ -6,9 +6,16 @@ export const metadata = { title: "Nueva salida" };
 
 export default async function PaginaNuevaSalida() {
   await requerirUsuario("ALMACEN");
-  const rows = await prisma.$queryRaw<{ stock_kg: string }[]>`
-    SELECT stock_kg::text FROM v_stock_almacen
-  `;
+  const [rows, clientes] = await Promise.all([
+    prisma.$queryRaw<{ stock_kg: string }[]>`
+      SELECT stock_kg::text FROM v_stock_almacen
+    `,
+    prisma.clientes.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true },
+      orderBy: { nombre: "asc" },
+    }),
+  ]);
   const stock = Number(rows[0]?.stock_kg ?? 0);
 
   return (
@@ -24,7 +31,10 @@ export default async function PaginaNuevaSalida() {
           Stock disponible: {stock.toLocaleString("es-CO", { maximumFractionDigits: 2 })} kg
         </p>
       </header>
-      <FormularioSalida stockMax={stock} />
+      <FormularioSalida
+        stockMax={stock}
+        clientes={clientes.map((c) => ({ id: String(c.id), nombre: c.nombre }))}
+      />
     </div>
   );
 }

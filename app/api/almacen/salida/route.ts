@@ -8,9 +8,19 @@ type Body = {
   tipo: "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
   cantidad_kg: number;
   cliente_detalle: string | null;
+  cliente_id: string | null;
   precio_total: number | null;
   notas: string | null;
 };
+
+function parsearBigInt(raw: string | null | undefined): bigint | null {
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
+}
 
 function esUuid(s: unknown): s is string {
   return (
@@ -68,7 +78,8 @@ export async function POST(req: Request) {
   }
 
   const cliente = body.cliente_detalle?.trim() || null;
-  if (body.tipo === "VENTA" && !cliente) {
+  const clienteId = parsearBigInt(body.cliente_id);
+  if (body.tipo === "VENTA" && !cliente && !clienteId) {
     return NextResponse.json(
       { error: "Para ventas, indica el cliente" },
       { status: 400 },
@@ -108,6 +119,7 @@ export async function POST(req: Request) {
         tipo: body.tipo,
         cantidad_kg: body.cantidad_kg,
         cliente_detalle: cliente,
+        cliente_id: clienteId,
         precio_total: precio,
         registrado_por_usuario_id: usuario.id,
         notas: body.notas?.trim() || null,

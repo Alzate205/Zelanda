@@ -5,10 +5,18 @@ import { useRouter } from "next/navigation";
 import { CloudOff } from "lucide-react";
 import { enviarSalida } from "@/lib/offline/api-cliente";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
 
 type Tipo = "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
+type Cliente = { id: string; nombre: string };
 
-export function FormularioSalida({ stockMax }: { stockMax: number }) {
+export function FormularioSalida({
+  stockMax,
+  clientes = [],
+}: {
+  stockMax: number;
+  clientes?: Cliente[];
+}) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
@@ -16,6 +24,10 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
   const [tipo, setTipo] = useState<Tipo>("VENTA");
   const [cantidad, setCantidad] = useState("");
   const [cliente, setCliente] = useState("");
+  const [clienteId, setClienteId] = useState("");
+  const [modoCliente, setModoCliente] = useState<"existente" | "nuevo">(
+    clientes.length > 0 ? "existente" : "nuevo",
+  );
   const [precio, setPrecio] = useState("");
   const [notas, setNotas] = useState("");
 
@@ -33,15 +45,17 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
       return;
     }
 
-    const clienteFinal = cliente.trim() || null;
-    if (tipo === "VENTA" && !clienteFinal) {
-      setError("Para ventas, indica el cliente.");
+    const usaIdExistente = tipo === "VENTA" && modoCliente === "existente" && clienteId !== "";
+    const clienteFinal = usaIdExistente ? null : cliente.trim() || null;
+    const clienteIdFinal = usaIdExistente ? clienteId : null;
+    if (tipo === "VENTA" && !clienteFinal && !clienteIdFinal) {
+      setError("Para ventas, elegí o escribí el cliente.");
       return;
     }
 
     let precioFinal: number | null = null;
     if (tipo === "VENTA" && precio.trim()) {
-      const p = Number(precio);
+      const p = Number(precio.replace(/\./g, ""));
       if (!Number.isFinite(p) || p <= 0) {
         setError("Precio total debe ser positivo.");
         return;
@@ -54,6 +68,7 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
         tipo,
         cantidad_kg: c,
         cliente_detalle: clienteFinal,
+        cliente_id: clienteIdFinal,
         precio_total: precioFinal,
         notas: notas.trim() || null,
       });
@@ -120,17 +135,59 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
       {tipo === "VENTA" && (
         <>
           <div>
-            <label htmlFor="cliente" className="block text-sm font-medium text-zelanda-verde-900">
+            <p className="block text-sm font-medium text-zelanda-verde-900">
               Cliente
-            </label>
-            <input
-              id="cliente"
-              required
-              value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-              placeholder="Nombre exportador / comprador"
-              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
-            />
+            </p>
+            {clientes.length > 0 ? (
+              <div className="mt-1 grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
+                <button
+                  type="button"
+                  onClick={() => setModoCliente("existente")}
+                  className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                    modoCliente === "existente"
+                      ? "bg-white text-zelanda-verde-900 shadow-suave"
+                      : "text-zelanda-verde-700"
+                  }`}
+                >
+                  Ya registrado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoCliente("nuevo")}
+                  className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
+                    modoCliente === "nuevo"
+                      ? "bg-white text-zelanda-verde-900 shadow-suave"
+                      : "text-zelanda-verde-700"
+                  }`}
+                >
+                  Texto libre
+                </button>
+              </div>
+            ) : null}
+            {clientes.length > 0 && modoCliente === "existente" ? (
+              <select
+                required
+                value={clienteId}
+                onChange={(e) => setClienteId(e.target.value)}
+                className="mt-2 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+              >
+                <option value="">Selecciona cliente…</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="cliente"
+                required={modoCliente === "nuevo"}
+                value={cliente}
+                onChange={(e) => setCliente(e.target.value)}
+                placeholder="Nombre exportador / comprador"
+                className="mt-2 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+              />
+            )}
           </div>
           <div>
             <label htmlFor="precio" className="block text-sm font-medium text-zelanda-verde-900">
@@ -138,13 +195,11 @@ export function FormularioSalida({ stockMax }: { stockMax: number }) {
             </label>
             <input
               id="precio"
-              type="number"
+              type="text"
               inputMode="numeric"
-              pattern="[0-9]*"
-              min="1"
-              step="1"
-              value={precio}
-              onChange={(e) => setPrecio(e.target.value)}
+              value={formatearMiles(precio)}
+              onChange={(e) => setPrecio(normalizarEntradaNumerica(e.target.value))}
+              placeholder="2.500.000"
               className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             />
           </div>

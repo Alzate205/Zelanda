@@ -17,6 +17,7 @@ import {
   CalendarCheck,
   UserMinus,
   Wallet,
+  TrendingUp,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -359,6 +360,18 @@ export function DashboardJefeCliente({
             icono={Wallet}
             titulo="Saldos"
             sub="Cuánto se debe"
+          />
+          <Atajo
+            href="/jefe/ventas"
+            icono={TrendingUp}
+            titulo="Ventas"
+            sub="Ingresos por cliente"
+          />
+          <Atajo
+            href="/jefe/clientes"
+            icono={Users}
+            titulo="Clientes"
+            sub="Compradores"
           />
           <Atajo
             href="/jefe/reportes"
