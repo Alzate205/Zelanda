@@ -353,8 +353,18 @@ Pasos:
 - **`/almacen/salidas/nueva`** ✅ extendido con segmentado "Ya registrado / Texto libre" para elegir cliente (manteniendo soporte offline vía `enviarSalida`); precio total con separador de miles.
 - **Atajos "Ventas" y "Clientes"** ✅ en el dashboard del jefe.
 
+### ✅ Fase 7 paso 3 — Compras y proveedores (COMPLETADA)
+- **Tabla `proveedores`** ✅ (nombre, contacto, NIT, teléfono, notas, flag `activo`). RLS jefe + bodega.
+- **Tablas `compras` (cabecera) + `compras_items` (detalle)** ✅ con `subtotal` calculado como columna generada `cantidad * costo_unitario`. Total de la cabecera se actualiza vía trigger al insertar/borrar/actualizar items.
+- **Trigger automático `ajustar_stock_por_compra_item`** ✅ al insertar item: sube `insumos.stock_actual += cantidad`, refresca `insumos.costo_unitario`, crea `movimientos_insumo` tipo INGRESO. Al borrar: revierte el stock.
+- **`/jefe/proveedores`** ✅ — CRUD completo con stats por proveedor (n° compras, total gastado), activar/desactivar.
+- **`/jefe/compras`** ✅ — dashboard mensual con KPIs (gastado, items, n° proveedores distintos, ticket promedio), ranking por proveedor y lista con navegación mes a mes.
+- **`/jefe/compras/nueva`** ✅ — formulario con segmentado "Ya registrado / Nuevo" para proveedor (auto-crea proveedor al guardar si es nuevo), items dinámicos (agregar/quitar filas) con autosugerencia de costo desde `insumos.costo_unitario`, subtotal por item y total en vivo, separador de miles en cantidades y precios. Server action en transacción.
+- **`/jefe/compras/[id]`** ✅ — detalle con listado de items, total, factura, notas. Botón "Borrar compra (revierte stock)" usa el trigger de borrado.
+- **Atajos "Compras" y "Proveedores"** ✅ en el dashboard del jefe.
+
 ### Fase 7 — Futuro (no hacer aún)
-Compras / proveedores, clima por lote, reportes avanzados, códigos QR en placas, APK distribuible con PWABuilder.
+Reportes avanzados, APK distribuible con PWABuilder.
 
 ---
 

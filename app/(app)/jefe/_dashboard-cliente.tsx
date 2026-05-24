@@ -18,6 +18,8 @@ import {
   UserMinus,
   Wallet,
   TrendingUp,
+  ShoppingCart,
+  Truck,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -372,6 +374,18 @@ export function DashboardJefeCliente({
             icono={Users}
             titulo="Clientes"
             sub="Compradores"
+          />
+          <Atajo
+            href="/jefe/compras"
+            icono={ShoppingCart}
+            titulo="Compras"
+            sub="Costos de insumos"
+          />
+          <Atajo
+            href="/jefe/proveedores"
+            icono={Truck}
+            titulo="Proveedores"
+            sub="A quién compramos"
           />
           <Atajo
             href="/jefe/reportes"
