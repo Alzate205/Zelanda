@@ -7,8 +7,9 @@ export const metadata: Metadata = {
     default: "La Zelanda",
     template: "%s · La Zelanda",
   },
-  description: "Sistema de gestión integral para Hacienda La Zelanda",
-  applicationName: "FincApp",
+  description:
+    "Gestión integral de la Hacienda La Zelanda: lotes, árboles, tareas del campo, equipo, cosecha, ventas y finanzas. Funciona sin conexión.",
+  applicationName: "La Zelanda",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -17,6 +18,9 @@ export const metadata: Metadata = {
   },
   icons: {
     apple: "/icons/icon-192.png",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 

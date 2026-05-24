@@ -371,8 +371,20 @@ Pasos:
   - **Cosecha anual (tendencia histórica)**: bar chart por año (todos los años con datos) en toneladas.
 - **Link destacado** en `/jefe/reportes` (banner verde claro con icono `BarChart3`) que lleva a los reportes avanzados.
 
-### Fase 7 — Futuro (no hacer aún)
-APK distribuible con PWABuilder.
+### ✅ Fase 7 paso 5 — APK distribuible (COMPLETADA)
+- **Manifest mejorado** ✅ (`public/manifest.webmanifest` ahora incluye `id`, `scope`, `lang`, `dir`, `categories`, `prefer_related_applications: false`, íconos separados por `purpose` (any + maskable), y 4 `shortcuts` para acciones comunes: mis tareas, asignar, registrar cosecha, saldos).
+- **Metadata del layout** ✅ refinada (descripción alineada con manifest, `applicationName: "La Zelanda"` consistente, `formatDetection.telephone: false` para que Android no convierta números en links de llamada).
+- **Documentación** ✅ — `docs/APK.md` con paso a paso para generar el APK con PWABuilder, distribuir por WhatsApp, gestionar la `signing.keystore` y entender cuándo regenerar.
+
+**Cómo generar el APK** (resumen):
+1. Deploy en Vercel.
+2. Abrir https://www.pwabuilder.com/, pegar la URL.
+3. **Package for Stores → Android → Other Android**.
+4. Descargar el ZIP, conservar `signing.keystore` en lugar seguro.
+5. Distribuir el `.apk` por WhatsApp.
+
+### Fase 8 — Futuro (no hacer aún)
+Sin definir. Cuando se necesite, anotar aquí.
 
 ---
 
