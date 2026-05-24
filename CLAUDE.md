@@ -363,8 +363,16 @@ Pasos:
 - **`/jefe/compras/[id]`** ✅ — detalle con listado de items, total, factura, notas. Botón "Borrar compra (revierte stock)" usa el trigger de borrado.
 - **Atajos "Compras" y "Proveedores"** ✅ en el dashboard del jefe.
 
+### ✅ Fase 7 paso 4 — Reportes avanzados (COMPLETADA)
+- **`/jefe/reportes/avanzados`** ✅ — nueva página accesible desde el principal con 4 secciones:
+  - **Resumen financiero del mes** con selector navegable mes a mes: KPIs (ingresos · costos · margen) y desglose línea por línea (ventas, compras de insumos, pagos a personas) con margen calculado y porcentaje.
+  - **Cosecha año actual vs año anterior**: bar chart de doble columna por mes (12 barras pareadas), variación porcentual anual con flecha (TrendingUp/Down) y leyenda.
+  - **Productividad por lote**: ranking ordenado por kg/hectárea con barras de progreso, kg/árbol como métrica secundaria, total kg y hectáreas como pie.
+  - **Cosecha anual (tendencia histórica)**: bar chart por año (todos los años con datos) en toneladas.
+- **Link destacado** en `/jefe/reportes` (banner verde claro con icono `BarChart3`) que lleva a los reportes avanzados.
+
 ### Fase 7 — Futuro (no hacer aún)
-Reportes avanzados, APK distribuible con PWABuilder.
+APK distribuible con PWABuilder.
 
 ---
 

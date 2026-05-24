@@ -1,4 +1,13 @@
-import { TrendingUp, TrendingDown, Warehouse, ShoppingBag, Hexagon } from "lucide-react";
+import Link from "next/link";
+import {
+  TrendingUp,
+  TrendingDown,
+  Warehouse,
+  ShoppingBag,
+  Hexagon,
+  BarChart3,
+  ChevronRight,
+} from "lucide-react";
 import { requerirUsuario } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DescargarCSVButton } from "@/components/jefe/DescargarCSVButton";
@@ -188,6 +197,26 @@ export default async function PaginaReportes() {
           Datos consolidados de todos los lotes y operaciones.
         </p>
       </header>
+
+      <Link
+        href="/jefe/reportes/avanzados"
+        className="flex items-center justify-between rounded-2xl border border-zelanda-verde-200 bg-zelanda-verde-50 p-4 shadow-suave transition hover:border-zelanda-verde-400"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-zelanda-verde-700 text-zelanda-beige-50">
+            <BarChart3 className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-serif text-[15px] text-zelanda-verde-900">
+              Reportes avanzados
+            </p>
+            <p className="text-[12px] text-zelanda-verde-700">
+              Margen del mes, año vs anterior, productividad por lote, anual
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="h-5 w-5 text-zelanda-verde-700" />
+      </Link>
 
       <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <div className="flex flex-col rounded-2xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
