@@ -27,10 +27,20 @@ const TIPOS: { id: Tipo; etiqueta: string; descripcion: string }[] = [
   { id: "OTRO", etiqueta: "Otro", descripcion: "Sin categoría" },
 ];
 
+function formatearMonto(valor: string): string {
+  if (!valor) return "";
+  const negativo = valor.startsWith("-");
+  const digitos = valor.replace(/[^\d]/g, "");
+  if (!digitos) return negativo ? "-" : "";
+  const conPuntos = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return negativo ? `-${conPuntos}` : conPuntos;
+}
+
 export function FormularioPago({ personas }: { personas: Persona[] }) {
   const [estado, accion, pendiente] = useActionState(crearPago, ESTADO_INICIAL);
   const [tipo, setTipo] = useState<Tipo>("SALARIO");
   const [conPeriodo, setConPeriodo] = useState(false);
+  const [monto, setMonto] = useState("");
 
   const hoy = new Date().toISOString().slice(0, 10);
   const esAjuste = tipo === "AJUSTE";
@@ -113,11 +123,17 @@ export function FormularioPago({ personas }: { personas: Persona[] }) {
             <input
               id="monto"
               name="monto"
-              type="number"
-              inputMode="numeric"
-              step="100"
+              type="text"
+              inputMode={esAjuste ? "text" : "numeric"}
               required
-              placeholder={esAjuste ? "puede ser negativo" : "80000"}
+              placeholder={esAjuste ? "puede ser negativo" : "80.000"}
+              value={formatearMonto(monto)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const negativo = esAjuste && raw.trim().startsWith("-");
+                const digitos = raw.replace(/[^\d]/g, "");
+                setMonto(negativo && digitos ? `-${digitos}` : digitos);
+              }}
               className={inputBase}
             />
             {esAjuste ? (

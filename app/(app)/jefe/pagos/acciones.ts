@@ -50,7 +50,7 @@ export async function crearPago(
   }
   const tipo = tipoRaw as tipo_pago;
 
-  const monto = Number(montoRaw);
+  const monto = Number(montoRaw.replace(/\./g, ""));
   if (!Number.isFinite(monto)) {
     return { error: "Monto inválido." };
   }
