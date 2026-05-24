@@ -888,6 +888,7 @@ model personas {
   pagos                     pagos[]
   servicios_contratados     servicios_contratados[]
   jornales                  jornales[]
+  ausencias                 ausencias[]
 
   @@schema("public")
 }
@@ -994,6 +995,26 @@ model jornales {
   @@schema("public")
 }
 
+model ausencias {
+  id                        BigInt        @id @default(autoincrement())
+  persona_id                BigInt
+  fecha                     DateTime      @db.Date
+  tipo                      tipo_ausencia
+  descontable               Boolean       @default(true)
+  observaciones             String?
+  registrado_por_usuario_id String        @db.Uuid
+  created_at                DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime      @default(now()) @db.Timestamptz(6)
+
+  persona  personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios usuarios @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([persona_id, fecha])
+  @@index([persona_id, fecha(sort: Desc)], map: "idx_ausencias_persona_fecha")
+  @@index([fecha(sort: Desc)], map: "idx_ausencias_fecha")
+  @@schema("public")
+}
+
 model vinculaciones {
   id                   BigInt              @id @default(autoincrement())
   persona_id           BigInt
@@ -1037,6 +1058,7 @@ model usuarios {
   pagos                 pagos[]
   servicios_contratados servicios_contratados[]
   jornales              jornales[]
+  ausencias             ausencias[]
   users                 users                   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   persona               personas?               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -1162,6 +1184,16 @@ enum estado_servicio {
   EN_CURSO
   TERMINADO
   CANCELADO
+
+  @@schema("public")
+}
+
+enum tipo_ausencia {
+  FALTA_INJUSTIFICADA
+  INCAPACIDAD
+  VACACIONES
+  LICENCIA
+  PERMISO
 
   @@schema("public")
 }

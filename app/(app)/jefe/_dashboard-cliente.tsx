@@ -15,6 +15,7 @@ import {
   DollarSign,
   Briefcase,
   CalendarCheck,
+  UserMinus,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -345,6 +346,12 @@ export function DashboardJefeCliente({
             icono={CalendarCheck}
             titulo="Jornales"
             sub="Días trabajados"
+          />
+          <Atajo
+            href="/jefe/ausencias"
+            icono={UserMinus}
+            titulo="Ausencias"
+            sub="Faltas y permisos"
           />
           <Atajo
             href="/jefe/reportes"
