@@ -11,7 +11,9 @@
     "format": "prettier --write .",
     "check:format": "prettier --check .",
     "test": "vitest",
+    "test:unit": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
     "prepare": "husky install",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
@@ -67,6 +69,8 @@
     "@testing-library/react": "^14.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/user-event": "^14.4.3",
-    "jsdom": "^22.1.0"
+    "jsdom": "^22.1.0",
+    "@playwright/test": "^1.40.0",
+    "wait-on": "^7.0.1"
   }
 }
