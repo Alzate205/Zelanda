@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
-import { RegistroSW } from "@/components/shared/RegistroSW";
 
 export const metadata: Metadata = {
   title: {
@@ -41,7 +41,17 @@ export default function RootLayout({
     <html lang="es">
       <body className="min-h-screen bg-zelanda-beige-50 text-zelanda-verde-900 antialiased">
         {children}
-        <RegistroSW />
+        <Script id="zelanda-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                  console.warn('SW registration failed', err);
+                });
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
