@@ -13,6 +13,7 @@ import {
   Hexagon,
   Bell,
   DollarSign,
+  Briefcase,
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -331,6 +332,12 @@ export function DashboardJefeCliente({
             icono={DollarSign}
             titulo="Pagos"
             sub="Histórico de salidas"
+          />
+          <Atajo
+            href="/jefe/servicios"
+            icono={Briefcase}
+            titulo="Servicios"
+            sub="Contratos puntuales"
           />
           <Atajo
             href="/jefe/reportes"

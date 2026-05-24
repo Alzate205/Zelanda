@@ -15,6 +15,13 @@ const labelBase =
   "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
 
 type Persona = { id: string; nombre: string };
+type Servicio = {
+  id: string;
+  descripcion: string;
+  persona_id: string;
+  persona_nombre: string;
+  monto_pactado: number;
+};
 
 type Tipo = "SALARIO" | "ADELANTO" | "JORNAL" | "SERVICIO" | "BONO" | "AJUSTE" | "OTRO";
 
@@ -28,14 +35,33 @@ const TIPOS: { id: Tipo; etiqueta: string; descripcion: string }[] = [
   { id: "OTRO", etiqueta: "Otro", descripcion: "Sin categoría" },
 ];
 
-export function FormularioPago({ personas }: { personas: Persona[] }) {
+export function FormularioPago({
+  personas,
+  servicios = [],
+  personaIdInicial = null,
+  tipoInicial = "SALARIO",
+  servicioIdInicial = null,
+}: {
+  personas: Persona[];
+  servicios?: Servicio[];
+  personaIdInicial?: string | null;
+  tipoInicial?: Tipo;
+  servicioIdInicial?: string | null;
+}) {
   const [estado, accion, pendiente] = useActionState(crearPago, ESTADO_INICIAL);
-  const [tipo, setTipo] = useState<Tipo>("SALARIO");
+  const [tipo, setTipo] = useState<Tipo>(tipoInicial);
   const [conPeriodo, setConPeriodo] = useState(false);
   const [monto, setMonto] = useState("");
+  const [personaId, setPersonaId] = useState<string>(personaIdInicial ?? "");
+  const [servicioId, setServicioId] = useState<string>(servicioIdInicial ?? "");
 
   const hoy = new Date().toISOString().slice(0, 10);
   const esAjuste = tipo === "AJUSTE";
+  const esServicio = tipo === "SERVICIO";
+
+  const serviciosDeLaPersona = personaId
+    ? servicios.filter((s) => s.persona_id === personaId)
+    : servicios;
 
   return (
     <form action={accion} className="space-y-5 pb-24" noValidate>
@@ -69,7 +95,11 @@ export function FormularioPago({ personas }: { personas: Persona[] }) {
             name="persona_id"
             required
             className={inputBase}
-            defaultValue=""
+            value={personaId}
+            onChange={(e) => {
+              setPersonaId(e.target.value);
+              setServicioId("");
+            }}
           >
             <option value="">Selecciona persona…</option>
             {personas.map((p) => (
@@ -79,6 +109,42 @@ export function FormularioPago({ personas }: { personas: Persona[] }) {
             ))}
           </select>
         </div>
+
+        {esServicio ? (
+          <div>
+            <label htmlFor="servicio_id" className={labelBase}>
+              Contrato al que aplica
+            </label>
+            <select
+              id="servicio_id"
+              name="servicio_id"
+              required={esServicio}
+              value={servicioId}
+              onChange={(e) => setServicioId(e.target.value)}
+              className={inputBase}
+            >
+              <option value="">
+                {serviciosDeLaPersona.length === 0
+                  ? personaId
+                    ? "No hay contratos abiertos para esta persona"
+                    : "Elegí primero la persona"
+                  : "Selecciona contrato…"}
+              </option>
+              {serviciosDeLaPersona.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.descripcion} ·{" "}
+                  {s.monto_pactado.toLocaleString("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    maximumFractionDigits: 0,
+                  })}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <input type="hidden" name="servicio_id" value={servicioId} />
+        )}
 
         <div>
           <label className={labelBase}>Tipo</label>

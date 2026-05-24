@@ -43,6 +43,7 @@ export async function crearPago(
   const cubreHastaRaw = String(formData.get("cubre_hasta") ?? "").trim();
   const motivoDiferencia = String(formData.get("motivo_diferencia") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
+  const servicioIdRaw = String(formData.get("servicio_id") ?? "").trim();
 
   if (!personaId) return { error: "Selecciona a quién se le pagó." };
   if (!TIPOS_VALIDOS.includes(tipoRaw as tipo_pago)) {
@@ -87,6 +88,17 @@ export async function crearPago(
     return { error: "Un ajuste necesita un motivo." };
   }
 
+  let servicioId: bigint | null = null;
+  if (tipo === "SERVICIO") {
+    servicioId = parsearId(servicioIdRaw);
+    if (!servicioId) {
+      return { error: "Para un pago de SERVICIO, elegí el contrato al que aplica." };
+    }
+  } else if (servicioIdRaw) {
+    // Si vino servicio_id pero el tipo no es SERVICIO, lo aceptamos como referencia.
+    servicioId = parsearId(servicioIdRaw);
+  }
+
   try {
     await prisma.pagos.create({
       data: {
@@ -94,6 +106,7 @@ export async function crearPago(
         monto,
         fecha,
         tipo,
+        servicio_id: servicioId,
         cubre_desde: cubreDesde,
         cubre_hasta: cubreHasta,
         metodo_pago: metodoPago || null,
