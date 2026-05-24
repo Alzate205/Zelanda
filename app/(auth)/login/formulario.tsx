@@ -23,7 +23,7 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
           htmlFor="identificador"
           className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
         >
-          Usuario o correo
+          Usuario
         </label>
         <input
           id="identificador"

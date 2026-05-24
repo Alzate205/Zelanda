@@ -29,7 +29,7 @@ export default async function PaginaLogin({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-zelanda.png"
+            src="/logo.png"
             alt="La Zelanda"
             style={{
               height: "100%",
