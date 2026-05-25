@@ -31,6 +31,18 @@ jobs:
         env:
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_TRACES_SAMPLE_RATE: ${{ secrets.SENTRY_TRACES_SAMPLE_RATE }}
+      - name: Upload sourcemaps to Sentry
+        if: github.ref == 'refs/heads/main'
+        run: |
+          npm install -g @sentry/cli@latest
+          sentry-cli releases create "${{ github.sha }}" \
+            --project=javascript-nextjs \
+            --org=zelanda
+          sentry-cli releases files "${{ github.sha }}" upload-sourcemaps .next/static --url-prefix='~/_next/static'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: zelanda
+          SENTRY_PROJECT: javascript-nextjs
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
