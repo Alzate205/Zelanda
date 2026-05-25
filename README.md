@@ -4,6 +4,21 @@ Sistema de gestión integral para la Hacienda La Zelanda (finca familiar de agua
 
 La fuente de verdad del proyecto está en [CLAUDE.md](./CLAUDE.md). El esquema de base de datos en [esquema.sql](./esquema.sql) y las políticas RLS en [supabase/policies.sql](./supabase/policies.sql).
 
+## CI/CD y Calidad
+
+[![CI Workflow](https://github.com/Alzate205/Zelanda/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Alzate205/Zelanda/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Alzate205/Zelanda/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Alzate205/Zelanda/actions/workflows/codeql.yml)
+[![E2E Tests](https://github.com/Alzate205/Zelanda/actions/workflows/e2e.yml/badge.svg?branch=main)](https://github.com/Alzate205/Zelanda/actions/workflows/e2e.yml)
+
+El proyecto tiene **integración completa de DevOps**:
+- **CI/CD**: GitHub Actions ejecuta tests, lint, build y upload de sourcemaps en cada push a `main`
+- **Testing**: Unit tests con [Vitest](https://vitest.dev/) + E2E con [Playwright](https://playwright.dev/)
+- **Code Quality**: [Prettier](https://prettier.io/) + ESLint + pre-commit hooks ([Husky](https://typicode.github.io/husky/))
+- **Security**: [CodeQL](https://codeql.github.com/) + [Dependabot](https://github.com/dependabot)
+- **Observability**: [Sentry](https://sentry.io/) para error tracking y performance monitoring
+
+Consulta [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) para instrucciones de desarrollo.
+
 ## Stack
 
 - Next.js 15 (App Router) · React 19 · TypeScript
