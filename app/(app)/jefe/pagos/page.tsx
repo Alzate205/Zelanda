@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import { Plus, DollarSign, ChevronLeft } from 'lucide-react';
+import { Plus, DollarSign, ChevronLeft, Pencil } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
+import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
 import { borrarPago } from './acciones';
+import { mesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Pagos' };
 
@@ -37,10 +39,12 @@ function fmtMonto(n: number): string {
 }
 
 function fmtFecha(d: Date): string {
+  // DATE fields de Prisma llegan como UTC midnight; timeZone 'UTC' evita corrimiento al día anterior.
   return d.toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
     year: '2-digit',
+    timeZone: 'UTC',
   });
 }
 
@@ -48,6 +52,7 @@ export default async function PaginaPagos() {
   await requerirUsuario('JEFE');
 
   const pagos = await prisma.pagos.findMany({
+    where: { borrado_en: null },
     orderBy: [{ fecha: 'desc' }, { created_at: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
@@ -55,11 +60,11 @@ export default async function PaginaPagos() {
     take: 200,
   });
 
+  const { anio: anioHoy, mes: mesHoy } = mesBogota();
   const totalMes = pagos
     .filter((p) => {
-      const f = new Date(p.fecha);
-      const hoy = new Date();
-      return f.getFullYear() === hoy.getFullYear() && f.getMonth() === hoy.getMonth();
+      // DATE field de Prisma = UTC midnight; comparar con getUTC* es equivalente a getDate en UTC.
+      return p.fecha.getUTCFullYear() === anioHoy && p.fecha.getUTCMonth() === mesHoy;
     })
     .reduce((acc, p) => acc + Number(p.monto), 0);
 
@@ -150,16 +155,20 @@ export default async function PaginaPagos() {
                   <p className="m-0 mt-1.5 text-[11.5px] text-zelanda-verde-700">{p.notas}</p>
                 ) : null}
 
-                <div className="mt-2 flex justify-end">
-                  <form action={borrarPago}>
-                    <input type="hidden" name="id" value={String(p.id)} />
-                    <button
-                      type="submit"
-                      className="rounded-[10px] border border-[#e8b3ad] bg-[#f4dad7] px-3 py-1.5 text-[12px] font-semibold text-[#7b2a23] hover:bg-[#efc7c2]"
-                    >
-                      Borrar
-                    </button>
-                  </form>
+                <div className="mt-2 flex items-center justify-end gap-2">
+                  <Link
+                    href={`/jefe/pagos/${p.id}`}
+                    className="inline-flex items-center gap-1 rounded-lg border border-zelanda-beige-200 bg-white px-2.5 py-1 text-xs text-zelanda-verde-700 transition hover:bg-zelanda-beige-50"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </Link>
+                  <ConfirmarBorrado
+                    action={borrarPago}
+                    id={p.id}
+                    mensaje={`¿Anular el pago de ${fmtMonto(monto)} a ${
+                      p.persona.nombre_completo
+                    }? El registro quedará para trazabilidad.`}
+                  />
                 </div>
               </li>
             );

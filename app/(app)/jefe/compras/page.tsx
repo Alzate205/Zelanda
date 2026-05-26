@@ -4,6 +4,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
+import { mesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Compras' };
 const MESES = [
@@ -30,17 +31,18 @@ function fmtMonto(n: number): string {
 }
 
 function fmtFecha(d: Date): string {
+  // compras.fecha es DATE; timeZone 'UTC' evita corrimiento al día anterior.
   return d.toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
     year: '2-digit',
+    timeZone: 'UTC',
   });
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
-  const hoy = new Date();
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+    return mesBogota();
   }
   const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
@@ -59,11 +61,12 @@ export default async function PaginaCompras({
 
   const sp = await searchParams;
   const { anio, mes } = parsearMes(sp.mes);
-  const desde = new Date(anio, mes, 1);
-  const hasta = new Date(anio, mes + 1, 0, 23, 59, 59, 999);
+  // compras.fecha es DATE; Date.UTC garantiza medianoche UTC sin depender del timezone del servidor.
+  const desde = new Date(Date.UTC(anio, mes, 1));
+  const hasta = new Date(Date.UTC(anio, mes + 1, 1) - 1);
 
   const compras = await prisma.compras.findMany({
-    where: { fecha: { gte: desde, lte: hasta } },
+    where: { fecha: { gte: desde, lte: hasta }, borrado_en: null },
     orderBy: { fecha: 'desc' },
     include: {
       proveedor: { select: { id: true, nombre: true } },

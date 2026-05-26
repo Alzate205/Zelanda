@@ -1,9 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import type {
-  TipoVinculacion,
-  TipoPeriodoPago,
-  EsquemaPagoDestajo,
-} from "@/types";
+import { prisma } from '@/lib/prisma';
+import type { TipoVinculacion, TipoPeriodoPago, EsquemaPagoDestajo } from '@/types';
 
 export type PeriodoSaldo = { desde: Date; hasta: Date };
 
@@ -50,8 +46,8 @@ export type SaldoPersona = {
 };
 
 function diasEstandar(periodo: TipoPeriodoPago | null): number {
-  if (periodo === "QUINCENAL") return 15;
-  if (periodo === "SEMANAL") return 7;
+  if (periodo === 'QUINCENAL') return 15;
+  if (periodo === 'SEMANAL') return 7;
   return 30;
 }
 
@@ -61,8 +57,10 @@ function diasInclusivos(desde: Date, hasta: Date): number {
 }
 
 export function periodoMes(anio: number, mes: number): PeriodoSaldo {
-  const desde = new Date(anio, mes, 1);
-  const hasta = new Date(anio, mes + 1, 0);
+  // Date.UTC garantiza medianoche UTC independientemente del timezone del servidor.
+  // Prisma envía la parte DATE de la ISO string para comparar con columnas tipo DATE.
+  const desde = new Date(Date.UTC(anio, mes, 1));
+  const hasta = new Date(Date.UTC(anio, mes + 1, 1) - 1); // último ms del mes
   return { desde, hasta };
 }
 
@@ -87,14 +85,14 @@ function tarifaVigente(
   tipoTareaId: bigint,
   fecha: Date,
   esquemas: string[],
-  loteId: bigint | null,
+  loteId: bigint | null
 ): TarifaConTipo | null {
   const candidatas = tarifas.filter(
     (t) =>
       t.tipo_tarea_id === tipoTareaId &&
       esquemas.includes(t.esquema_pago) &&
       t.vigente_desde.getTime() <= fecha.getTime() &&
-      (t.vigente_hasta === null || t.vigente_hasta.getTime() >= fecha.getTime()),
+      (t.vigente_hasta === null || t.vigente_hasta.getTime() >= fecha.getTime())
   );
   if (candidatas.length === 0) return null;
   // Preferir match por lote
@@ -102,24 +100,29 @@ function tarifaVigente(
   const escogidas = conLote.length > 0 ? conLote : candidatas.filter((t) => t.lote_id === null);
   if (escogidas.length === 0) return null;
   // La mas reciente
-  return escogidas.sort(
-    (a, b) => b.vigente_desde.getTime() - a.vigente_desde.getTime(),
-  )[0];
+  return escogidas.sort((a, b) => b.vigente_desde.getTime() - a.vigente_desde.getTime())[0];
 }
 
-export async function calcularSaldosPeriodo(
-  periodo: PeriodoSaldo,
-): Promise<SaldoPersona[]> {
+export async function calcularSaldosPeriodo(periodo: PeriodoSaldo): Promise<SaldoPersona[]> {
   const { desde, hasta } = periodo;
   const diasPeriodo = diasInclusivos(desde, hasta);
 
+  // Incluir personas inactivas que tuvieron vinculación activa durante el período
+  const vinculacionEnPeriodo = {
+    fecha_inicio: { lte: hasta },
+    OR: [{ fecha_fin: null }, { fecha_fin: { gte: desde } }],
+  };
+
   const personas = await prisma.personas.findMany({
-    where: { deleted_at: null, activo: true },
+    where: {
+      deleted_at: null,
+      vinculaciones: { some: vinculacionEnPeriodo },
+    },
     select: {
       id: true,
       nombre_completo: true,
       vinculaciones: {
-        where: { fecha_fin: null },
+        where: vinculacionEnPeriodo,
         select: {
           tipo: true,
           salario_base: true,
@@ -127,11 +130,11 @@ export async function calcularSaldosPeriodo(
           tarifa_jornal: true,
           esquema_pago_destajo: true,
         },
-        orderBy: { fecha_inicio: "desc" },
+        orderBy: { fecha_inicio: 'desc' },
         take: 1,
       },
     },
-    orderBy: { nombre_completo: "asc" },
+    orderBy: { nombre_completo: 'asc' },
   });
 
   if (personas.length === 0) return [];
@@ -142,7 +145,11 @@ export async function calcularSaldosPeriodo(
   const [jornales, ausencias, servicios, pagos, registrosAvance, cosechas, tarifasRaw] =
     await Promise.all([
       prisma.jornales.findMany({
-        where: { persona_id: { in: personaIds }, fecha: { gte: desde, lte: hasta } },
+        where: {
+          persona_id: { in: personaIds },
+          fecha: { gte: desde, lte: hasta },
+          borrado_en: null,
+        },
         select: { persona_id: true, tarifa_aplicada: true, fecha: true },
       }),
       prisma.ausencias.findMany({
@@ -150,6 +157,7 @@ export async function calcularSaldosPeriodo(
           persona_id: { in: personaIds },
           fecha: { gte: desde, lte: hasta },
           descontable: true,
+          borrado_en: null,
         },
         select: { persona_id: true },
       }),
@@ -157,12 +165,17 @@ export async function calcularSaldosPeriodo(
         where: {
           persona_id: { in: personaIds },
           fecha_inicio: { gte: desde, lte: hasta },
-          estado: { not: "CANCELADO" },
+          // Solo servicios que efectivamente se prestaron (no meros acuerdos sin iniciar)
+          estado: { in: ['EN_CURSO', 'TERMINADO'] },
         },
         select: { persona_id: true, monto_pactado: true },
       }),
       prisma.pagos.findMany({
-        where: { persona_id: { in: personaIds }, fecha: { gte: desde, lte: hasta } },
+        where: {
+          persona_id: { in: personaIds },
+          fecha: { gte: desde, lte: hasta },
+          borrado_en: null,
+        },
         select: { persona_id: true, monto: true, tipo: true },
       }),
       prisma.registros_avance.findMany({
@@ -192,11 +205,9 @@ export async function calcularSaldosPeriodo(
       }),
       prisma.tarifas_tarea.findMany({
         where: {
-          esquema_pago: { in: ["POR_ARBOL", "POR_HECTAREA", "POR_KG"] },
-          OR: [
-            { vigente_hasta: null },
-            { vigente_hasta: { gte: desde } },
-          ],
+          esquema_pago: { in: ['POR_ARBOL', 'POR_HECTAREA', 'POR_KG'] },
+          borrado_en: null,
+          OR: [{ vigente_hasta: null }, { vigente_hasta: { gte: desde } }],
         },
         select: {
           id: true,
@@ -248,8 +259,7 @@ export async function calcularSaldosPeriodo(
     const salarioBase = vinc?.salario_base ? Number(vinc.salario_base) : null;
     const periodoPago = (vinc?.periodo_pago as TipoPeriodoPago | undefined) ?? null;
     const tarifaJornal = vinc?.tarifa_jornal ? Number(vinc.tarifa_jornal) : null;
-    const esquemaDestajo =
-      (vinc?.esquema_pago_destajo as EsquemaPagoDestajo | undefined) ?? null;
+    const esquemaDestajo = (vinc?.esquema_pago_destajo as EsquemaPagoDestajo | undefined) ?? null;
 
     const ausDesc = ausenciasPP.get(key) ?? [];
     const jorns = jornalesPP.get(key) ?? [];
@@ -261,16 +271,9 @@ export async function calcularSaldosPeriodo(
     const diasAusenciaDesc = ausDesc.length;
     const diasEfectivos = Math.max(0, diasPeriodo - diasAusenciaDesc);
     const diasEst = diasEstandar(periodoPago);
-    const salarioDiario =
-      salarioBase != null && diasEst > 0 ? salarioBase / diasEst : 0;
-    const jornalesTotal = jorns.reduce(
-      (acc, j) => acc + Number(j.tarifa_aplicada),
-      0,
-    );
-    const serviciosTotalPactado = servs.reduce(
-      (acc, s) => acc + Number(s.monto_pactado),
-      0,
-    );
+    const salarioDiario = salarioBase != null && diasEst > 0 ? salarioBase / diasEst : 0;
+    const jornalesTotal = jorns.reduce((acc, j) => acc + Number(j.tarifa_aplicada), 0);
+    const serviciosTotalPactado = servs.reduce((acc, s) => acc + Number(s.monto_pactado), 0);
 
     // Calcular extras_destajo
     const extras: ExtraDestajo[] = [];
@@ -283,8 +286,8 @@ export async function calcularSaldosPeriodo(
         tarifas,
         r.asignaciones.tipo_tarea_id,
         r.fecha_registro,
-        ["POR_ARBOL", "POR_HECTAREA"],
-        r.asignaciones.lote_id ?? null,
+        ['POR_ARBOL', 'POR_HECTAREA'],
+        r.asignaciones.lote_id ?? null
       );
       if (!tarifa) continue;
       const monto = r.cantidad_arboles * tarifa.monto;
@@ -292,7 +295,7 @@ export async function calcularSaldosPeriodo(
         fecha: r.fecha_registro,
         concepto: `${r.asignaciones.tipos_tarea.nombre} (${r.cantidad_arboles} árboles)`,
         cantidad: r.cantidad_arboles,
-        unidad: tarifa.esquema_pago === "POR_HECTAREA" ? "ha" : "árbol",
+        unidad: tarifa.esquema_pago === 'POR_HECTAREA' ? 'ha' : 'árbol',
         tarifa: tarifa.monto,
         monto,
       });
@@ -307,26 +310,26 @@ export async function calcularSaldosPeriodo(
       // si no, cualquier tarifa POR_KG vigente.
       const tarifasKg = tarifas.filter(
         (t) =>
-          t.esquema_pago === "POR_KG" &&
+          t.esquema_pago === 'POR_KG' &&
           t.vigente_desde.getTime() <= c.fecha.getTime() &&
-          (t.vigente_hasta === null || t.vigente_hasta.getTime() >= c.fecha.getTime()),
+          (t.vigente_hasta === null || t.vigente_hasta.getTime() >= c.fecha.getTime())
       );
       if (tarifasKg.length === 0) continue;
       // Preferir Cosecha + lote match
       const cosechaPorLote = tarifasKg.find(
-        (t) => /cosecha/i.test(t.tipo_tarea_nombre) && t.lote_id === c.lote_id,
+        (t) => /cosecha/i.test(t.tipo_tarea_nombre) && t.lote_id === c.lote_id
       );
       const cosechaGlobal = tarifasKg.find(
-        (t) => /cosecha/i.test(t.tipo_tarea_nombre) && t.lote_id === null,
+        (t) => /cosecha/i.test(t.tipo_tarea_nombre) && t.lote_id === null
       );
       const cualquiera = tarifasKg.find((t) => t.lote_id === c.lote_id) ?? tarifasKg[0];
       const tarifa = cosechaPorLote ?? cosechaGlobal ?? cualquiera;
       const monto = kg * tarifa.monto;
       extras.push({
         fecha: c.fecha,
-        concepto: `Cosecha (${kg.toLocaleString("es-CO", { maximumFractionDigits: 1 })} kg)`,
+        concepto: `Cosecha (${kg.toLocaleString('es-CO', { maximumFractionDigits: 1 })} kg)`,
         cantidad: kg,
-        unidad: "kg",
+        unidad: 'kg',
         tarifa: tarifa.monto,
         monto,
       });
@@ -336,43 +339,52 @@ export async function calcularSaldosPeriodo(
     const extrasDestajoTotal = extras.reduce((acc, x) => acc + x.monto, 0);
     const diasConDestajo = diasConDestajoSet.size;
 
+    // Para REEMPLAZA_DIA JORNALERO: mapa de fecha → tarifa_aplicada del jornal de ese día
+    const jornalTarifaPorFecha = new Map<string, number>();
+    for (const j of jorns) {
+      const k = j.fecha.toISOString().slice(0, 10);
+      jornalTarifaPorFecha.set(k, (jornalTarifaPorFecha.get(k) ?? 0) + Number(j.tarifa_aplicada));
+    }
+
     const pagado = pgs.reduce((acc, p) => acc + Number(p.monto), 0);
     const adelantosTotal = pgs
-      .filter((p) => p.tipo === "ADELANTO")
+      .filter((p) => p.tipo === 'ADELANTO')
       .reduce((acc, p) => acc + Number(p.monto), 0);
 
     // Calcular pago base segun tipo
     let pagoBase = 0;
-    if (tipo === "FIJO" && salarioBase != null) {
+    if (tipo === 'FIJO' && salarioBase != null) {
       pagoBase = salarioDiario * diasEfectivos;
-    } else if (tipo === "JORNALERO") {
+    } else if (tipo === 'JORNALERO') {
       pagoBase = jornalesTotal;
-    } else if (tipo === "CONTRATISTA") {
+    } else if (tipo === 'CONTRATISTA') {
       pagoBase = serviciosTotalPactado;
     }
 
     // Aplicar esquema_pago_destajo al devengado
     let devengado = pagoBase;
-    if (tipo === "FIJO" || tipo === "JORNALERO") {
+    if (tipo === 'FIJO' || tipo === 'JORNALERO') {
       switch (esquemaDestajo) {
-        case "ADICIONAL":
+        case 'ADICIONAL':
           devengado = pagoBase + extrasDestajoTotal;
           break;
-        case "REEMPLAZA_DIA":
+        case 'REEMPLAZA_DIA':
           // Por cada dia con destajo, descontar el salario diario y sumar destajo
-          if (tipo === "FIJO") {
+          if (tipo === 'FIJO') {
             devengado = pagoBase - salarioDiario * diasConDestajo + extrasDestajoTotal;
           } else {
-            // Para JORNALERO: el destajo reemplaza al jornal de ese dia
-            // Aproximacion: descontar tarifa_jornal por dia con destajo
-            const tarifaDia = tarifaJornal ?? 0;
-            devengado = pagoBase - tarifaDia * diasConDestajo + extrasDestajoTotal;
+            // Para JORNALERO: descontar el snapshot de tarifa_aplicada del jornal registrado ese día
+            let descuentoJornales = 0;
+            for (const dia of diasConDestajoSet) {
+              descuentoJornales += jornalTarifaPorFecha.get(dia) ?? 0;
+            }
+            devengado = pagoBase - descuentoJornales + extrasDestajoTotal;
           }
           break;
-        case "SOLO_DESTAJO":
+        case 'SOLO_DESTAJO':
           devengado = extrasDestajoTotal;
           break;
-        case "NUNCA":
+        case 'NUNCA':
         case null:
         default:
           // No suma destajo
@@ -403,9 +415,7 @@ export async function calcularSaldosPeriodo(
         servicios_count: servs.length,
         servicios_total_pactado: serviciosTotalPactado,
         extras_destajo: extrasDestajoTotal,
-        extras_destajo_items: extras.sort(
-          (a, b) => a.fecha.getTime() - b.fecha.getTime(),
-        ),
+        extras_destajo_items: extras.sort((a, b) => a.fecha.getTime() - b.fecha.getTime()),
         dias_con_destajo: diasConDestajo,
         pagos_count: pgs.length,
         adelantos_total: adelantosTotal,
@@ -416,7 +426,7 @@ export async function calcularSaldosPeriodo(
 
 export async function calcularSaldoPersona(
   personaId: bigint,
-  periodo: PeriodoSaldo,
+  periodo: PeriodoSaldo
 ): Promise<SaldoPersona | null> {
   const todos = await calcularSaldosPeriodo(periodo);
   return todos.find((s) => s.persona_id === personaId) ?? null;

@@ -1,20 +1,20 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import { sanitizarError } from "@/lib/errores";
-import type { tipo_ausencia } from "@prisma/client";
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import { sanitizarError } from '@/lib/errores';
+import type { tipo_ausencia } from '@prisma/client';
 
 export type EstadoAusencia = { error: string | null };
 
 const TIPOS_VALIDOS: tipo_ausencia[] = [
-  "FALTA_INJUSTIFICADA",
-  "INCAPACIDAD",
-  "VACACIONES",
-  "LICENCIA",
-  "PERMISO",
+  'FALTA_INJUSTIFICADA',
+  'INCAPACIDAD',
+  'VACACIONES',
+  'LICENCIA',
+  'PERMISO',
 ];
 
 function parsearId(raw: string | null): bigint | null {
@@ -28,26 +28,26 @@ function parsearId(raw: string | null): bigint | null {
 
 export async function crearAusencia(
   _prev: EstadoAusencia,
-  formData: FormData,
+  formData: FormData
 ): Promise<EstadoAusencia> {
-  const usuario = await requerirUsuario("JEFE");
+  const usuario = await requerirUsuario('JEFE');
 
-  const personaId = parsearId(String(formData.get("persona_id") ?? ""));
-  const tipoRaw = String(formData.get("tipo") ?? "").trim();
-  const fechaRaw = String(formData.get("fecha") ?? "").trim();
-  const descontable = String(formData.get("descontable") ?? "") === "on";
-  const observaciones = String(formData.get("observaciones") ?? "").trim();
+  const personaId = parsearId(String(formData.get('persona_id') ?? ''));
+  const tipoRaw = String(formData.get('tipo') ?? '').trim();
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const descontable = String(formData.get('descontable') ?? '') === 'on';
+  const observaciones = String(formData.get('observaciones') ?? '').trim();
 
-  if (!personaId) return { error: "Selecciona la persona." };
+  if (!personaId) return { error: 'Selecciona la persona.' };
   if (!TIPOS_VALIDOS.includes(tipoRaw as tipo_ausencia)) {
-    return { error: "Tipo de ausencia inválido." };
+    return { error: 'Tipo de ausencia inválido.' };
   }
   const tipo = tipoRaw as tipo_ausencia;
 
-  if (!fechaRaw) return { error: "Elegí la fecha." };
+  if (!fechaRaw) return { error: 'Elegí la fecha.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
-    return { error: "Fecha inválida." };
+    return { error: 'Fecha inválida.' };
   }
 
   try {
@@ -62,32 +62,34 @@ export async function crearAusencia(
       },
     });
   } catch (e) {
-    const msg = (e as Error)?.message ?? "";
-    if (
-      /unique constraint.*persona_id.*fecha|ausencias_persona_id_fecha_key/i.test(
-        msg,
-      )
-    ) {
+    const msg = (e as Error)?.message ?? '';
+    if (/unique constraint.*persona_id.*fecha|ausencias_persona_id_fecha_key/i.test(msg)) {
       return {
         error:
-          "Ya hay una ausencia registrada para esta persona en esa fecha. Borrala primero si querés cambiarla.",
+          'Ya hay una ausencia registrada para esta persona en esa fecha. Borrala primero si querés cambiarla.',
       };
     }
-    return { error: sanitizarError(e, "ausencias/crear") };
+    return { error: sanitizarError(e, 'ausencias/crear') };
   }
 
-  revalidatePath("/jefe/ausencias");
-  redirect("/jefe/ausencias");
+  revalidatePath('/jefe/ausencias');
+  redirect('/jefe/ausencias');
 }
 
 export async function borrarAusencia(formData: FormData) {
-  await requerirUsuario("JEFE");
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const usuario = await requerirUsuario('JEFE');
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
   try {
-    await prisma.ausencias.delete({ where: { id } });
+    await prisma.ausencias.update({
+      where: { id, borrado_en: null },
+      data: {
+        borrado_en: new Date(),
+        borrado_por: usuario.id,
+      },
+    });
   } catch {
-    // best-effort
+    // ya borrado o no existe — ignorar
   }
-  revalidatePath("/jefe/ausencias");
+  revalidatePath('/jefe/ausencias');
 }

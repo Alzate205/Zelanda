@@ -4,6 +4,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
+import { mesBogota, periodoMesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -49,9 +50,8 @@ function fmtKg(n: number): string {
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
-  const hoy = new Date();
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+    return mesBogota();
   }
   const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
@@ -70,8 +70,10 @@ export default async function PaginaReportesAvanzados({
 
   const sp = await searchParams;
   const { anio, mes } = parsearMes(sp.mes);
-  const desde = new Date(anio, mes, 1);
-  const hasta = new Date(anio, mes + 1, 0, 23, 59, 59, 999);
+  // ventas usan TIMESTAMPTZ: necesitan límites Bogotá; compras/pagos usan DATE: Date.UTC es suficiente.
+  const { desde: desdeTZ, hasta: hastaTZ } = periodoMesBogota(anio, mes);
+  const desdeDate = new Date(Date.UTC(anio, mes, 1));
+  const hastaDate = new Date(Date.UTC(anio, mes + 1, 1) - 1);
 
   const [
     ventasMes,
@@ -86,20 +88,20 @@ export default async function PaginaReportesAvanzados({
     prisma.salidas_cosecha.aggregate({
       where: {
         tipo: 'VENTA',
-        fecha: { gte: desde, lte: hasta },
+        fecha: { gte: desdeTZ, lte: hastaTZ },
       },
       _sum: { precio_total: true, cantidad_kg: true },
       _count: { _all: true },
     }),
     // Costos de compras del mes
     prisma.compras.aggregate({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { fecha: { gte: desdeDate, lte: hastaDate } },
       _sum: { total: true },
       _count: { _all: true },
     }),
     // Costos de pagos a personas del mes
     prisma.pagos.aggregate({
-      where: { fecha: { gte: desde, lte: hasta } },
+      where: { fecha: { gte: desdeDate, lte: hastaDate } },
       _sum: { monto: true },
       _count: { _all: true },
     }),

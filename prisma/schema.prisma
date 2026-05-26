@@ -853,23 +853,27 @@ model proveedores {
 }
 
 model compras {
-  id                        BigInt   @id @default(autoincrement())
+  id                        BigInt    @id @default(autoincrement())
   proveedor_id              BigInt?
   proveedor_detalle         String?
-  fecha                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  total                     Decimal  @default(0) @db.Decimal(12, 2)
+  fecha                     DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  total                     Decimal   @default(0) @db.Decimal(12, 2)
   numero_factura            String?
   notas                     String?
-  registrado_por_usuario_id String   @db.Uuid
-  created_at                DateTime @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime @default(now()) @db.Timestamptz(6)
+  registrado_por_usuario_id String    @db.Uuid
+  borrado_en                DateTime? @db.Timestamptz(6)
+  borrado_por               String?   @db.Uuid
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
 
-  proveedor proveedores?    @relation(fields: [proveedor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  usuarios  usuarios        @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  items     compras_items[]
+  proveedor     proveedores?    @relation(fields: [proveedor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usuarios      usuarios        @relation("compras_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u usuarios?       @relation("compras_borrado_por", fields: [borrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items         compras_items[]
 
   @@index([fecha(sort: Desc)], map: "idx_compras_fecha")
   @@index([proveedor_id], map: "idx_compras_proveedor")
+  @@index([borrado_en], map: "idx_compras_borrado_en")
   @@schema("public")
 }
 
@@ -931,16 +935,20 @@ model tarifas_tarea {
   lote_id                   BigInt?
   notas                     String?
   registrado_por_usuario_id String                 @db.Uuid
+  borrado_en                DateTime?              @db.Timestamptz(6)
+  borrado_por               String?                @db.Uuid
   created_at                DateTime               @default(now()) @db.Timestamptz(6)
   updated_at                DateTime               @default(now()) @db.Timestamptz(6)
 
-  tipos_tarea tipos_tarea @relation(fields: [tipo_tarea_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  lotes       lotes?      @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  usuarios    usuarios    @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipos_tarea   tipos_tarea @relation(fields: [tipo_tarea_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lotes         lotes?      @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usuarios      usuarios    @relation("tarifas_tarea_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u usuarios?   @relation("tarifas_tarea_borrado_por", fields: [borrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([tipo_tarea_id], map: "idx_tarifas_tarea_tipo")
   @@index([tipo_tarea_id, vigente_desde(sort: Desc)], map: "idx_tarifas_tarea_vigentes")
   @@index([lote_id], map: "idx_tarifas_tarea_lote")
+  @@index([borrado_en], map: "idx_tarifas_tarea_borrado_en")
   @@schema("public")
 }
 
@@ -1015,17 +1023,21 @@ model pagos {
   metodo_pago               String?
   notas                     String?
   registrado_por_usuario_id String    @db.Uuid
+  borrado_en                DateTime? @db.Timestamptz(6)
+  borrado_por               String?   @db.Uuid
   created_at                DateTime  @default(now()) @db.Timestamptz(6)
   updated_at                DateTime  @default(now()) @db.Timestamptz(6)
 
-  persona  personas               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuarios usuarios               @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  servicio servicios_contratados? @relation(fields: [servicio_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  persona       personas               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios      usuarios               @relation("pagos_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u usuarios?              @relation("pagos_borrado_por", fields: [borrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  servicio      servicios_contratados? @relation(fields: [servicio_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([persona_id, fecha(sort: Desc)], map: "idx_pagos_persona_fecha")
   @@index([fecha(sort: Desc)], map: "idx_pagos_fecha")
   @@index([tipo], map: "idx_pagos_tipo")
   @@index([servicio_id], map: "idx_pagos_servicio")
+  @@index([borrado_en], map: "idx_pagos_borrado_en")
   @@schema("public")
 }
 
@@ -1055,25 +1067,29 @@ model servicios_contratados {
 }
 
 model jornales {
-  id                        BigInt   @id @default(autoincrement())
+  id                        BigInt    @id @default(autoincrement())
   persona_id                BigInt
-  fecha                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  tarifa_aplicada           Decimal  @db.Decimal(12, 2)
+  fecha                     DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  tarifa_aplicada           Decimal   @db.Decimal(12, 2)
   lote_id                   BigInt?
   descripcion_actividad     String?
   notas                     String?
-  registrado_por_usuario_id String   @db.Uuid
-  created_at                DateTime @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime @default(now()) @db.Timestamptz(6)
+  registrado_por_usuario_id String    @db.Uuid
+  borrado_en                DateTime? @db.Timestamptz(6)
+  borrado_por               String?   @db.Uuid
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
 
-  persona  personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lotes    lotes?   @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  usuarios usuarios @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona       personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lotes         lotes?   @relation(fields: [lote_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usuarios      usuarios @relation("jornales_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u usuarios? @relation("jornales_borrado_por", fields: [borrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([persona_id, fecha])
   @@index([fecha(sort: Desc)], map: "idx_jornales_fecha")
   @@index([persona_id, fecha(sort: Desc)], map: "idx_jornales_persona_fecha")
   @@index([lote_id], map: "idx_jornales_lote")
+  @@index([borrado_en], map: "idx_jornales_borrado_en")
   @@schema("public")
 }
 
@@ -1085,15 +1101,19 @@ model ausencias {
   descontable               Boolean       @default(true)
   observaciones             String?
   registrado_por_usuario_id String        @db.Uuid
+  borrado_en                DateTime?     @db.Timestamptz(6)
+  borrado_por               String?       @db.Uuid
   created_at                DateTime      @default(now()) @db.Timestamptz(6)
   updated_at                DateTime      @default(now()) @db.Timestamptz(6)
 
-  persona  personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuarios usuarios @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  persona       personas  @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios      usuarios  @relation("ausencias_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u usuarios? @relation("ausencias_borrado_por", fields: [borrado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([persona_id, fecha])
   @@index([persona_id, fecha(sort: Desc)], map: "idx_ausencias_persona_fecha")
   @@index([fecha(sort: Desc)], map: "idx_ausencias_fecha")
+  @@index([borrado_en], map: "idx_ausencias_borrado_en")
   @@schema("public")
 }
 
@@ -1128,24 +1148,29 @@ model usuarios {
   activo                Boolean                 @default(true)
   created_at            DateTime                @default(now()) @db.Timestamptz(6)
   updated_at            DateTime                @default(now()) @db.Timestamptz(6)
-  asignaciones          asignaciones[]
-  cosechas              cosechas[]
-  cosechas_miel         cosechas_miel[]
-  despachos             despachos[]
-  movimientos_insumo    movimientos_insumo[]
-  salidas_cosecha       salidas_cosecha[]
-  push_subscriptions    push_subscriptions[]
-  recordatorios         recordatorios[]
-  tarifas_tarea         tarifas_tarea[]
-  pagos                 pagos[]
-  servicios_contratados servicios_contratados[]
-  jornales              jornales[]
-  ausencias             ausencias[]
-  clientes              clientes[]
-  proveedores           proveedores[]
-  compras               compras[]
-  users                 users                   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  persona               personas?               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asignaciones               asignaciones[]
+  cosechas                   cosechas[]
+  cosechas_miel              cosechas_miel[]
+  despachos                  despachos[]
+  movimientos_insumo         movimientos_insumo[]
+  salidas_cosecha            salidas_cosecha[]
+  push_subscriptions         push_subscriptions[]
+  recordatorios              recordatorios[]
+  tarifas_tarea              tarifas_tarea[]              @relation("tarifas_tarea_registrado_por")
+  tarifas_tarea_borradas      tarifas_tarea[]              @relation("tarifas_tarea_borrado_por")
+  pagos                      pagos[]                      @relation("pagos_registrado_por")
+  pagos_borrados             pagos[]                      @relation("pagos_borrado_por")
+  servicios_contratados      servicios_contratados[]
+  jornales                   jornales[]                   @relation("jornales_registrado_por")
+  jornales_borrados          jornales[]                   @relation("jornales_borrado_por")
+  ausencias                  ausencias[]                  @relation("ausencias_registrado_por")
+  ausencias_borradas         ausencias[]                  @relation("ausencias_borrado_por")
+  clientes                   clientes[]
+  proveedores                proveedores[]
+  compras                    compras[]                    @relation("compras_registrado_por")
+  compras_borradas           compras[]                    @relation("compras_borrado_por")
+  users                      users                        @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  persona                    personas?                    @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@schema("public")
 }

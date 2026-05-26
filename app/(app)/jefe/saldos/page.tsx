@@ -4,6 +4,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
 import { calcularSaldosPeriodo, periodoMes } from '@/lib/saldos';
+import { mesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Saldos' };
 const ETIQUETA_VINC: Record<string, string> = {
@@ -37,9 +38,8 @@ function fmtMonto(n: number): string {
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
-  const hoy = new Date();
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+    return mesBogota();
   }
   const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };

@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Plus, CalendarCheck, ChevronLeft } from 'lucide-react';
+import { Plus, CalendarCheck, ChevronLeft, Pencil } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { borrarJornal } from './acciones';
+import { mesBogota } from '@/lib/fecha';
+import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
 
 export const metadata = { title: 'Jornales' };
 
@@ -20,6 +22,7 @@ const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
+  timeZone: 'UTC', // jornales.fecha es DATE; UTC evita corrimiento al día anterior
 });
 
 function tituloFecha(d: Date): string {
@@ -35,6 +38,7 @@ export default async function PaginaJornales() {
   await requerirUsuario('JEFE');
 
   const jornales = await prisma.jornales.findMany({
+    where: { borrado_en: null },
     orderBy: [{ fecha: 'desc' }, { created_at: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
@@ -54,15 +58,13 @@ export default async function PaginaJornales() {
   const ordenados = Array.from(grupos.entries()).sort((a, b) => b[0].localeCompare(a[0]));
 
   // Totales del mes
-  const hoy = new Date();
+  const { anio: anioHoy, mes: mesHoy } = mesBogota();
   const totalMes = jornales
-    .filter(
-      (j) => j.fecha.getFullYear() === hoy.getFullYear() && j.fecha.getMonth() === hoy.getMonth()
-    )
+    .filter((j) => j.fecha.getUTCFullYear() === anioHoy && j.fecha.getUTCMonth() === mesHoy)
     .reduce((acc, j) => acc + Number(j.tarifa_aplicada), 0);
 
   const jornalesMes = jornales.filter(
-    (j) => j.fecha.getFullYear() === hoy.getFullYear() && j.fecha.getMonth() === hoy.getMonth()
+    (j) => j.fecha.getUTCFullYear() === anioHoy && j.fecha.getUTCMonth() === mesHoy
   ).length;
 
   return (
@@ -148,16 +150,18 @@ export default async function PaginaJornales() {
                       {j.notas ? (
                         <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">{j.notas}</p>
                       ) : null}
-                      <div className="mt-2 flex justify-end">
-                        <form action={borrarJornal}>
-                          <input type="hidden" name="id" value={String(j.id)} />
-                          <button
-                            type="submit"
-                            className="rounded-[10px] border border-[#e8b3ad] bg-[#f4dad7] px-3 py-1.5 text-[11.5px] font-semibold text-[#7b2a23] hover:bg-[#efc7c2]"
-                          >
-                            Borrar
-                          </button>
-                        </form>
+                      <div className="mt-2 flex items-center justify-end gap-2">
+                        <Link
+                          href={`/jefe/jornales/${j.id}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-zelanda-beige-200 bg-white px-2.5 py-1 text-xs text-zelanda-verde-700 transition hover:bg-zelanda-beige-50"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Link>
+                        <ConfirmarBorrado
+                          action={borrarJornal}
+                          id={j.id}
+                          mensaje={`¿Anular el jornal de ${j.persona.nombre_completo}? El registro quedará para trazabilidad.`}
+                        />
                       </div>
                     </li>
                   ))}

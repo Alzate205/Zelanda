@@ -93,34 +93,39 @@ export async function POST(req: Request) {
     precio = body.precio_total;
   }
 
-  const stockRows = await prisma.$queryRaw<{ stock_kg: string }[]>`
-    SELECT stock_kg::text FROM v_stock_almacen
-  `;
-  const stock = Number(stockRows[0]?.stock_kg ?? 0);
-  if (body.cantidad_kg > stock) {
-    return NextResponse.json(
-      { error: `Stock insuficiente. Disponible: ${stock.toFixed(2)} kg` },
-      { status: 409 }
-    );
-  }
-
   try {
-    const creada = await prisma.salidas_cosecha.create({
-      data: {
-        id_local: body.id_local,
-        tipo: body.tipo,
-        cantidad_kg: body.cantidad_kg,
-        cliente_detalle: cliente,
-        cliente_id: clienteId,
-        precio_total: precio,
-        registrado_por_usuario_id: usuario.id,
-        notas: body.notas?.trim() || null,
-      },
+    const creada = await prisma.$transaction(async (tx) => {
+      const stockRows = await tx.$queryRaw<{ stock_kg: string }[]>`
+        SELECT stock_kg::text FROM v_stock_almacen
+      `;
+      const stock = Number(stockRows[0]?.stock_kg ?? 0);
+      if (body.cantidad_kg > stock) {
+        throw Object.assign(new Error('STOCK_INSUFICIENTE'), { stock });
+      }
+      return tx.salidas_cosecha.create({
+        data: {
+          id_local: body.id_local,
+          tipo: body.tipo,
+          cantidad_kg: body.cantidad_kg,
+          cliente_detalle: cliente,
+          cliente_id: clienteId,
+          precio_total: precio,
+          registrado_por_usuario_id: usuario.id,
+          notas: body.notas?.trim() || null,
+        },
+      });
     });
     revalidarSnapshotAlmacen();
     revalidarDashboards();
     return NextResponse.json({ ok: true, id: String(creada.id) });
   } catch (e) {
+    const err = e as Error & { stock?: number };
+    if (err.message === 'STOCK_INSUFICIENTE') {
+      return NextResponse.json(
+        { error: `Stock insuficiente. Disponible: ${(err.stock ?? 0).toFixed(2)} kg` },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: sanitizarError(e, 'api/almacen/salida') }, { status: 500 });
   }
 }

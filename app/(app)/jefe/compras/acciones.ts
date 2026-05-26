@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import { sanitizarError } from "@/lib/errores";
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import { sanitizarError } from '@/lib/errores';
 
 export type EstadoCompra = { error: string | null };
 
@@ -24,41 +24,36 @@ function parsearId(raw: string | null): bigint | null {
   }
 }
 
-export async function crearCompra(
-  _prev: EstadoCompra,
-  formData: FormData,
-): Promise<EstadoCompra> {
-  const usuario = await requerirUsuario("JEFE");
+export async function crearCompra(_prev: EstadoCompra, formData: FormData): Promise<EstadoCompra> {
+  const usuario = await requerirUsuario('JEFE');
 
-  const proveedorIdRaw = String(formData.get("proveedor_id") ?? "").trim();
-  const proveedorNuevoNombre = String(
-    formData.get("proveedor_nuevo_nombre") ?? "",
-  ).trim();
-  const fechaRaw = String(formData.get("fecha") ?? "").trim();
-  const numeroFactura = String(formData.get("numero_factura") ?? "").trim();
-  const notas = String(formData.get("notas") ?? "").trim();
-  const itemsRaw = String(formData.get("items") ?? "").trim();
+  const proveedorIdRaw = String(formData.get('proveedor_id') ?? '').trim();
+  const proveedorNuevoNombre = String(formData.get('proveedor_nuevo_nombre') ?? '').trim();
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const numeroFactura = String(formData.get('numero_factura') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
+  const itemsRaw = String(formData.get('items') ?? '').trim();
 
   let proveedorId = proveedorIdRaw ? parsearId(proveedorIdRaw) : null;
   if (!proveedorId && !proveedorNuevoNombre) {
-    return { error: "Elegí un proveedor o escribí el nombre." };
+    return { error: 'Elegí un proveedor o escribí el nombre.' };
   }
 
-  if (!fechaRaw) return { error: "Elegí la fecha de la compra." };
+  if (!fechaRaw) return { error: 'Elegí la fecha de la compra.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
-    return { error: "Fecha inválida." };
+    return { error: 'Fecha inválida.' };
   }
 
   let items: ItemEntrada[] = [];
   try {
     items = JSON.parse(itemsRaw) as ItemEntrada[];
   } catch {
-    return { error: "Items inválidos." };
+    return { error: 'Items inválidos.' };
   }
 
   if (!Array.isArray(items) || items.length === 0) {
-    return { error: "Agregá al menos un insumo a la compra." };
+    return { error: 'Agregá al menos un insumo a la compra.' };
   }
 
   // Validar cada item
@@ -114,24 +109,56 @@ export async function crearCompra(
       }
     });
   } catch (e) {
-    return { error: sanitizarError(e, "compras/crear") };
+    return { error: sanitizarError(e, 'compras/crear') };
   }
 
-  revalidatePath("/jefe/compras");
-  revalidatePath("/jefe/inventario");
-  redirect("/jefe/compras");
+  revalidatePath('/jefe/compras');
+  revalidatePath('/jefe/inventario');
+  redirect('/jefe/compras');
 }
 
 export async function borrarCompra(formData: FormData) {
-  await requerirUsuario("JEFE");
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const usuario = await requerirUsuario('JEFE');
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
   try {
-    // Los triggers ON DELETE de compras_items revertiran el stock
-    await prisma.compras.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const compra = await tx.compras.findUnique({
+        where: { id, borrado_en: null },
+        include: { items: true },
+      });
+      if (!compra) return;
+
+      // Revertir stock por cada item antes de soft-delete
+      for (const item of compra.items) {
+        await tx.insumos.update({
+          where: { id: item.insumo_id },
+          data: {
+            stock_actual: { decrement: Number(item.cantidad) },
+          },
+        });
+        await tx.movimientos_insumo.create({
+          data: {
+            insumo_id: item.insumo_id,
+            tipo: 'AJUSTE',
+            cantidad: -Number(item.cantidad),
+            notas: `Reversión por anulación de compra #${compra.id}`,
+            usuario_id: usuario.id,
+          },
+        });
+      }
+
+      await tx.compras.update({
+        where: { id },
+        data: {
+          borrado_en: new Date(),
+          borrado_por: usuario.id,
+        },
+      });
+    });
   } catch {
     // best-effort
   }
-  revalidatePath("/jefe/compras");
-  revalidatePath("/jefe/inventario");
+  revalidatePath('/jefe/compras');
+  revalidatePath('/jefe/inventario');
 }

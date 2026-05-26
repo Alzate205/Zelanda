@@ -119,6 +119,41 @@ export function obtenerAño(fecha: Date): number {
 }
 
 /**
+ * Retorna los límites del mes indicado expresados como TIMESTAMPTZ en UTC.
+ * Usar para filtrar campos TIMESTAMPTZ (ej: salidas_cosecha.fecha, cosechas.fecha).
+ * Para campos DATE (pagos, jornales, compras, etc.) usar periodoMes() de lib/saldos es suficiente.
+ * Colombia es UTC-5 (sin cambio de horario): medianoche Bogotá = 05:00 UTC.
+ */
+export function periodoMesBogota(anio: number, mes: number): { desde: Date; hasta: Date } {
+  const desde = new Date(Date.UTC(anio, mes, 1, 5, 0, 0, 0));
+  const hasta = new Date(Date.UTC(anio, mes + 1, 1, 4, 59, 59, 999));
+  return { desde, hasta };
+}
+
+/**
+ * Retorna el año y mes actuales en Bogotá.
+ * Usar en parsearMes() de páginas financieras en vez de new Date()
+ * para evitar que el mes por defecto sea incorrecto entre medianoche UTC y las 5am UTC.
+ */
+export function mesBogota(): { anio: number; mes: number } {
+  const hoy = hoyEnBogota();
+  return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+}
+
+/**
+ * Formatea un campo DATE de Prisma (que llega como UTC midnight) para mostrar en UI.
+ * Usa timeZone 'UTC' explícito para evitar corrimiento al día anterior en servidores no-UTC.
+ */
+export function formatearFechaDateCorta(fecha: Date, incluirAnio = false): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    ...(incluirAnio ? { year: '2-digit' } : {}),
+    timeZone: 'UTC',
+  }).format(fecha);
+}
+
+/**
  * Obtiene el mes (0-11) de una fecha en Bogotá
  */
 export function obtenerMes(fecha: Date): number {

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { CloudOff } from "lucide-react";
-import { enviarSalida } from "@/lib/offline/api-cliente";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { CloudOff } from 'lucide-react';
+import { enviarSalida } from '@/lib/offline/api-cliente';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
 
-type Tipo = "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
+type Tipo = 'VENTA' | 'CONSUMO' | 'PERDIDA' | 'OTRO';
 type Cliente = { id: string; nombre: string };
 
 export function FormularioSalida({
@@ -21,15 +21,15 @@ export function FormularioSalida({
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [tipo, setTipo] = useState<Tipo>("VENTA");
-  const [cantidad, setCantidad] = useState("");
-  const [cliente, setCliente] = useState("");
-  const [clienteId, setClienteId] = useState("");
-  const [modoCliente, setModoCliente] = useState<"existente" | "nuevo">(
-    clientes.length > 0 ? "existente" : "nuevo",
+  const [tipo, setTipo] = useState<Tipo>('VENTA');
+  const [cantidad, setCantidad] = useState('');
+  const [cliente, setCliente] = useState('');
+  const [clienteId, setClienteId] = useState('');
+  const [modoCliente, setModoCliente] = useState<'existente' | 'nuevo'>(
+    clientes.length > 0 ? 'existente' : 'nuevo'
   );
-  const [precio, setPrecio] = useState("");
-  const [notas, setNotas] = useState("");
+  const [precio, setPrecio] = useState('');
+  const [notas, setNotas] = useState('');
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,7 +37,7 @@ export function FormularioSalida({
 
     const c = Number(cantidad);
     if (!Number.isFinite(c) || c <= 0) {
-      setError("Cantidad debe ser positiva.");
+      setError('Cantidad debe ser positiva.');
       return;
     }
     if (c > stockMax) {
@@ -45,19 +45,23 @@ export function FormularioSalida({
       return;
     }
 
-    const usaIdExistente = tipo === "VENTA" && modoCliente === "existente" && clienteId !== "";
+    const usaIdExistente = tipo === 'VENTA' && modoCliente === 'existente' && clienteId !== '';
     const clienteFinal = usaIdExistente ? null : cliente.trim() || null;
     const clienteIdFinal = usaIdExistente ? clienteId : null;
-    if (tipo === "VENTA" && !clienteFinal && !clienteIdFinal) {
-      setError("Para ventas, elegí o escribí el cliente.");
+    if (tipo === 'VENTA' && !clienteFinal && !clienteIdFinal) {
+      setError('Para ventas, elegí o escribí el cliente.');
       return;
     }
 
     let precioFinal: number | null = null;
-    if (tipo === "VENTA" && precio.trim()) {
-      const p = Number(precio.replace(/\./g, ""));
+    if (tipo === 'VENTA') {
+      if (!precio.trim()) {
+        setError('Para ventas, el precio total es obligatorio.');
+        return;
+      }
+      const p = Number(precio.replace(/\./g, ''));
       if (!Number.isFinite(p) || p <= 0) {
-        setError("Precio total debe ser positivo.");
+        setError('Precio total debe ser mayor a 0.');
         return;
       }
       precioFinal = p;
@@ -76,7 +80,7 @@ export function FormularioSalida({
         setError(r.error);
         return;
       }
-      router.push("/almacen/salidas");
+      router.push('/almacen/salidas');
     });
   }
 
@@ -85,13 +89,13 @@ export function FormularioSalida({
       <div>
         <p className="block text-sm font-medium text-zelanda-verde-900">Tipo</p>
         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {(["VENTA", "CONSUMO", "PERDIDA", "OTRO"] as const).map((t) => (
+          {(['VENTA', 'CONSUMO', 'PERDIDA', 'OTRO'] as const).map((t) => (
             <label
               key={t}
               className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${
                 tipo === t
-                  ? "border-zelanda-verde-700 bg-zelanda-verde-700 text-white"
-                  : "border-zelanda-beige-300"
+                  ? 'border-zelanda-verde-700 bg-zelanda-verde-700 text-white'
+                  : 'border-zelanda-beige-300'
               }`}
             >
               <input
@@ -102,13 +106,13 @@ export function FormularioSalida({
                 onChange={() => setTipo(t)}
                 className="sr-only"
               />
-              {t === "VENTA"
-                ? "Venta"
-                : t === "CONSUMO"
-                  ? "Consumo"
-                  : t === "PERDIDA"
-                    ? "Pérdida"
-                    : "Otro"}
+              {t === 'VENTA'
+                ? 'Venta'
+                : t === 'CONSUMO'
+                ? 'Consumo'
+                : t === 'PERDIDA'
+                ? 'Pérdida'
+                : 'Otro'}
             </label>
           ))}
         </div>
@@ -132,39 +136,37 @@ export function FormularioSalida({
         />
       </div>
 
-      {tipo === "VENTA" && (
+      {tipo === 'VENTA' && (
         <>
           <div>
-            <p className="block text-sm font-medium text-zelanda-verde-900">
-              Cliente
-            </p>
+            <p className="block text-sm font-medium text-zelanda-verde-900">Cliente</p>
             {clientes.length > 0 ? (
               <div className="mt-1 grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
                 <button
                   type="button"
-                  onClick={() => setModoCliente("existente")}
+                  onClick={() => setModoCliente('existente')}
                   className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                    modoCliente === "existente"
-                      ? "bg-white text-zelanda-verde-900 shadow-suave"
-                      : "text-zelanda-verde-700"
+                    modoCliente === 'existente'
+                      ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                      : 'text-zelanda-verde-700'
                   }`}
                 >
                   Ya registrado
                 </button>
                 <button
                   type="button"
-                  onClick={() => setModoCliente("nuevo")}
+                  onClick={() => setModoCliente('nuevo')}
                   className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                    modoCliente === "nuevo"
-                      ? "bg-white text-zelanda-verde-900 shadow-suave"
-                      : "text-zelanda-verde-700"
+                    modoCliente === 'nuevo'
+                      ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                      : 'text-zelanda-verde-700'
                   }`}
                 >
                   Texto libre
                 </button>
               </div>
             ) : null}
-            {clientes.length > 0 && modoCliente === "existente" ? (
+            {clientes.length > 0 && modoCliente === 'existente' ? (
               <select
                 required
                 value={clienteId}
@@ -181,7 +183,7 @@ export function FormularioSalida({
             ) : (
               <input
                 id="cliente"
-                required={modoCliente === "nuevo"}
+                required={modoCliente === 'nuevo'}
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
                 placeholder="Nombre exportador / comprador"
@@ -191,7 +193,7 @@ export function FormularioSalida({
           </div>
           <div>
             <label htmlFor="precio" className="block text-sm font-medium text-zelanda-verde-900">
-              Precio total (COP, opcional)
+              Precio total (COP){tipo === 'VENTA' ? ' *' : ' (opcional)'}
             </label>
             <input
               id="precio"
@@ -206,7 +208,7 @@ export function FormularioSalida({
         </>
       )}
 
-      {tipo !== "VENTA" && (
+      {tipo !== 'VENTA' && (
         <div>
           <label htmlFor="detalle" className="block text-sm font-medium text-zelanda-verde-900">
             Detalle (opcional)
@@ -255,7 +257,7 @@ export function FormularioSalida({
         disabled={pendiente}
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pendiente ? "Registrando..." : "Registrar salida"}
+        {pendiente ? 'Registrando...' : 'Registrar salida'}
       </button>
     </form>
   );

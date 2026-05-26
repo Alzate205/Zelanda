@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import { sanitizarError } from "@/lib/errores";
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import { sanitizarError } from '@/lib/errores';
 
 export type EstadoJornal = { error: string | null };
 
@@ -17,34 +17,31 @@ function parsearId(raw: string | null): bigint | null {
   }
 }
 
-export async function crearJornal(
-  _prev: EstadoJornal,
-  formData: FormData,
-): Promise<EstadoJornal> {
-  const usuario = await requerirUsuario("JEFE");
+export async function crearJornal(_prev: EstadoJornal, formData: FormData): Promise<EstadoJornal> {
+  const usuario = await requerirUsuario('JEFE');
 
-  const personaId = parsearId(String(formData.get("persona_id") ?? ""));
-  const fechaRaw = String(formData.get("fecha") ?? "").trim();
-  const tarifaRaw = String(formData.get("tarifa_aplicada") ?? "").trim();
-  const loteIdRaw = String(formData.get("lote_id") ?? "").trim();
-  const descripcion = String(formData.get("descripcion_actividad") ?? "").trim();
-  const notas = String(formData.get("notas") ?? "").trim();
+  const personaId = parsearId(String(formData.get('persona_id') ?? ''));
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const tarifaRaw = String(formData.get('tarifa_aplicada') ?? '').trim();
+  const loteIdRaw = String(formData.get('lote_id') ?? '').trim();
+  const descripcion = String(formData.get('descripcion_actividad') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
 
-  if (!personaId) return { error: "Selecciona la persona." };
+  if (!personaId) return { error: 'Selecciona la persona.' };
 
-  if (!fechaRaw) return { error: "Elegí la fecha." };
+  if (!fechaRaw) return { error: 'Elegí la fecha.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
-    return { error: "Fecha inválida." };
+    return { error: 'Fecha inválida.' };
   }
 
-  const tarifa = Number(tarifaRaw.replace(/\./g, ""));
+  const tarifa = Number(tarifaRaw.replace(/\./g, ''));
   if (!Number.isFinite(tarifa) || tarifa < 0) {
-    return { error: "Tarifa inválida." };
+    return { error: 'Tarifa inválida.' };
   }
 
   const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;
-  if (loteIdRaw && !loteId) return { error: "Lote inválido." };
+  if (loteIdRaw && !loteId) return { error: 'Lote inválido.' };
 
   try {
     await prisma.jornales.create({
@@ -59,28 +56,71 @@ export async function crearJornal(
       },
     });
   } catch (e) {
-    const msg = (e as Error)?.message ?? "";
+    const msg = (e as Error)?.message ?? '';
     if (/unique constraint.*persona_id.*fecha|jornales_persona_id_fecha_key/i.test(msg)) {
       return {
         error:
-          "Ya hay un jornal registrado para esta persona en esa fecha. Borralo primero si querés cambiarlo.",
+          'Ya hay un jornal registrado para esta persona en esa fecha. Borralo primero si querés cambiarlo.',
       };
     }
-    return { error: sanitizarError(e, "jornales/crear") };
+    return { error: sanitizarError(e, 'jornales/crear') };
   }
 
-  revalidatePath("/jefe/jornales");
-  redirect("/jefe/jornales");
+  revalidatePath('/jefe/jornales');
+  redirect('/jefe/jornales');
+}
+
+export async function editarJornal(_prev: EstadoJornal, formData: FormData): Promise<EstadoJornal> {
+  await requerirUsuario('JEFE');
+
+  const id = parsearId(String(formData.get('id') ?? ''));
+  if (!id) return { error: 'Jornal no encontrado.' };
+
+  const tarifaRaw = String(formData.get('tarifa_aplicada') ?? '').trim();
+  const loteIdRaw = String(formData.get('lote_id') ?? '').trim();
+  const descripcion = String(formData.get('descripcion_actividad') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
+
+  const tarifa = Number(tarifaRaw.replace(/\./g, ''));
+  if (!Number.isFinite(tarifa) || tarifa < 0) {
+    return { error: 'Tarifa inválida.' };
+  }
+
+  const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;
+  if (loteIdRaw && !loteId) return { error: 'Lote inválido.' };
+
+  try {
+    await prisma.jornales.update({
+      where: { id, borrado_en: null },
+      data: {
+        tarifa_aplicada: tarifa,
+        lote_id: loteId,
+        descripcion_actividad: descripcion || null,
+        notas: notas || null,
+      },
+    });
+  } catch (e) {
+    return { error: sanitizarError(e, 'jornales/editar') };
+  }
+
+  revalidatePath('/jefe/jornales');
+  redirect('/jefe/jornales');
 }
 
 export async function borrarJornal(formData: FormData) {
-  await requerirUsuario("JEFE");
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const usuario = await requerirUsuario('JEFE');
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
   try {
-    await prisma.jornales.delete({ where: { id } });
+    await prisma.jornales.update({
+      where: { id, borrado_en: null },
+      data: {
+        borrado_en: new Date(),
+        borrado_por: usuario.id,
+      },
+    });
   } catch {
-    // best-effort
+    // ya borrado o no existe — ignorar
   }
-  revalidatePath("/jefe/jornales");
+  revalidatePath('/jefe/jornales');
 }

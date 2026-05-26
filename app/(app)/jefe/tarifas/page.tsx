@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
 import { cerrarTarifa, borrarTarifa } from './acciones';
+import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
 
 export const metadata = { title: 'Tarifas de tarea' };
 
@@ -40,6 +41,7 @@ export default async function PaginaTarifas() {
   hoy.setHours(0, 0, 0, 0);
 
   const tarifas = await prisma.tarifas_tarea.findMany({
+    where: { borrado_en: null },
     orderBy: [{ vigente_hasta: { sort: 'asc', nulls: 'first' } }, { vigente_desde: 'desc' }],
     include: {
       tipos_tarea: { select: { nombre: true, area: true } },
@@ -113,15 +115,11 @@ export default async function PaginaTarifas() {
               </button>
             </form>
           ) : null}
-          <form action={borrarTarifa}>
-            <input type="hidden" name="id" value={String(t.id)} />
-            <button
-              type="submit"
-              className="rounded-[10px] border border-[#e8b3ad] bg-[#f4dad7] px-3 py-1.5 text-[12px] font-semibold text-[#7b2a23] hover:bg-[#efc7c2]"
-            >
-              Borrar
-            </button>
-          </form>
+          <ConfirmarBorrado
+            action={borrarTarifa}
+            id={t.id}
+            mensaje="¿Anular esta tarifa? Los saldos históricos que ya usaron esta tarifa no se modifican. El registro quedará para trazabilidad."
+          />
         </div>
       </li>
     );

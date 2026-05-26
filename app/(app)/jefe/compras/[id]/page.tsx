@@ -4,6 +4,7 @@ import { ChevronLeft, Package, FileText } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
 import { borrarCompra } from '../acciones';
 
 export const metadata = { title: 'Compra' };
@@ -17,11 +18,13 @@ function fmtMonto(n: number): string {
 }
 
 function fmtFecha(d: Date): string {
+  // compras.fecha es DATE; timeZone 'UTC' evita corrimiento al día anterior.
   return d.toLocaleDateString('es-CO', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
@@ -124,15 +127,14 @@ export default async function PaginaDetalleCompra({ params }: { params: Promise<
       ) : null}
 
       <div className="flex justify-end">
-        <form action={borrarCompra}>
-          <input type="hidden" name="id" value={String(compra.id)} />
-          <button
-            type="submit"
-            className="rounded-[10px] border border-[#e8b3ad] bg-[#f4dad7] px-3 py-1.5 text-[12px] font-semibold text-[#7b2a23] hover:bg-[#efc7c2]"
-          >
-            Borrar compra (revierte stock)
-          </button>
-        </form>
+        <ConfirmarBorrado
+          action={borrarCompra}
+          id={compra.id}
+          mensaje={`¿Anular esta compra de ${fmtMonto(
+            total
+          )}? Se revertirá el stock de todos los insumos. El registro quedará para trazabilidad.`}
+          etiqueta="Anular compra (revierte stock)"
+        />
       </div>
     </div>
   );

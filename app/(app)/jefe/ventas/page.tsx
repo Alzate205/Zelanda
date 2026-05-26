@@ -4,6 +4,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
+import { mesBogota, periodoMesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Ventas' };
 const MESES = [
@@ -30,17 +31,18 @@ function fmtMonto(n: number): string {
 }
 
 function fmtFecha(d: Date): string {
+  // salidas_cosecha.fecha es TIMESTAMPTZ; convertir a Bogotá para mostrar.
   return d.toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
     year: '2-digit',
+    timeZone: 'America/Bogota',
   });
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
-  const hoy = new Date();
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+    return mesBogota();
   }
   const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
@@ -59,8 +61,8 @@ export default async function PaginaVentas({
 
   const sp = await searchParams;
   const { anio, mes } = parsearMes(sp.mes);
-  const desde = new Date(anio, mes, 1);
-  const hasta = new Date(anio, mes + 1, 0, 23, 59, 59, 999);
+  // salidas_cosecha.fecha es TIMESTAMPTZ: usar límites en hora Bogotá para no perder ventas nocturnas.
+  const { desde, hasta } = periodoMesBogota(anio, mes);
 
   const ventas = await prisma.salidas_cosecha.findMany({
     where: {

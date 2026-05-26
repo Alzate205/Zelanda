@@ -5,6 +5,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { calcularSaldoPersona, periodoMes } from '@/lib/saldos';
+import { mesBogota } from '@/lib/fecha';
 
 export const metadata = { title: 'Saldo de la persona' };
 
@@ -49,16 +50,17 @@ function fmtMonto(n: number): string {
 }
 
 function fmtFecha(d: Date): string {
+  // DATE fields de Prisma llegan como UTC midnight; timeZone 'UTC' evita corrimiento al día anterior.
   return d.toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
+    timeZone: 'UTC',
   });
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
-  const hoy = new Date();
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
+    return mesBogota();
   }
   const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
@@ -93,6 +95,7 @@ export default async function PaginaSaldoPersona({
       where: {
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
+        borrado_en: null,
       },
       orderBy: { fecha: 'asc' },
       include: { lotes: { select: { nombre: true } } },
@@ -101,6 +104,7 @@ export default async function PaginaSaldoPersona({
       where: {
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
+        borrado_en: null,
       },
       orderBy: { fecha: 'asc' },
     }),
@@ -115,6 +119,7 @@ export default async function PaginaSaldoPersona({
       where: {
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
+        borrado_en: null,
       },
       orderBy: { fecha: 'asc' },
     }),

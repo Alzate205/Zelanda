@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
 import { borrarAusencia } from './acciones';
+import { mesBogota } from '@/lib/fecha';
+import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
 
 export const metadata = { title: 'Ausencias' };
 
@@ -25,11 +27,13 @@ const ESTADO_BADGE: Record<string, 'aldia' | 'proxima' | 'vencida' | 'neutro'> =
 };
 
 function fmtFecha(d: Date): string {
+  // ausencias.fecha es DATE; timeZone 'UTC' evita corrimiento al día anterior.
   return d.toLocaleDateString('es-CO', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
     year: '2-digit',
+    timeZone: 'UTC',
   });
 }
 
@@ -37,6 +41,7 @@ export default async function PaginaAusencias() {
   await requerirUsuario('JEFE');
 
   const ausencias = await prisma.ausencias.findMany({
+    where: { borrado_en: null },
     orderBy: [{ fecha: 'desc' }, { created_at: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
@@ -44,9 +49,9 @@ export default async function PaginaAusencias() {
     take: 200,
   });
 
-  const hoy = new Date();
+  const { anio: anioHoy, mes: mesHoy } = mesBogota();
   const totalMes = ausencias.filter(
-    (a) => a.fecha.getFullYear() === hoy.getFullYear() && a.fecha.getMonth() === hoy.getMonth()
+    (a) => a.fecha.getUTCFullYear() === anioHoy && a.fecha.getUTCMonth() === mesHoy
   ).length;
 
   return (
@@ -119,15 +124,11 @@ export default async function PaginaAusencias() {
                   </p>
                 ) : null}
                 <div className="mt-2 flex justify-end">
-                  <form action={borrarAusencia}>
-                    <input type="hidden" name="id" value={String(a.id)} />
-                    <button
-                      type="submit"
-                      className="rounded-[10px] border border-[#e8b3ad] bg-[#f4dad7] px-3 py-1.5 text-[11.5px] font-semibold text-[#7b2a23] hover:bg-[#efc7c2]"
-                    >
-                      Borrar
-                    </button>
-                  </form>
+                  <ConfirmarBorrado
+                    action={borrarAusencia}
+                    id={a.id}
+                    mensaje={`¿Anular la ausencia de ${a.persona.nombre_completo}? El registro quedará para trazabilidad.`}
+                  />
                 </div>
               </li>
             );
