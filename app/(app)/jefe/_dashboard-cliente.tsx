@@ -293,18 +293,6 @@ export function DashboardJefeCliente({
       <section>
         <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Más</h2>
         <div className="grid grid-cols-2 gap-2.5">
-          <Atajo
-            href="/jefe/inventario"
-            icono={AlertTriangle}
-            titulo="Stock bajo"
-            sub={`${contadores.stock_bajo} en alerta`}
-          />
-          <Atajo
-            href="/bodega/despachos"
-            icono={Truck}
-            titulo="Despachos"
-            sub={`${contadores.despachos_abiertos} abiertos`}
-          />
           <Atajo href="/jefe/tarifas" icono={DollarSign} titulo="Tarifas" sub="Catálogo de pagos" />
           <Atajo href="/jefe/pagos" icono={DollarSign} titulo="Pagos" sub="Histórico de salidas" />
           <Atajo
