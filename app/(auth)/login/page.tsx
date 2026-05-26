@@ -14,12 +14,13 @@ export default async function PaginaLogin({
 
   return (
     <main
-      className="flex min-h-svh flex-col bg-gradient-to-br"
+      className="flex min-h-screen flex-col"
       style={{
         background:
           'radial-gradient(circle at 20% 0%, rgba(193,150,88,0.15), transparent 50%),' +
           'radial-gradient(circle at 80% 100%, rgba(58,92,68,0.20), transparent 55%),' +
           'linear-gradient(180deg, #faf7f2 0%, #f3e8d8 100%)',
+        backgroundAttachment: 'fixed',
       }}
     >
       <div className="flex-1 flex flex-col items-center justify-center px-4 pt-8 sm:pt-12">

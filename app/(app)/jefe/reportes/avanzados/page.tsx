@@ -250,7 +250,7 @@ export default async function PaginaReportesAvanzados({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <KPI
             etiqueta="Ingresos"
             valor={fmtMonto(ingresos)}

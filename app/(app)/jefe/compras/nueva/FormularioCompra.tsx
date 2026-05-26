@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useActionState, useMemo, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, Check, Plus, X } from "lucide-react";
-import { crearCompra, type EstadoCompra } from "../acciones";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useActionState, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Check, Plus, X } from 'lucide-react';
+import { crearCompra, type EstadoCompra } from '../acciones';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
 
 const ESTADO_INICIAL: EstadoCompra = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
 const labelBase =
-  "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
 type Proveedor = { id: string; nombre: string };
 type Insumo = {
@@ -30,13 +30,13 @@ type Item = {
 };
 
 function nuevoItem(): Item {
-  return { insumo_id: "", cantidad: "", costo_unitario: "", notas: "" };
+  return { insumo_id: '', cantidad: '', costo_unitario: '', notas: '' };
 }
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
@@ -49,8 +49,8 @@ export function FormularioCompra({
   insumos: Insumo[];
 }) {
   const [estado, accion, pendiente] = useActionState(crearCompra, ESTADO_INICIAL);
-  const [modoProveedor, setModoProveedor] = useState<"existente" | "nuevo">(
-    proveedores.length > 0 ? "existente" : "nuevo",
+  const [modoProveedor, setModoProveedor] = useState<'existente' | 'nuevo'>(
+    proveedores.length > 0 ? 'existente' : 'nuevo'
   );
   const [items, setItems] = useState<Item[]>([nuevoItem()]);
 
@@ -58,17 +58,15 @@ export function FormularioCompra({
 
   const total = useMemo(() => {
     return items.reduce((acc, it) => {
-      const c = Number(it.cantidad.replace(/\./g, ""));
-      const cu = Number(it.costo_unitario.replace(/\./g, ""));
+      const c = Number(it.cantidad.replace(/\./g, ''));
+      const cu = Number(it.costo_unitario.replace(/\./g, ''));
       if (!Number.isFinite(c) || !Number.isFinite(cu)) return acc;
       return acc + c * cu;
     }, 0);
   }, [items]);
 
   function actualizarItem(idx: number, parche: Partial<Item>) {
-    setItems((prev) =>
-      prev.map((it, i) => (i === idx ? { ...it, ...parche } : it)),
-    );
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...parche } : it)));
   }
 
   function agregarItem() {
@@ -85,7 +83,7 @@ export function FormularioCompra({
       insumo_id: insumoId,
       // Pre-llenar costo si el insumo tiene uno registrado
       costo_unitario:
-        items[idx].costo_unitario === "" && insumo?.costo_unitario != null
+        items[idx].costo_unitario === '' && insumo?.costo_unitario != null
           ? String(Math.round(insumo.costo_unitario))
           : items[idx].costo_unitario,
     });
@@ -97,10 +95,10 @@ export function FormularioCompra({
       .filter((it) => it.insumo_id && it.cantidad && it.costo_unitario)
       .map((it) => ({
         insumo_id: it.insumo_id,
-        cantidad: Number(it.cantidad.replace(/\./g, "")),
-        costo_unitario: Number(it.costo_unitario.replace(/\./g, "")),
+        cantidad: Number(it.cantidad.replace(/\./g, '')),
+        costo_unitario: Number(it.costo_unitario.replace(/\./g, '')),
         notas: it.notas || undefined,
-      })),
+      }))
   );
 
   return (
@@ -117,9 +115,7 @@ export function FormularioCompra({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Registrar
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Nueva compra
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nueva compra</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
           El stock de los insumos se actualiza automáticamente al guardar.
         </p>
@@ -131,31 +127,31 @@ export function FormularioCompra({
           <div className="mt-1.5 grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
             <button
               type="button"
-              onClick={() => setModoProveedor("existente")}
+              onClick={() => setModoProveedor('existente')}
               className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                modoProveedor === "existente"
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700"
+                modoProveedor === 'existente'
+                  ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                  : 'text-zelanda-verde-700'
               }`}
             >
               Ya registrado
             </button>
             <button
               type="button"
-              onClick={() => setModoProveedor("nuevo")}
+              onClick={() => setModoProveedor('nuevo')}
               className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                modoProveedor === "nuevo"
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700"
+                modoProveedor === 'nuevo'
+                  ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                  : 'text-zelanda-verde-700'
               }`}
             >
               Nuevo
             </button>
           </div>
-          {modoProveedor === "existente" ? (
+          {modoProveedor === 'existente' ? (
             <select
               name="proveedor_id"
-              required={modoProveedor === "existente"}
+              required={modoProveedor === 'existente'}
               className={`${inputBase} mt-2`}
               defaultValue=""
             >
@@ -171,7 +167,7 @@ export function FormularioCompra({
               <input
                 name="proveedor_nuevo_nombre"
                 type="text"
-                required={modoProveedor === "nuevo"}
+                required={modoProveedor === 'nuevo'}
                 placeholder="Nombre del proveedor"
                 className={`${inputBase} mt-2`}
               />
@@ -182,31 +178,24 @@ export function FormularioCompra({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="fecha" className={labelBase}>
-              Fecha
-            </label>
-            <input
-              id="fecha"
-              name="fecha"
-              type="date"
-              required
-              defaultValue={hoy}
-              className={inputBase}
-            />
-          </div>
-          <div>
-            <label htmlFor="numero_factura" className={labelBase}>
-              Factura # (opcional)
-            </label>
-            <input
-              id="numero_factura"
-              name="numero_factura"
-              type="text"
-              className={inputBase}
-            />
-          </div>
+        <div>
+          <label htmlFor="fecha" className={labelBase}>
+            Fecha
+          </label>
+          <input
+            id="fecha"
+            name="fecha"
+            type="date"
+            required
+            defaultValue={hoy}
+            className={inputBase}
+          />
+        </div>
+        <div>
+          <label htmlFor="numero_factura" className={labelBase}>
+            Factura # (opcional)
+          </label>
+          <input id="numero_factura" name="numero_factura" type="text" className={inputBase} />
         </div>
       </section>
 
@@ -224,10 +213,9 @@ export function FormularioCompra({
 
         {items.map((it, idx) => {
           const insumo = insumos.find((i) => i.id === it.insumo_id);
-          const c = Number(it.cantidad.replace(/\./g, ""));
-          const cu = Number(it.costo_unitario.replace(/\./g, ""));
-          const subtotal =
-            Number.isFinite(c) && Number.isFinite(cu) ? c * cu : 0;
+          const c = Number(it.cantidad.replace(/\./g, ''));
+          const cu = Number(it.costo_unitario.replace(/\./g, ''));
+          const subtotal = Number.isFinite(c) && Number.isFinite(cu) ? c * cu : 0;
           return (
             <div
               key={idx}
@@ -265,7 +253,7 @@ export function FormularioCompra({
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
-                    Cantidad {insumo ? `(${insumo.unidad})` : ""}
+                    Cantidad {insumo ? `(${insumo.unidad})` : ''}
                   </label>
                   <input
                     type="text"
@@ -290,9 +278,7 @@ export function FormularioCompra({
                     value={formatearMiles(it.costo_unitario)}
                     onChange={(e) =>
                       actualizarItem(idx, {
-                        costo_unitario: normalizarEntradaNumerica(
-                          e.target.value,
-                        ),
+                        costo_unitario: normalizarEntradaNumerica(e.target.value),
                       })
                     }
                     placeholder="50.000"
@@ -319,12 +305,8 @@ export function FormularioCompra({
         })}
 
         <div className="flex items-center justify-between rounded-[10px] bg-zelanda-verde-50 px-3 py-2.5">
-          <span className="font-serif text-[14px] text-zelanda-verde-900">
-            Total
-          </span>
-          <span className="font-serif text-[18px] text-zelanda-verde-900">
-            {fmtMonto(total)}
-          </span>
+          <span className="font-serif text-[14px] text-zelanda-verde-900">Total</span>
+          <span className="font-serif text-[18px] text-zelanda-verde-900">{fmtMonto(total)}</span>
         </div>
       </section>
 
@@ -355,7 +337,7 @@ export function FormularioCompra({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <Link
@@ -370,7 +352,7 @@ export function FormularioCompra({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente ? "Registrando…" : `Registrar ${fmtMonto(total)}`}
+            {pendiente ? 'Registrando…' : `Registrar ${fmtMonto(total)}`}
           </button>
         </div>
       </div>

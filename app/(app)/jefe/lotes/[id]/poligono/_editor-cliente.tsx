@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   MapContainer,
@@ -7,18 +7,14 @@ import {
   Polyline,
   useMapEvents,
   useMap,
-} from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { useActionState, useState, useMemo, useEffect } from "react";
-import { Undo2, Trash2 } from "lucide-react";
-import {
-  guardarPoligonoLote,
-  quitarPoligonoLote,
-  type EstadoEdicion,
-} from "./acciones";
-import { CapaReferencias } from "@/components/mapa/CapaReferencias";
-import type { ReferenciasMapa } from "@/lib/referencias-mapa";
+} from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { useActionState, useState, useMemo, useEffect } from 'react';
+import { Undo2, Trash2 } from 'lucide-react';
+import { guardarPoligonoLote, quitarPoligonoLote, type EstadoEdicion } from './acciones';
+import { CapaReferencias } from '@/components/mapa/CapaReferencias';
+import type { ReferenciasMapa } from '@/lib/referencias-mapa';
 
 type LngLat = [number, number];
 
@@ -29,7 +25,7 @@ function AjustarVistaReferencias({
   borde,
   vacio,
 }: {
-  borde: ReferenciasMapa["borde"];
+  borde: ReferenciasMapa['borde'];
   vacio: boolean;
 }) {
   const map = useMap();
@@ -47,11 +43,7 @@ function AjustarVistaReferencias({
   return null;
 }
 
-function CapturadorClicks({
-  onClick,
-}: {
-  onClick: (lng: number, lat: number) => void;
-}) {
+function CapturadorClicks({ onClick }: { onClick: (lng: number, lat: number) => void }) {
   useMapEvents({
     click: (e) => onClick(e.latlng.lng, e.latlng.lat),
   });
@@ -65,7 +57,7 @@ function parseGeojsonInicial(geojson: string | null): LngLat[] {
       type: string;
       coordinates: number[][][];
     };
-    if (obj.type !== "Polygon" || !obj.coordinates[0]) return [];
+    if (obj.type !== 'Polygon' || !obj.coordinates[0]) return [];
     const anillo = obj.coordinates[0] as LngLat[];
     if (
       anillo.length > 1 &&
@@ -89,19 +81,11 @@ export default function EditorPoligono({
   geojsonInicial: string | null;
   referencias?: ReferenciasMapa;
 }) {
-  const iniciales = useMemo(
-    () => parseGeojsonInicial(geojsonInicial),
-    [geojsonInicial],
-  );
+  const iniciales = useMemo(() => parseGeojsonInicial(geojsonInicial), [geojsonInicial]);
   const [vertices, setVertices] = useState<LngLat[]>(iniciales);
-  const [estado, formAction, pending] = useActionState(
-    guardarPoligonoLote,
-    ESTADO_INICIAL,
-  );
+  const [estado, formAction, pending] = useActionState(guardarPoligonoLote, ESTADO_INICIAL);
 
-  const positions = vertices.map(
-    ([lng, lat]) => [lat, lng] as [number, number],
-  );
+  const positions = vertices.map(([lng, lat]) => [lat, lng] as [number, number]);
   const previewCierre =
     vertices.length >= 3 ? [positions[positions.length - 1], positions[0]] : null;
   const centro: [number, number] =
@@ -111,13 +95,13 @@ export default function EditorPoligono({
     <div className="space-y-3">
       <div
         className="overflow-hidden rounded-xl border border-zelanda-beige-200 shadow-card"
-        style={{ height: "65vh" }}
+        style={{ height: 'clamp(300px, 65vh - 120px, 600px)' }}
       >
         <MapContainer
           center={centro}
           zoom={iniciales.length > 0 ? 16 : 14}
           scrollWheelZoom
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
             attribution="Tiles &copy; Esri"
@@ -126,10 +110,7 @@ export default function EditorPoligono({
           />
           {referencias && (
             <>
-              <AjustarVistaReferencias
-                borde={referencias.borde}
-                vacio={iniciales.length === 0}
-              />
+              <AjustarVistaReferencias borde={referencias.borde} vacio={iniciales.length === 0} />
               <CapaReferencias
                 borde={referencias.borde}
                 lotes={referencias.lotes}
@@ -139,20 +120,15 @@ export default function EditorPoligono({
             </>
           )}
           <CapturadorClicks
-            onClick={(lng, lat) =>
-              setVertices((p) => [...p, [lng, lat] as LngLat])
-            }
+            onClick={(lng, lat) => setVertices((p) => [...p, [lng, lat] as LngLat])}
           />
           {positions.length >= 2 && (
-            <Polyline
-              positions={positions}
-              pathOptions={{ color: "#c89045", weight: 3 }}
-            />
+            <Polyline positions={positions} pathOptions={{ color: '#c89045', weight: 3 }} />
           )}
           {previewCierre && (
             <Polyline
               positions={previewCierre}
-              pathOptions={{ color: "#c89045", weight: 2, dashArray: "4,4" }}
+              pathOptions={{ color: '#c89045', weight: 2, dashArray: '4,4' }}
             />
           )}
           {positions.map((p, idx) => (
@@ -161,8 +137,8 @@ export default function EditorPoligono({
               center={p}
               radius={7}
               pathOptions={{
-                color: "#3d5c42",
-                fillColor: "#c89045",
+                color: '#3d5c42',
+                fillColor: '#c89045',
                 fillOpacity: 1,
                 weight: 2,
               }}
@@ -175,9 +151,7 @@ export default function EditorPoligono({
         <span className="text-zelanda-verde-700">
           Vértices: <strong>{vertices.length}</strong>
           {vertices.length > 0 && vertices.length < 3 && (
-            <span className="ml-1 text-estado-vencida">
-              (necesitás al menos 3)
-            </span>
+            <span className="ml-1 text-estado-vencida">(necesitás al menos 3)</span>
           )}
         </span>
         <div className="flex gap-2">
@@ -214,7 +188,7 @@ export default function EditorPoligono({
           disabled={vertices.length < 3 || pending}
           className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
         >
-          {pending ? "Guardando..." : "Cerrar y guardar"}
+          {pending ? 'Guardando...' : 'Cerrar y guardar'}
         </button>
       </form>
 
