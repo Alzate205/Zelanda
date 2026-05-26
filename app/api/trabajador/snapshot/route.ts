@@ -1,20 +1,12 @@
-import { NextResponse } from "next/server";
-import { obtenerUsuarioActual } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
+import { obtenerUsuarioActual } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export const dynamic = "force-dynamic";
-
-export async function GET() {
-  const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== "TRABAJADOR" || usuario.persona_id === null) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const personaId = BigInt(usuario.persona_id);
-
+async function construirSnapshotTrabajadorUncached(personaId: bigint) {
   const asignaciones = await prisma.asignaciones.findMany({
-    where: { persona_id: personaId, estado: { in: ["PENDIENTE", "EN_CURSO"] } },
-    orderBy: { fecha_inicio: "asc" },
+    where: { persona_id: personaId, estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
+    orderBy: { fecha_inicio: 'asc' },
     include: {
       tipos_tarea: { select: { id: true, nombre: true, area: true } },
       lotes: { select: { id: true, nombre: true, total_arboles: true } },
@@ -22,7 +14,7 @@ export async function GET() {
   });
 
   const apiarioIds = Array.from(
-    new Set(asignaciones.map((a) => a.apiario_id).filter((x): x is bigint => x !== null)),
+    new Set(asignaciones.map((a) => a.apiario_id).filter((x): x is bigint => x !== null))
   );
   const apiarios = apiarioIds.length
     ? await prisma.apiarios.findMany({
@@ -32,14 +24,13 @@ export async function GET() {
     : [];
   const mapaApiario = new Map(apiarios.map((a) => [String(a.id), a]));
 
-  // Lotes para crear novedad: traer todos los lotes con árboles cargados
   const lotes = await prisma.lotes.findMany({
     where: { deleted_at: null, total_arboles: { gt: 0 } },
     select: { id: true, nombre: true, total_arboles: true },
-    orderBy: { nombre: "asc" },
+    orderBy: { nombre: 'asc' },
   });
 
-  return NextResponse.json({
+  return {
     asignaciones: asignaciones.map((a) => {
       const ap = a.apiario_id ? mapaApiario.get(String(a.apiario_id)) : null;
       return {
@@ -65,6 +56,27 @@ export async function GET() {
       nombre: l.nombre,
       total_arboles: l.total_arboles,
     })),
+  };
+}
+
+const construirSnapshotTrabajador = unstable_cache(
+  construirSnapshotTrabajadorUncached,
+  ['snapshot-trabajador-key'],
+  { revalidate: 10, tags: ['snapshot-trabajador'] }
+);
+
+export async function GET() {
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario || usuario.rol !== 'TRABAJADOR' || usuario.persona_id === null) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  const personaId = BigInt(usuario.persona_id);
+
+  const snapshot = await construirSnapshotTrabajador(personaId);
+
+  return NextResponse.json({
+    ...snapshot,
     ts: new Date().toISOString(),
   });
 }
