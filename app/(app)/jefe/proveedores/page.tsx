@@ -1,27 +1,25 @@
-import Link from "next/link";
-import { Plus, Truck, ChevronLeft, Edit } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
-import { borrarProveedor } from "./acciones";
+import Link from 'next/link';
+import { Plus, Truck, ChevronLeft, Edit } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
+import { borrarProveedor } from './acciones';
 
-export const metadata = { title: "Proveedores" };
-export const dynamic = "force-dynamic";
-
+export const metadata = { title: 'Proveedores' };
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 export default async function PaginaProveedores() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const proveedores = await prisma.proveedores.findMany({
-    orderBy: [{ activo: "desc" }, { nombre: "asc" }],
+    orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
     include: {
       _count: { select: { compras: true } },
       compras: { select: { total: true } },
@@ -40,14 +38,12 @@ export default async function PaginaProveedores() {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
-              {p.nombre}
-            </p>
+            <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">{p.nombre}</p>
             <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
-              {p.nit ? `NIT ${p.nit}` : ""}
-              {p.nit && p.contacto ? " · " : ""}
-              {p.contacto ?? ""}
-              {p.telefono ? ` · ${p.telefono}` : ""}
+              {p.nit ? `NIT ${p.nit}` : ''}
+              {p.nit && p.contacto ? ' · ' : ''}
+              {p.contacto ?? ''}
+              {p.telefono ? ` · ${p.telefono}` : ''}
             </p>
           </div>
           {!p.activo ? <Badge estado="neutro">Inactivo</Badge> : null}
@@ -57,15 +53,11 @@ export default async function PaginaProveedores() {
           <div className="mt-2 grid grid-cols-2 gap-2 text-[11.5px]">
             <div>
               <span className="block text-zelanda-verde-700">Compras</span>
-              <span className="font-semibold text-zelanda-verde-900">
-                {p.compras.length}
-              </span>
+              <span className="font-semibold text-zelanda-verde-900">{p.compras.length}</span>
             </div>
             <div>
               <span className="block text-zelanda-verde-700">Total</span>
-              <span className="font-semibold text-zelanda-verde-900">
-                {fmtMonto(totalCompras)}
-              </span>
+              <span className="font-semibold text-zelanda-verde-900">{fmtMonto(totalCompras)}</span>
             </div>
           </div>
         ) : null}
@@ -112,9 +104,7 @@ export default async function PaginaProveedores() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Negocio · Proveedores</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Quién nos vende
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Quién nos vende</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
             {activos.length} activos · {inactivos.length} inactivos
           </p>
@@ -134,8 +124,8 @@ export default async function PaginaProveedores() {
             Sin proveedores registrados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá a quién le comprás insumos. Cada compra queda asociada a
-            su proveedor y permite ver costos por origen.
+            Registrá a quién le comprás insumos. Cada compra queda asociada a su proveedor y permite
+            ver costos por origen.
           </p>
           <Link
             href="/jefe/proveedores/nuevo"
@@ -148,17 +138,13 @@ export default async function PaginaProveedores() {
         <>
           {activos.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Activos
-              </h2>
+              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Activos</h2>
               <ul className="space-y-2">{activos.map(fila)}</ul>
             </section>
           ) : null}
           {inactivos.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Inactivos
-              </h2>
+              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Inactivos</h2>
               <ul className="space-y-2">{inactivos.map(fila)}</ul>
             </section>
           ) : null}

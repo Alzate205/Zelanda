@@ -1,8 +1,9 @@
-import "server-only";
+import 'server-only';
 
-import { prisma } from "@/lib/prisma";
-import { calcularResumen } from "@/lib/fechas-tarea";
-import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
+import { unstable_cache } from 'next/cache';
+import { prisma } from '@/lib/prisma';
+import { calcularResumen } from '@/lib/fechas-tarea';
+import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
 
 /**
  * Construye el snapshot del dashboard del jefe: vencidas, próximas,
@@ -11,10 +12,10 @@ import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
  * Es compartido entre el Server Component `/jefe` y la API `/api/jefe/snapshot`
  * para evitar duplicar la lógica de Prisma.
  */
-export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
+const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
   const completadasLote = await prisma.asignaciones.groupBy({
-    by: ["lote_id", "tipo_tarea_id"],
-    where: { estado: "COMPLETADA", lote_id: { not: null } },
+    by: ['lote_id', 'tipo_tarea_id'],
+    where: { estado: 'COMPLETADA', lote_id: { not: null } },
     _max: { fecha_completada: true },
   });
 
@@ -24,7 +25,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       select: { id: true, nombre: true },
     }),
     prisma.tipos_tarea.findMany({
-      where: { area: "CULTIVO", activo: true },
+      where: { area: 'CULTIVO', activo: true },
       select: { id: true, nombre: true, frecuencia_dias_default: true },
     }),
     prisma.frecuencias_lote.findMany({
@@ -55,9 +56,9 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       const resumen = calcularResumen(ultima, freq);
 
       if (
-        resumen.estado === "vencida" ||
-        resumen.estado === "sin_historial" ||
-        resumen.estado === "proxima"
+        resumen.estado === 'vencida' ||
+        resumen.estado === 'sin_historial' ||
+        resumen.estado === 'proxima'
       ) {
         filas.push({
           lote_nombre: l.nombre,
@@ -73,7 +74,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
   }
 
   const vencidas: AlertaTareaJefe[] = filas
-    .filter((f) => f.estado === "vencida" || f.estado === "sin_historial")
+    .filter((f) => f.estado === 'vencida' || f.estado === 'sin_historial')
     .sort((a, b) => a.ord - b.ord)
     .slice(0, 10)
     .map((f) => ({
@@ -86,7 +87,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     }));
 
   const proximas: AlertaTareaJefe[] = filas
-    .filter((f) => f.estado === "proxima")
+    .filter((f) => f.estado === 'proxima')
     .sort((a, b) => (a.dias_para_proxima ?? 0) - (b.dias_para_proxima ?? 0))
     .slice(0, 10)
     .map((f) => ({
@@ -118,7 +119,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
   ] = await Promise.all([
     prisma.novedades.findMany({
       where: { resuelta: false },
-      orderBy: { fecha: "desc" },
+      orderBy: { fecha: 'desc' },
       take: 5,
       include: {
         arboles: {
@@ -130,13 +131,13 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       SELECT COUNT(*)::int AS count FROM v_insumos_stock
       WHERE activo = TRUE AND por_debajo_minimo = TRUE
     `,
-    prisma.despachos.count({ where: { estado: "ABIERTO" } }),
+    prisma.despachos.count({ where: { estado: 'ABIERTO' } }),
     prisma.$queryRaw<{ stock_kg: string }[]>`
       SELECT stock_kg::text FROM v_stock_almacen
     `,
     prisma.personas.findMany({
       where: { activo: true },
-      orderBy: { nombre_completo: "asc" },
+      orderBy: { nombre_completo: 'asc' },
       select: { id: true, nombre_completo: true },
     }),
     prisma.lotes.findMany({
@@ -144,10 +145,10 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
       select: { id: true, total_arboles: true },
     }),
     prisma.asignaciones.count({
-      where: { estado: { in: ["PENDIENTE", "EN_CURSO"] } },
+      where: { estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
     }),
     prisma.asignaciones.count({
-      where: { estado: "COMPLETADA", fecha_completada: { gte: inicioDia } },
+      where: { estado: 'COMPLETADA', fecha_completada: { gte: inicioDia } },
     }),
     prisma.cosechas.aggregate({
       where: { fecha: { gte: inicioMes } },
@@ -162,7 +163,7 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
         completado_en: null,
         fecha: { lte: new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000) },
       },
-      orderBy: { fecha: "asc" },
+      orderBy: { fecha: 'asc' },
       take: 10,
       include: {
         asignado_a: { select: { id: true, nombre_completo: true } },
@@ -171,11 +172,8 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
   ]);
 
   const recordatorios = recordatoriosRaw.map((r) => {
-    const d = Math.round(
-      (r.fecha.getTime() - inicioDia.getTime()) / 86400000,
-    );
-    const estado: "vencido" | "hoy" | "proximo" =
-      d < 0 ? "vencido" : d === 0 ? "hoy" : "proximo";
+    const d = Math.round((r.fecha.getTime() - inicioDia.getTime()) / 86400000);
+    const estado: 'vencido' | 'hoy' | 'proximo' = d < 0 ? 'vencido' : d === 0 ? 'hoy' : 'proximo';
     return {
       id: String(r.id),
       titulo: r.titulo,
@@ -189,24 +187,24 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
   const totalLotes = lotesTotales.length;
   const totalArboles = lotesTotales.reduce((a, l) => a + l.total_arboles, 0);
 
-  const lotesPorEstado = new globalThis.Map<string, "aldia" | "proxima" | "vencida">();
+  const lotesPorEstado = new globalThis.Map<string, 'aldia' | 'proxima' | 'vencida'>();
   for (const l of lotes) {
-    lotesPorEstado.set(String(l.id), "aldia");
+    lotesPorEstado.set(String(l.id), 'aldia');
   }
   for (const f of filas) {
-    const actual = lotesPorEstado.get(f.lote_id) ?? "aldia";
-    if (f.estado === "vencida" || f.estado === "sin_historial") {
-      lotesPorEstado.set(f.lote_id, "vencida");
-    } else if (f.estado === "proxima" && actual !== "vencida") {
-      lotesPorEstado.set(f.lote_id, "proxima");
+    const actual = lotesPorEstado.get(f.lote_id) ?? 'aldia';
+    if (f.estado === 'vencida' || f.estado === 'sin_historial') {
+      lotesPorEstado.set(f.lote_id, 'vencida');
+    } else if (f.estado === 'proxima' && actual !== 'vencida') {
+      lotesPorEstado.set(f.lote_id, 'proxima');
     }
   }
   let lotesAldia = 0;
   let lotesProxima = 0;
   let lotesVencida = 0;
   for (const v of lotesPorEstado.values()) {
-    if (v === "vencida") lotesVencida++;
-    else if (v === "proxima") lotesProxima++;
+    if (v === 'vencida') lotesVencida++;
+    else if (v === 'proxima') lotesProxima++;
     else lotesAldia++;
   }
 
@@ -245,4 +243,10 @@ export async function construirSnapshotJefe(): Promise<SnapshotJefe> {
     personas,
     ts: new Date().toISOString(),
   };
-}
+};
+
+export const construirSnapshotJefe = unstable_cache(
+  construirSnapshotJefaUncached,
+  ['snapshot-jefe'],
+  { revalidate: 30, tags: ['snapshot-jefe'] }
+);

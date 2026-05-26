@@ -1,37 +1,36 @@
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { ListaTareasCliente } from "./_lista-tareas-cliente";
-import type { SnapshotTrabajador } from "@/lib/offline/tipos";
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { ListaTareasCliente } from './_lista-tareas-cliente';
+import type { SnapshotTrabajador } from '@/lib/offline/tipos';
 
 export type RecordatorioTrabajador = {
   id: string;
   titulo: string;
   fecha: string;
-  estado: "vencido" | "hoy" | "proximo";
+  estado: 'vencido' | 'hoy' | 'proximo';
   dias: number;
 };
 
-export const metadata = { title: "Mis tareas" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Mis tareas' };
 
 export default async function PaginaInicioTrabajador() {
-  const usuario = await requerirUsuario("TRABAJADOR");
-  const nombrePila = usuario.nombre_completo.split(" ")[0];
+  const usuario = await requerirUsuario('TRABAJADOR');
+  const nombrePila = usuario.nombre_completo.split(' ')[0];
 
   let snapshot: SnapshotTrabajador | null = null;
   let recordatorios: RecordatorioTrabajador[] = [];
   if (usuario.persona_id !== null) {
     const personaId = BigInt(usuario.persona_id);
     const asignaciones = await prisma.asignaciones.findMany({
-      where: { persona_id: personaId, estado: { in: ["PENDIENTE", "EN_CURSO"] } },
-      orderBy: { fecha_inicio: "asc" },
+      where: { persona_id: personaId, estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
+      orderBy: { fecha_inicio: 'asc' },
       include: {
         tipos_tarea: { select: { id: true, nombre: true, area: true } },
         lotes: { select: { id: true, nombre: true, total_arboles: true } },
       },
     });
     const apiarioIds = Array.from(
-      new Set(asignaciones.map((a) => a.apiario_id).filter((x): x is bigint => x !== null)),
+      new Set(asignaciones.map((a) => a.apiario_id).filter((x): x is bigint => x !== null))
     );
     const apiarios = apiarioIds.length
       ? await prisma.apiarios.findMany({
@@ -43,7 +42,7 @@ export default async function PaginaInicioTrabajador() {
     const lotes = await prisma.lotes.findMany({
       where: { deleted_at: null, total_arboles: { gt: 0 } },
       select: { id: true, nombre: true, total_arboles: true },
-      orderBy: { nombre: "asc" },
+      orderBy: { nombre: 'asc' },
     });
 
     const recordsRaw = await prisma.recordatorios.findMany({
@@ -52,7 +51,7 @@ export default async function PaginaInicioTrabajador() {
         completado_en: null,
         fecha: { lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
       },
-      orderBy: { fecha: "asc" },
+      orderBy: { fecha: 'asc' },
       take: 10,
       select: { id: true, titulo: true, fecha: true },
     });
@@ -67,11 +66,7 @@ export default async function PaginaInicioTrabajador() {
         titulo: r.titulo,
         fecha: r.fecha.toISOString(),
         estado:
-          dias < 0
-            ? ("vencido" as const)
-            : dias === 0
-              ? ("hoy" as const)
-              : ("proximo" as const),
+          dias < 0 ? ('vencido' as const) : dias === 0 ? ('hoy' as const) : ('proximo' as const),
         dias,
       };
     });

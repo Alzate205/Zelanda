@@ -1,47 +1,39 @@
-import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  ShoppingCart,
-  Package,
-} from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { KPI } from "@/components/ui/KPI";
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Plus, ShoppingCart, Package } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { KPI } from '@/components/ui/KPI';
 
-export const metadata = { title: "Compras" };
-export const dynamic = "force-dynamic";
-
+export const metadata = { title: 'Compras' };
 const MESES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ];
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "2-digit",
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit',
   });
 }
 
@@ -50,12 +42,12 @@ function parsearMes(raw: string | undefined): { anio: number; mes: number } {
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
     return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
   }
-  const [a, m] = raw.split("-");
+  const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
 }
 
 function aClaveMes(anio: number, mes: number): string {
-  return `${anio}-${String(mes + 1).padStart(2, "0")}`;
+  return `${anio}-${String(mes + 1).padStart(2, '0')}`;
 }
 
 export default async function PaginaCompras({
@@ -63,7 +55,7 @@ export default async function PaginaCompras({
 }: {
   searchParams: Promise<{ mes?: string }>;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const sp = await searchParams;
   const { anio, mes } = parsearMes(sp.mes);
@@ -72,7 +64,7 @@ export default async function PaginaCompras({
 
   const compras = await prisma.compras.findMany({
     where: { fecha: { gte: desde, lte: hasta } },
-    orderBy: { fecha: "desc" },
+    orderBy: { fecha: 'desc' },
     include: {
       proveedor: { select: { id: true, nombre: true } },
       items: { select: { cantidad: true } },
@@ -88,10 +80,8 @@ export default async function PaginaCompras({
     { nombre: string; proveedorId: string | null; total: number; count: number }
   >();
   for (const c of compras) {
-    const key = c.proveedor ? String(c.proveedor.id) : c.proveedor_detalle ?? "(sin proveedor)";
-    const nombre = c.proveedor
-      ? c.proveedor.nombre
-      : c.proveedor_detalle ?? "(sin proveedor)";
+    const key = c.proveedor ? String(c.proveedor.id) : c.proveedor_detalle ?? '(sin proveedor)';
+    const nombre = c.proveedor ? c.proveedor.nombre : c.proveedor_detalle ?? '(sin proveedor)';
     const prev = porProveedor.get(key) ?? {
       nombre,
       proveedorId: c.proveedor ? String(c.proveedor.id) : null,
@@ -102,14 +92,10 @@ export default async function PaginaCompras({
     prev.count += 1;
     porProveedor.set(key, prev);
   }
-  const rankingProveedores = Array.from(porProveedor.values()).sort(
-    (a, b) => b.total - a.total,
-  );
+  const rankingProveedores = Array.from(porProveedor.values()).sort((a, b) => b.total - a.total);
 
-  const mesAnterior =
-    mes === 0 ? aClaveMes(anio - 1, 11) : aClaveMes(anio, mes - 1);
-  const mesSiguiente =
-    mes === 11 ? aClaveMes(anio + 1, 0) : aClaveMes(anio, mes + 1);
+  const mesAnterior = mes === 0 ? aClaveMes(anio - 1, 11) : aClaveMes(anio, mes - 1);
+  const mesSiguiente = mes === 11 ? aClaveMes(anio + 1, 0) : aClaveMes(anio, mes + 1);
 
   return (
     <div className="space-y-5">
@@ -124,9 +110,7 @@ export default async function PaginaCompras({
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Negocio · Compras</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Costos de insumos
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Costos de insumos</h1>
         </div>
         <Link
           href="/jefe/compras/nueva"
@@ -148,7 +132,7 @@ export default async function PaginaCompras({
             {MESES[mes]} {anio}
           </p>
           <p className="text-[11px] text-zelanda-verde-700">
-            {compras.length} {compras.length === 1 ? "compra" : "compras"}
+            {compras.length} {compras.length === 1 ? 'compra' : 'compras'}
           </p>
         </div>
         <Link
@@ -166,42 +150,30 @@ export default async function PaginaCompras({
           pie={`${compras.length} compras`}
           acento="ocre"
         />
-        <KPI
-          etiqueta="Items"
-          valor={itemsTotales}
-          pie={`insumos distintos`}
-        />
-        <KPI
-          etiqueta="Proveedores"
-          valor={rankingProveedores.length}
-          pie="distintos en el mes"
-        />
+        <KPI etiqueta="Items" valor={itemsTotales} pie={`insumos distintos`} />
+        <KPI etiqueta="Proveedores" valor={rankingProveedores.length} pie="distintos en el mes" />
         <KPI
           etiqueta="Ticket promedio"
           valor={fmtMonto(compras.length > 0 ? totalGastado / compras.length : 0)}
-          pie={compras.length > 0 ? `${compras.length} operaciones` : "—"}
+          pie={compras.length > 0 ? `${compras.length} operaciones` : '—'}
         />
       </div>
 
       {rankingProveedores.length > 0 ? (
         <section>
-          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-            Por proveedor
-          </h2>
+          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Por proveedor</h2>
           <ul className="space-y-2">
             {rankingProveedores.map((r, i) => (
               <li key={i}>
                 <div className="rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
                   <div className="flex items-center justify-between">
-                    <p className="font-serif text-[14.5px] text-zelanda-verde-900">
-                      {r.nombre}
-                    </p>
+                    <p className="font-serif text-[14.5px] text-zelanda-verde-900">{r.nombre}</p>
                     <span className="font-serif text-[15px] text-zelanda-verde-900">
                       {fmtMonto(r.total)}
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                    {r.count} {r.count === 1 ? "compra" : "compras"}
+                    {r.count} {r.count === 1 ? 'compra' : 'compras'}
                   </p>
                 </div>
               </li>
@@ -211,18 +183,13 @@ export default async function PaginaCompras({
       ) : null}
 
       <section>
-        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-          Compras del mes
-        </h2>
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Compras del mes</h2>
         {compras.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center">
             <ShoppingCart className="mx-auto h-8 w-8 text-zelanda-verde-700/40" />
-            <p className="mt-3 font-serif text-base text-zelanda-verde-900">
-              Sin compras este mes
-            </p>
+            <p className="mt-3 font-serif text-base text-zelanda-verde-900">Sin compras este mes</p>
             <p className="mt-1 text-sm text-zelanda-verde-700">
-              Registrá las compras de insumos para llevar costos y actualizar
-              stock automáticamente.
+              Registrá las compras de insumos para llevar costos y actualizar stock automáticamente.
             </p>
             <Link
               href="/jefe/compras/nueva"
@@ -244,13 +211,13 @@ export default async function PaginaCompras({
                       <p className="font-serif text-[14.5px] text-zelanda-verde-900">
                         {c.proveedor
                           ? c.proveedor.nombre
-                          : c.proveedor_detalle ?? "(sin proveedor)"}
+                          : c.proveedor_detalle ?? '(sin proveedor)'}
                       </p>
                       <p className="mt-0.5 flex items-center gap-1 text-[12px] text-zelanda-verde-700">
                         <Package className="h-3 w-3" />
-                        {c.items.length}{" "}
-                        {c.items.length === 1 ? "item" : "items"} · {fmtFecha(c.fecha)}
-                        {c.numero_factura ? ` · Fact. ${c.numero_factura}` : ""}
+                        {c.items.length} {c.items.length === 1 ? 'item' : 'items'} ·{' '}
+                        {fmtFecha(c.fecha)}
+                        {c.numero_factura ? ` · Fact. ${c.numero_factura}` : ''}
                       </p>
                     </div>
                     <span className="font-serif text-[16px] text-zelanda-verde-900">

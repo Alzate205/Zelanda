@@ -1,31 +1,29 @@
-import Link from "next/link";
-import { Plus, Users, ChevronLeft, Edit } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
-import { borrarCliente } from "./acciones";
+import Link from 'next/link';
+import { Plus, Users, ChevronLeft, Edit } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
+import { borrarCliente } from './acciones';
 
-export const metadata = { title: "Clientes" };
-export const dynamic = "force-dynamic";
-
+export const metadata = { title: 'Clientes' };
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 export default async function PaginaClientes() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const clientes = await prisma.clientes.findMany({
-    orderBy: [{ activo: "desc" }, { nombre: "asc" }],
+    orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
     include: {
       _count: { select: { salidas_cosecha: true } },
       salidas_cosecha: {
-        where: { tipo: "VENTA" },
+        where: { tipo: 'VENTA' },
         select: { cantidad_kg: true, precio_total: true },
       },
     },
@@ -35,14 +33,8 @@ export default async function PaginaClientes() {
   const inactivos = clientes.filter((c) => !c.activo);
 
   function fila(c: (typeof clientes)[number]) {
-    const totalKg = c.salidas_cosecha.reduce(
-      (acc, s) => acc + Number(s.cantidad_kg),
-      0,
-    );
-    const totalIngreso = c.salidas_cosecha.reduce(
-      (acc, s) => acc + Number(s.precio_total ?? 0),
-      0,
-    );
+    const totalKg = c.salidas_cosecha.reduce((acc, s) => acc + Number(s.cantidad_kg), 0);
+    const totalIngreso = c.salidas_cosecha.reduce((acc, s) => acc + Number(s.precio_total ?? 0), 0);
     return (
       <li
         key={String(c.id)}
@@ -50,12 +42,10 @@ export default async function PaginaClientes() {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
-              {c.nombre}
-            </p>
+            <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">{c.nombre}</p>
             <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
-              {c.contacto ? c.contacto : "Sin contacto registrado"}
-              {c.telefono ? ` · ${c.telefono}` : ""}
+              {c.contacto ? c.contacto : 'Sin contacto registrado'}
+              {c.telefono ? ` · ${c.telefono}` : ''}
             </p>
           </div>
           {!c.activo ? <Badge estado="neutro">Inactivo</Badge> : null}
@@ -72,14 +62,12 @@ export default async function PaginaClientes() {
             <div>
               <span className="block text-zelanda-verde-700">Total kg</span>
               <span className="font-semibold text-zelanda-verde-900">
-                {totalKg.toLocaleString("es-CO", { maximumFractionDigits: 0 })}
+                {totalKg.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
               </span>
             </div>
             <div>
               <span className="block text-zelanda-verde-700">Ingresos</span>
-              <span className="font-semibold text-zelanda-verde-900">
-                {fmtMonto(totalIngreso)}
-              </span>
+              <span className="font-semibold text-zelanda-verde-900">{fmtMonto(totalIngreso)}</span>
             </div>
           </div>
         ) : null}
@@ -126,9 +114,7 @@ export default async function PaginaClientes() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Negocio · Clientes</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Compradores
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Compradores</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
             {activos.length} activos · {inactivos.length} inactivos
           </p>
@@ -148,8 +134,8 @@ export default async function PaginaClientes() {
             Sin clientes registrados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá a quién le vendés la cosecha. Cada venta queda asociada a
-            su cliente y permite ver ingresos por comprador.
+            Registrá a quién le vendés la cosecha. Cada venta queda asociada a su cliente y permite
+            ver ingresos por comprador.
           </p>
           <Link
             href="/jefe/clientes/nuevo"
@@ -162,17 +148,13 @@ export default async function PaginaClientes() {
         <>
           {activos.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Activos
-              </h2>
+              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Activos</h2>
               <ul className="space-y-2">{activos.map(fila)}</ul>
             </section>
           ) : null}
           {inactivos.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Inactivos
-              </h2>
+              <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Inactivos</h2>
               <ul className="space-y-2">{inactivos.map(fila)}</ul>
             </section>
           ) : null}

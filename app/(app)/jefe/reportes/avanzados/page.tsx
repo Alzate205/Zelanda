@@ -1,59 +1,51 @@
-import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-} from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { KPI } from "@/components/ui/KPI";
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { KPI } from '@/components/ui/KPI';
 
-export const metadata = { title: "Reportes avanzados" };
-export const dynamic = "force-dynamic";
-
+export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ];
 
 const MESES_CORTO = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
 ];
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtKg(n: number): string {
-  return n.toLocaleString("es-CO", { maximumFractionDigits: 0 });
+  return n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
 
 function parsearMes(raw: string | undefined): { anio: number; mes: number } {
@@ -61,12 +53,12 @@ function parsearMes(raw: string | undefined): { anio: number; mes: number } {
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
     return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
   }
-  const [a, m] = raw.split("-");
+  const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
 }
 
 function aClaveMes(anio: number, mes: number): string {
-  return `${anio}-${String(mes + 1).padStart(2, "0")}`;
+  return `${anio}-${String(mes + 1).padStart(2, '0')}`;
 }
 
 export default async function PaginaReportesAvanzados({
@@ -74,7 +66,7 @@ export default async function PaginaReportesAvanzados({
 }: {
   searchParams: Promise<{ mes?: string }>;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const sp = await searchParams;
   const { anio, mes } = parsearMes(sp.mes);
@@ -93,7 +85,7 @@ export default async function PaginaReportesAvanzados({
     // Ingresos del mes (ventas con precio_total)
     prisma.salidas_cosecha.aggregate({
       where: {
-        tipo: "VENTA",
+        tipo: 'VENTA',
         fecha: { gte: desde, lte: hasta },
       },
       _sum: { precio_total: true, cantidad_kg: true },
@@ -132,13 +124,15 @@ export default async function PaginaReportesAvanzados({
       ORDER BY m
     `,
     // Ranking lotes por productividad
-    prisma.$queryRaw<{
-      id: bigint;
-      nombre: string;
-      total_arboles: number;
-      hectareas: string | null;
-      kg_total: string;
-    }[]>`
+    prisma.$queryRaw<
+      {
+        id: bigint;
+        nombre: string;
+        total_arboles: number;
+        hectareas: string | null;
+        kg_total: string;
+      }[]
+    >`
       SELECT
         l.id,
         l.nombre,
@@ -178,17 +172,12 @@ export default async function PaginaReportesAvanzados({
   const maxComparativo = Math.max(
     ...Array.from(mapaActual.values()),
     ...Array.from(mapaAnterior.values()),
-    1,
+    1
   );
   const totalActual = Array.from(mapaActual.values()).reduce((a, b) => a + b, 0);
-  const totalAnterior = Array.from(mapaAnterior.values()).reduce(
-    (a, b) => a + b,
-    0,
-  );
+  const totalAnterior = Array.from(mapaAnterior.values()).reduce((a, b) => a + b, 0);
   const variacionAnual =
-    totalAnterior > 0
-      ? ((totalActual - totalAnterior) / totalAnterior) * 100
-      : null;
+    totalAnterior > 0 ? ((totalActual - totalAnterior) / totalAnterior) * 100 : null;
 
   // Productividad por lote
   const productividad = rankingLotes
@@ -218,10 +207,8 @@ export default async function PaginaReportesAvanzados({
   }));
   const maxAnio = totalesAnio.reduce((m, r) => Math.max(m, r.kg), 0);
 
-  const mesAnterior =
-    mes === 0 ? aClaveMes(anio - 1, 11) : aClaveMes(anio, mes - 1);
-  const mesSiguiente =
-    mes === 11 ? aClaveMes(anio + 1, 0) : aClaveMes(anio, mes + 1);
+  const mesAnterior = mes === 0 ? aClaveMes(anio - 1, 11) : aClaveMes(anio, mes - 1);
+  const mesSiguiente = mes === 11 ? aClaveMes(anio + 1, 0) : aClaveMes(anio, mes + 1);
 
   return (
     <div className="space-y-5">
@@ -243,9 +230,7 @@ export default async function PaginaReportesAvanzados({
       {/* Sección 1: Resumen financiero del mes */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Resumen financiero
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Resumen financiero</h2>
           <div className="flex items-center gap-1">
             <Link
               href={`/jefe/reportes/avanzados?mes=${mesAnterior}`}
@@ -281,11 +266,9 @@ export default async function PaginaReportesAvanzados({
             etiqueta="Margen"
             valor={fmtMonto(margen)}
             pie={
-              ingresos > 0
-                ? `${margenPct >= 0 ? "+" : ""}${margenPct.toFixed(1)}%`
-                : "sin ventas"
+              ingresos > 0 ? `${margenPct >= 0 ? '+' : ''}${margenPct.toFixed(1)}%` : 'sin ventas'
             }
-            acento={margen >= 0 ? "ocre" : undefined}
+            acento={margen >= 0 ? 'ocre' : undefined}
           />
         </div>
 
@@ -304,20 +287,16 @@ export default async function PaginaReportesAvanzados({
           </div>
           <div className="flex justify-between border-t border-zelanda-beige-300 pt-2 font-serif text-[14px]">
             <span className="text-zelanda-verde-900">Margen del mes</span>
-            <span
-              className={
-                margen >= 0 ? "text-zelanda-verde-900" : "text-estado-vencida"
-              }
-            >
+            <span className={margen >= 0 ? 'text-zelanda-verde-900' : 'text-estado-vencida'}>
               {fmtMonto(margen)}
             </span>
           </div>
         </div>
 
         <p className="mt-2 text-[11px] text-zelanda-verde-700/70">
-          Margen aproximado. Ventas: salidas tipo VENTA con precio. Costos:
-          compras de insumos + suma de todos los pagos a personas (salarios,
-          jornales, servicios, bonos, adelantos, ajustes).
+          Margen aproximado. Ventas: salidas tipo VENTA con precio. Costos: compras de insumos +
+          suma de todos los pagos a personas (salarios, jornales, servicios, bonos, adelantos,
+          ajustes).
         </p>
       </section>
 
@@ -329,9 +308,9 @@ export default async function PaginaReportesAvanzados({
               Cosecha {anio} vs {anio - 1}
             </h2>
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
-              {fmtKg(totalActual)} kg en {anio} ·{" "}
+              {fmtKg(totalActual)} kg en {anio} ·{' '}
               {variacionAnual !== null
-                ? `${variacionAnual >= 0 ? "+" : ""}${variacionAnual.toFixed(1)}% vs ${anio - 1}`
+                ? `${variacionAnual >= 0 ? '+' : ''}${variacionAnual.toFixed(1)}% vs ${anio - 1}`
                 : `sin datos en ${anio - 1}`}
             </p>
           </div>
@@ -339,8 +318,8 @@ export default async function PaginaReportesAvanzados({
             <div
               className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
                 variacionAnual >= 0
-                  ? "bg-zelanda-verde-50 text-zelanda-verde-800"
-                  : "bg-estado-vencida/10 text-estado-vencida"
+                  ? 'bg-zelanda-verde-50 text-zelanda-verde-800'
+                  : 'bg-estado-vencida/10 text-estado-vencida'
               }`}
             >
               {variacionAnual >= 0 ? (
@@ -348,7 +327,7 @@ export default async function PaginaReportesAvanzados({
               ) : (
                 <TrendingDown className="h-3 w-3" />
               )}
-              {variacionAnual >= 0 ? "+" : ""}
+              {variacionAnual >= 0 ? '+' : ''}
               {variacionAnual.toFixed(1)}%
             </div>
           ) : null}
@@ -358,24 +337,23 @@ export default async function PaginaReportesAvanzados({
           className="mt-4 grid items-end gap-1.5"
           style={{
             gridTemplateColumns: `repeat(12, 1fr)`,
-            height: "120px",
+            height: '120px',
           }}
         >
           {MESES_CORTO.map((_, i) => {
             const m = i + 1;
             const actual = mapaActual.get(m) ?? 0;
             const anterior = mapaAnterior.get(m) ?? 0;
-            const hActual =
-              maxComparativo > 0 ? Math.round((actual / maxComparativo) * 100) : 0;
+            const hActual = maxComparativo > 0 ? Math.round((actual / maxComparativo) * 100) : 0;
             const hAnterior =
-              maxComparativo > 0
-                ? Math.round((anterior / maxComparativo) * 100)
-                : 0;
+              maxComparativo > 0 ? Math.round((anterior / maxComparativo) * 100) : 0;
             return (
               <div
                 key={m}
                 className="flex flex-col items-stretch justify-end gap-0.5"
-                title={`${MESES_CORTO[i]} · ${anio}: ${fmtKg(actual)} kg · ${anio - 1}: ${fmtKg(anterior)} kg`}
+                title={`${MESES_CORTO[i]} · ${anio}: ${fmtKg(actual)} kg · ${anio - 1}: ${fmtKg(
+                  anterior
+                )} kg`}
               >
                 <div className="flex h-full items-end gap-0.5">
                   <div
@@ -414,17 +392,13 @@ export default async function PaginaReportesAvanzados({
 
       {/* Sección 3: Productividad por lote */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Productividad por lote
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Productividad por lote</h2>
         <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
           kg cosechados por hectárea · todos los tiempos
         </p>
 
         {productividad.length === 0 ? (
-          <p className="mt-3 text-sm text-zelanda-verde-700/70">
-            Aún no hay cosechas registradas.
-          </p>
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">Aún no hay cosechas registradas.</p>
         ) : (
           <ul className="mt-3 space-y-3">
             {productividad.slice(0, 10).map((l, i) => {
@@ -433,16 +407,12 @@ export default async function PaginaReportesAvanzados({
                 <li key={l.id}>
                   <div className="mb-1 flex items-baseline justify-between">
                     <span className="font-serif text-[13.5px] text-zelanda-verde-900">
-                      <span className="mr-1.5 text-zelanda-verde-700">
-                        {i + 1}.
-                      </span>
+                      <span className="mr-1.5 text-zelanda-verde-700">{i + 1}.</span>
                       {l.nombre}
                     </span>
                     <span className="text-[11.5px] text-zelanda-verde-700">
-                      <strong className="text-zelanda-verde-900">
-                        {fmtKg(l.kg_por_ha)}
-                      </strong>{" "}
-                      kg/ha · {l.kg_por_arbol.toFixed(1)} kg/árbol
+                      <strong className="text-zelanda-verde-900">{fmtKg(l.kg_por_ha)}</strong> kg/ha
+                      · {l.kg_por_arbol.toFixed(1)} kg/árbol
                     </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-zelanda-beige-200">
@@ -452,9 +422,8 @@ export default async function PaginaReportesAvanzados({
                     />
                   </div>
                   <p className="mt-0.5 text-[10.5px] text-zelanda-verde-700/80">
-                    {fmtKg(l.kg_total)} kg ·{" "}
-                    {l.hectareas > 0 ? `${l.hectareas} ha` : "sin hectáreas"} ·{" "}
-                    {l.arboles} árboles
+                    {fmtKg(l.kg_total)} kg ·{' '}
+                    {l.hectareas > 0 ? `${l.hectareas} ha` : 'sin hectáreas'} · {l.arboles} árboles
                   </p>
                 </li>
               );
@@ -467,28 +436,23 @@ export default async function PaginaReportesAvanzados({
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h2 className="font-serif text-base text-zelanda-verde-900">
-              Cosecha anual
-            </h2>
+            <h2 className="font-serif text-base text-zelanda-verde-900">Cosecha anual</h2>
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
-              Tendencia histórica · {totalesAnio.length}{" "}
-              {totalesAnio.length === 1 ? "año" : "años"}
+              Tendencia histórica · {totalesAnio.length} {totalesAnio.length === 1 ? 'año' : 'años'}
             </p>
           </div>
           <Wallet className="h-5 w-5 text-zelanda-verde-700/40" />
         </div>
 
         {totalesAnio.length === 0 ? (
-          <p className="mt-3 text-sm text-zelanda-verde-700/70">
-            Aún no hay cosechas registradas.
-          </p>
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">Aún no hay cosechas registradas.</p>
         ) : (
           <>
             <div
               className="mt-4 grid items-end gap-2"
               style={{
                 gridTemplateColumns: `repeat(${totalesAnio.length}, 1fr)`,
-                height: "120px",
+                height: '120px',
               }}
             >
               {totalesAnio.map((r) => {
