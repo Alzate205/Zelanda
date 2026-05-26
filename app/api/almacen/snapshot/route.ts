@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function construirSnapshotAlmacenUncached(usuarioId: string) {
   const [personas, lotes, stockRows] = await Promise.all([
     prisma.personas.findMany({

@@ -1,15 +1,13 @@
-import { NextResponse } from "next/server";
-import { obtenerUsuarioActual } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { sanitizarError } from "@/lib/errores";
-import {
-  notificarStockBajoSiCorresponde,
-  snapshotDisponiblesAntes,
-} from "@/lib/push/stock-bajo";
+import { NextResponse } from 'next/server';
+import { obtenerUsuarioActual } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { sanitizarError } from '@/lib/errores';
+import { notificarStockBajoSiCorresponde, snapshotDisponiblesAntes } from '@/lib/push/stock-bajo';
+import { revalidarDespachos } from '@/lib/revalidar';
 
 type ItemBody = {
   despacho_item_id: string;
-  tipo: "HERRAMIENTA" | "INSUMO";
+  tipo: 'HERRAMIENTA' | 'INSUMO';
   devuelto?: boolean;
   consumido?: number;
   condicion_devolucion?: string | null;
@@ -23,32 +21,29 @@ type Body = {
 
 function esUuid(s: unknown): s is string {
   return (
-    typeof s === "string" &&
+    typeof s === 'string' &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
   );
 }
 
 export async function POST(req: Request) {
   const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== "BODEGA") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!usuario || usuario.rol !== 'BODEGA') {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
   let body: Body;
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'JSON inválido' }, { status: 400 });
   }
 
   if (!esUuid(body.id_local)) {
-    return NextResponse.json({ error: "id_local inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'id_local inválido' }, { status: 400 });
   }
-  if (!/^\d+$/.test(String(body.despacho_id ?? ""))) {
-    return NextResponse.json(
-      { error: "despacho_id inválido" },
-      { status: 400 },
-    );
+  if (!/^\d+$/.test(String(body.despacho_id ?? ''))) {
+    return NextResponse.json({ error: 'despacho_id inválido' }, { status: 400 });
   }
   const despachoId = BigInt(body.despacho_id);
 
@@ -58,12 +53,9 @@ export async function POST(req: Request) {
     include: { despacho_items: true },
   });
   if (!despacho) {
-    return NextResponse.json(
-      { error: "Despacho no encontrado." },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: 'Despacho no encontrado.' }, { status: 404 });
   }
-  if (despacho.estado === "CERRADO") {
+  if (despacho.estado === 'CERRADO') {
     return NextResponse.json({
       ok: true,
       id: String(despachoId),
@@ -72,17 +64,14 @@ export async function POST(req: Request) {
   }
 
   if (!Array.isArray(body.items)) {
-    return NextResponse.json({ error: "Items inválidos." }, { status: 400 });
+    return NextResponse.json({ error: 'Items inválidos.' }, { status: 400 });
   }
 
   // Indexar items recibidos por despacho_item_id.
   const mapaItemsBody = new Map<string, ItemBody>();
   for (const it of body.items) {
-    if (!/^\d+$/.test(String(it.despacho_item_id ?? ""))) {
-      return NextResponse.json(
-        { error: "despacho_item_id inválido." },
-        { status: 400 },
-      );
+    if (!/^\d+$/.test(String(it.despacho_item_id ?? ''))) {
+      return NextResponse.json({ error: 'despacho_item_id inválido.' }, { status: 400 });
     }
     mapaItemsBody.set(String(it.despacho_item_id), it);
   }
@@ -90,14 +79,14 @@ export async function POST(req: Request) {
   // Verificar que el body cubre exactamente los items del despacho.
   if (mapaItemsBody.size !== despacho.despacho_items.length) {
     return NextResponse.json(
-      { error: "Los items del cierre no coinciden con el despacho." },
-      { status: 409 },
+      { error: 'Los items del cierre no coinciden con el despacho.' },
+      { status: 409 }
     );
   }
 
   type Actualizacion = {
     itemId: bigint;
-    tipo: "HERRAMIENTA" | "INSUMO";
+    tipo: 'HERRAMIENTA' | 'INSUMO';
     insumoId: bigint | null;
     cantidadOriginal: number;
     devuelto?: boolean;
@@ -111,24 +100,24 @@ export async function POST(req: Request) {
     if (!recibido) {
       return NextResponse.json(
         { error: `Falta el item ${item.id.toString()} en el cierre.` },
-        { status: 409 },
+        { status: 409 }
       );
     }
     if (recibido.tipo !== item.tipo_item) {
       return NextResponse.json(
-        { error: "Tipo de item no coincide con el despacho." },
-        { status: 409 },
+        { error: 'Tipo de item no coincide con el despacho.' },
+        { status: 409 }
       );
     }
 
-    if (item.tipo_item === "HERRAMIENTA") {
+    if (item.tipo_item === 'HERRAMIENTA') {
       const cond =
-        typeof recibido.condicion_devolucion === "string"
+        typeof recibido.condicion_devolucion === 'string'
           ? recibido.condicion_devolucion.trim() || null
           : null;
       actualizaciones.push({
         itemId: item.id,
-        tipo: "HERRAMIENTA",
+        tipo: 'HERRAMIENTA',
         insumoId: null,
         cantidadOriginal: Number(item.cantidad),
         devuelto: recibido.devuelto === true,
@@ -139,22 +128,21 @@ export async function POST(req: Request) {
       const cantidadOriginal = Number(item.cantidad);
       if (!Number.isFinite(consumido) || consumido < 0) {
         return NextResponse.json(
-          { error: "Cantidad consumida inválida en un item." },
-          { status: 400 },
+          { error: 'Cantidad consumida inválida en un item.' },
+          { status: 400 }
         );
       }
       if (consumido > cantidadOriginal) {
         return NextResponse.json(
           {
-            error:
-              "La cantidad consumida no puede ser mayor a la despachada.",
+            error: 'La cantidad consumida no puede ser mayor a la despachada.',
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
       actualizaciones.push({
         itemId: item.id,
-        tipo: "INSUMO",
+        tipo: 'INSUMO',
         insumoId: item.insumo_id,
         cantidadOriginal,
         consumido,
@@ -163,14 +151,14 @@ export async function POST(req: Request) {
   }
 
   const insumoIdsPush: bigint[] = despacho.despacho_items
-    .filter((it) => it.tipo_item === "INSUMO" && it.insumo_id !== null)
+    .filter((it) => it.tipo_item === 'INSUMO' && it.insumo_id !== null)
     .map((it) => it.insumo_id as bigint);
   const disponiblesAntes = await snapshotDisponiblesAntes(insumoIdsPush);
 
   try {
     await prisma.$transaction(async (tx) => {
       for (const a of actualizaciones) {
-        if (a.tipo === "HERRAMIENTA") {
+        if (a.tipo === 'HERRAMIENTA') {
           await tx.despacho_items.update({
             where: { id: a.itemId },
             data: {
@@ -195,7 +183,7 @@ export async function POST(req: Request) {
             await tx.movimientos_insumo.create({
               data: {
                 insumo_id: a.insumoId,
-                tipo: "CONSUMO",
+                tipo: 'CONSUMO',
                 cantidad: -a.consumido!,
                 despacho_item_id: a.itemId,
                 usuario_id: usuario.id,
@@ -207,7 +195,7 @@ export async function POST(req: Request) {
             await tx.movimientos_insumo.create({
               data: {
                 insumo_id: a.insumoId,
-                tipo: "DEVOLUCION",
+                tipo: 'DEVOLUCION',
                 cantidad: devuelto,
                 despacho_item_id: a.itemId,
                 usuario_id: usuario.id,
@@ -219,21 +207,22 @@ export async function POST(req: Request) {
 
       await tx.despachos.update({
         where: { id: despachoId },
-        data: { estado: "CERRADO", fecha_devolucion: new Date() },
+        data: { estado: 'CERRADO', fecha_devolucion: new Date() },
       });
     });
   } catch (e) {
     return NextResponse.json(
-      { error: sanitizarError(e, "api/bodega/despacho/cerrar") },
-      { status: 500 },
+      { error: sanitizarError(e, 'api/bodega/despacho/cerrar') },
+      { status: 500 }
     );
   }
 
   try {
     await notificarStockBajoSiCorresponde(insumoIdsPush, disponiblesAntes);
   } catch (e) {
-    console.warn("Push stock bajo falló:", e);
+    console.warn('Push stock bajo falló:', e);
   }
 
+  revalidarDespachos();
   return NextResponse.json({ ok: true, id: String(despachoId) });
 }
