@@ -1,4 +1,3 @@
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowDownRight, ArrowUpRight, Plus } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
@@ -6,18 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { Card } from '@/components/ui/Card';
-
-const FormularioCosecha = dynamic(
-  () => import('./cosecha/nueva/_formulario').then((m) => m.FormularioCosecha),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 py-8 text-center text-sm text-zelanda-verde-700">
-        Cargando formulario…
-      </div>
-    ),
-  }
-);
+import { FormularioCosechaWrapper } from './FormularioCosechaWrapper';
 
 export const metadata = { title: 'Almacén' };
 
@@ -168,7 +156,7 @@ export default async function PaginaInicioAlmacen() {
       <Card lift className="border-zelanda-verde-300 p-4">
         <Eyebrow>Registrar ingreso</Eyebrow>
         <div className="mt-2">
-          <FormularioCosecha personas={personasForm} lotes={lotesForm} compacto />
+          <FormularioCosechaWrapper personas={personasForm} lotes={lotesForm} compacto />
         </div>
       </Card>
 
