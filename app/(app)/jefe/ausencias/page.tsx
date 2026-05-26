@@ -1,45 +1,43 @@
-import Link from "next/link";
-import { Plus, UserMinus, ChevronLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
-import { borrarAusencia } from "./acciones";
+import Link from 'next/link';
+import { Plus, UserMinus, ChevronLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
+import { borrarAusencia } from './acciones';
 
-export const metadata = { title: "Ausencias" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Ausencias' };
 
 const ETIQUETA_TIPO: Record<string, string> = {
-  FALTA_INJUSTIFICADA: "Falta injustificada",
-  INCAPACIDAD: "Incapacidad",
-  VACACIONES: "Vacaciones",
-  LICENCIA: "Licencia",
-  PERMISO: "Permiso",
+  FALTA_INJUSTIFICADA: 'Falta injustificada',
+  INCAPACIDAD: 'Incapacidad',
+  VACACIONES: 'Vacaciones',
+  LICENCIA: 'Licencia',
+  PERMISO: 'Permiso',
 };
 
-const ESTADO_BADGE: Record<string, "aldia" | "proxima" | "vencida" | "neutro"> =
-  {
-    FALTA_INJUSTIFICADA: "vencida",
-    INCAPACIDAD: "neutro",
-    VACACIONES: "aldia",
-    LICENCIA: "proxima",
-    PERMISO: "proxima",
-  };
+const ESTADO_BADGE: Record<string, 'aldia' | 'proxima' | 'vencida' | 'neutro'> = {
+  FALTA_INJUSTIFICADA: 'vencida',
+  INCAPACIDAD: 'neutro',
+  VACACIONES: 'aldia',
+  LICENCIA: 'proxima',
+  PERMISO: 'proxima',
+};
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "2-digit",
+  return d.toLocaleDateString('es-CO', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit',
   });
 }
 
 export default async function PaginaAusencias() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const ausencias = await prisma.ausencias.findMany({
-    orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+    orderBy: [{ fecha: 'desc' }, { created_at: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
     },
@@ -48,9 +46,7 @@ export default async function PaginaAusencias() {
 
   const hoy = new Date();
   const totalMes = ausencias.filter(
-    (a) =>
-      a.fecha.getFullYear() === hoy.getFullYear() &&
-      a.fecha.getMonth() === hoy.getMonth(),
+    (a) => a.fecha.getFullYear() === hoy.getFullYear() && a.fecha.getMonth() === hoy.getMonth()
   ).length;
 
   return (
@@ -66,9 +62,7 @@ export default async function PaginaAusencias() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Finanzas · Ausencias</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Días no trabajados
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Días no trabajados</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
             {ausencias.length} registradas · {totalMes} este mes
           </p>
@@ -88,8 +82,8 @@ export default async function PaginaAusencias() {
             Sin ausencias registradas
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá días no trabajados para que el cálculo de saldos de los
-            fijos descuente los días que correspondan.
+            Registrá días no trabajados para que el cálculo de saldos de los fijos descuente los
+            días que correspondan.
           </p>
           <Link
             href="/jefe/ausencias/nueva"
@@ -101,7 +95,7 @@ export default async function PaginaAusencias() {
       ) : (
         <ul className="space-y-2">
           {ausencias.map((a) => {
-            const estado = ESTADO_BADGE[a.tipo] ?? "neutro";
+            const estado = ESTADO_BADGE[a.tipo] ?? 'neutro';
             return (
               <li
                 key={String(a.id)}
@@ -114,7 +108,7 @@ export default async function PaginaAusencias() {
                     </p>
                     <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
                       {fmtFecha(a.fecha)}
-                      {a.descontable ? " · Descuenta" : " · No descuenta"}
+                      {a.descontable ? ' · Descuenta' : ' · No descuenta'}
                     </p>
                   </div>
                   <Badge estado={estado}>{ETIQUETA_TIPO[a.tipo] ?? a.tipo}</Badge>

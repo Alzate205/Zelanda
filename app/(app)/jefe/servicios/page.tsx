@@ -1,49 +1,47 @@
-import Link from "next/link";
-import { Plus, Briefcase, ChevronLeft, ChevronRight } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
+import Link from 'next/link';
+import { Plus, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
 
-export const metadata = { title: "Servicios contratados" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Servicios contratados' };
 
 const ETIQUETA_ESTADO: Record<string, string> = {
-  ACUERDO: "Acuerdo",
-  EN_CURSO: "En curso",
-  TERMINADO: "Terminado",
-  CANCELADO: "Cancelado",
+  ACUERDO: 'Acuerdo',
+  EN_CURSO: 'En curso',
+  TERMINADO: 'Terminado',
+  CANCELADO: 'Cancelado',
 };
 
-const ESTADO_BADGE: Record<string, "aldia" | "proxima" | "vencida" | "neutro"> =
-  {
-    ACUERDO: "proxima",
-    EN_CURSO: "aldia",
-    TERMINADO: "neutro",
-    CANCELADO: "vencida",
-  };
+const ESTADO_BADGE: Record<string, 'aldia' | 'proxima' | 'vencida' | 'neutro'> = {
+  ACUERDO: 'proxima',
+  EN_CURSO: 'aldia',
+  TERMINADO: 'neutro',
+  CANCELADO: 'vencida',
+};
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "2-digit",
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit',
   });
 }
 
 export default async function PaginaServicios() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const servicios = await prisma.servicios_contratados.findMany({
-    orderBy: [{ estado: "asc" }, { fecha_inicio: "desc" }],
+    orderBy: [{ estado: 'asc' }, { fecha_inicio: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
       lotes: { select: { nombre: true } },
@@ -52,18 +50,14 @@ export default async function PaginaServicios() {
     take: 200,
   });
 
-  const abiertos = servicios.filter(
-    (s) => s.estado === "ACUERDO" || s.estado === "EN_CURSO",
-  );
-  const cerrados = servicios.filter(
-    (s) => s.estado === "TERMINADO" || s.estado === "CANCELADO",
-  );
+  const abiertos = servicios.filter((s) => s.estado === 'ACUERDO' || s.estado === 'EN_CURSO');
+  const cerrados = servicios.filter((s) => s.estado === 'TERMINADO' || s.estado === 'CANCELADO');
 
   function fila(s: (typeof servicios)[number]) {
     const pactado = Number(s.monto_pactado);
     const pagado = s.pagos.reduce((acc, p) => acc + Number(p.monto), 0);
     const saldo = pactado - pagado;
-    const estado = ESTADO_BADGE[s.estado] ?? "neutro";
+    const estado = ESTADO_BADGE[s.estado] ?? 'neutro';
     return (
       <li key={String(s.id)}>
         <Link
@@ -72,12 +66,10 @@ export default async function PaginaServicios() {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
-                {s.descripcion}
-              </p>
+              <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">{s.descripcion}</p>
               <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
                 {s.persona.nombre_completo}
-                {s.lotes ? ` · Lote ${s.lotes.nombre}` : ""}
+                {s.lotes ? ` · Lote ${s.lotes.nombre}` : ''}
               </p>
             </div>
             <Badge estado={estado}>{ETIQUETA_ESTADO[s.estado] ?? s.estado}</Badge>
@@ -88,35 +80,31 @@ export default async function PaginaServicios() {
               <span className="font-serif text-[20px] text-zelanda-verde-900">
                 {fmtMonto(pactado)}
               </span>
-              <span className="ml-1.5 text-[11.5px] text-zelanda-verde-700">
-                pactado
-              </span>
+              <span className="ml-1.5 text-[11.5px] text-zelanda-verde-700">pactado</span>
             </div>
             <span className="text-[11.5px] text-zelanda-verde-700">
               {fmtFecha(s.fecha_inicio)}
-              {s.fecha_fin ? ` → ${fmtFecha(s.fecha_fin)}` : " → en curso"}
+              {s.fecha_fin ? ` → ${fmtFecha(s.fecha_fin)}` : ' → en curso'}
             </span>
           </div>
 
           {s.pagos.length > 0 ? (
             <div className="mt-2 flex items-center justify-between rounded-[8px] bg-zelanda-beige-100 px-2.5 py-1.5 text-[11.5px]">
-              <span className="text-zelanda-verde-800">
-                Pagado: {fmtMonto(pagado)}
-              </span>
+              <span className="text-zelanda-verde-800">Pagado: {fmtMonto(pagado)}</span>
               <span
                 className={`font-semibold ${
                   saldo > 0
-                    ? "text-zelanda-verde-900"
+                    ? 'text-zelanda-verde-900'
                     : saldo === 0
-                      ? "text-estado-aldia"
-                      : "text-estado-vencida"
+                    ? 'text-estado-aldia'
+                    : 'text-estado-vencida'
                 }`}
               >
                 {saldo > 0
                   ? `Falta ${fmtMonto(saldo)}`
                   : saldo === 0
-                    ? "Saldado"
-                    : `Sobrepagado ${fmtMonto(Math.abs(saldo))}`}
+                  ? 'Saldado'
+                  : `Sobrepagado ${fmtMonto(Math.abs(saldo))}`}
               </span>
             </div>
           ) : null}
@@ -142,9 +130,7 @@ export default async function PaginaServicios() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Finanzas · Contratos</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Servicios contratados
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Servicios contratados</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
             {abiertos.length} abiertos · {cerrados.length} cerrados
           </p>
@@ -164,9 +150,8 @@ export default async function PaginaServicios() {
             Sin servicios contratados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Acá vas a llevar los contratos puntuales con contratistas: arreglar
-            un puente, levantar una cerca, podar un sector. Cada uno con su
-            monto pactado y pagos parciales.
+            Acá vas a llevar los contratos puntuales con contratistas: arreglar un puente, levantar
+            una cerca, podar un sector. Cada uno con su monto pactado y pagos parciales.
           </p>
           <Link
             href="/jefe/servicios/nuevo"
@@ -180,7 +165,7 @@ export default async function PaginaServicios() {
           {abiertos.length > 0 ? (
             <section>
               <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Abiertos{" "}
+                Abiertos{' '}
                 <span className="text-sm font-normal text-zelanda-verde-700">
                   ({abiertos.length})
                 </span>
@@ -191,7 +176,7 @@ export default async function PaginaServicios() {
           {cerrados.length > 0 ? (
             <section>
               <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Cerrados{" "}
+                Cerrados{' '}
                 <span className="text-sm font-normal text-zelanda-verde-700">
                   ({cerrados.length})
                 </span>

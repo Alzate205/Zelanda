@@ -1,43 +1,41 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
-import { cambiarEstadoServicio, borrarServicio } from "../acciones";
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ChevronLeft, Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
+import { cambiarEstadoServicio, borrarServicio } from '../acciones';
 
-export const metadata = { title: "Servicio contratado" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Servicio contratado' };
 
 const ETIQUETA_ESTADO: Record<string, string> = {
-  ACUERDO: "Acuerdo",
-  EN_CURSO: "En curso",
-  TERMINADO: "Terminado",
-  CANCELADO: "Cancelado",
+  ACUERDO: 'Acuerdo',
+  EN_CURSO: 'En curso',
+  TERMINADO: 'Terminado',
+  CANCELADO: 'Cancelado',
 };
 
-const ESTADO_BADGE: Record<string, "aldia" | "proxima" | "vencida" | "neutro"> =
-  {
-    ACUERDO: "proxima",
-    EN_CURSO: "aldia",
-    TERMINADO: "neutro",
-    CANCELADO: "vencida",
-  };
+const ESTADO_BADGE: Record<string, 'aldia' | 'proxima' | 'vencida' | 'neutro'> = {
+  ACUERDO: 'proxima',
+  EN_CURSO: 'aldia',
+  TERMINADO: 'neutro',
+  CANCELADO: 'vencida',
+};
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "2-digit",
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit',
   });
 }
 
@@ -46,7 +44,7 @@ export default async function PaginaDetalleServicio({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
   const { id: idRaw } = await params;
   if (!/^\d+$/.test(idRaw)) notFound();
   const id = BigInt(idRaw);
@@ -57,7 +55,7 @@ export default async function PaginaDetalleServicio({
       persona: { select: { id: true, nombre_completo: true } },
       lotes: { select: { nombre: true } },
       pagos: {
-        orderBy: { fecha: "desc" },
+        orderBy: { fecha: 'desc' },
       },
     },
   });
@@ -67,11 +65,11 @@ export default async function PaginaDetalleServicio({
   const pactado = Number(servicio.monto_pactado);
   const pagado = servicio.pagos.reduce((acc, p) => acc + Number(p.monto), 0);
   const saldo = pactado - pagado;
-  const estadoBadge = ESTADO_BADGE[servicio.estado] ?? "neutro";
+  const estadoBadge = ESTADO_BADGE[servicio.estado] ?? 'neutro';
 
   const proxEstado: Record<string, string | null> = {
-    ACUERDO: "EN_CURSO",
-    EN_CURSO: "TERMINADO",
+    ACUERDO: 'EN_CURSO',
+    EN_CURSO: 'TERMINADO',
     TERMINADO: null,
     CANCELADO: null,
   };
@@ -96,10 +94,8 @@ export default async function PaginaDetalleServicio({
             </h1>
             <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
               {fmtFecha(servicio.fecha_inicio)}
-              {servicio.fecha_fin
-                ? ` → ${fmtFecha(servicio.fecha_fin)}`
-                : " → en curso"}
-              {servicio.lotes ? ` · Lote ${servicio.lotes.nombre}` : ""}
+              {servicio.fecha_fin ? ` → ${fmtFecha(servicio.fecha_fin)}` : ' → en curso'}
+              {servicio.lotes ? ` · Lote ${servicio.lotes.nombre}` : ''}
             </p>
           </div>
           <Badge estado={estadoBadge}>{ETIQUETA_ESTADO[servicio.estado]}</Badge>
@@ -120,9 +116,7 @@ export default async function PaginaDetalleServicio({
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
               Pagado
             </p>
-            <p className="mt-1 font-serif text-[18px] text-zelanda-verde-900">
-              {fmtMonto(pagado)}
-            </p>
+            <p className="mt-1 font-serif text-[18px] text-zelanda-verde-900">{fmtMonto(pagado)}</p>
           </div>
           <div>
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
@@ -131,10 +125,10 @@ export default async function PaginaDetalleServicio({
             <p
               className={`mt-1 font-serif text-[18px] ${
                 saldo > 0
-                  ? "text-zelanda-verde-900"
+                  ? 'text-zelanda-verde-900'
                   : saldo === 0
-                    ? "text-estado-aldia"
-                    : "text-estado-vencida"
+                  ? 'text-estado-aldia'
+                  : 'text-estado-vencida'
               }`}
             >
               {fmtMonto(saldo)}
@@ -161,7 +155,7 @@ export default async function PaginaDetalleServicio({
               </button>
             </form>
           ) : null}
-          {servicio.estado !== "CANCELADO" && servicio.estado !== "TERMINADO" ? (
+          {servicio.estado !== 'CANCELADO' && servicio.estado !== 'TERMINADO' ? (
             <form action={cambiarEstadoServicio}>
               <input type="hidden" name="id" value={String(servicio.id)} />
               <input type="hidden" name="estado" value="CANCELADO" />
@@ -187,9 +181,7 @@ export default async function PaginaDetalleServicio({
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Pagos
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Pagos</h2>
           <Link
             href={`/jefe/pagos/nuevo?servicio_id=${servicio.id}&persona_id=${servicio.persona.id}&tipo=SERVICIO`}
             className="inline-flex items-center gap-1 rounded-[10px] bg-zelanda-verde-700 px-2.5 py-1.5 text-[12px] font-semibold text-zelanda-beige-50 hover:bg-zelanda-verde-800"
@@ -215,14 +207,12 @@ export default async function PaginaDetalleServicio({
                     </p>
                     <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
                       {fmtFecha(p.fecha)}
-                      {p.metodo_pago ? ` · ${p.metodo_pago}` : ""}
+                      {p.metodo_pago ? ` · ${p.metodo_pago}` : ''}
                     </p>
                   </div>
                 </div>
                 {p.notas ? (
-                  <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">
-                    {p.notas}
-                  </p>
+                  <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">{p.notas}</p>
                 ) : null}
               </li>
             ))}

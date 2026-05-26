@@ -1,41 +1,34 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  Circle,
-  Pause,
-  Ban,
-} from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { BadgeBase } from "@/components/shared/BadgeRol";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { formatearFechaCorta } from "@/lib/utils";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Pause, Ban } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { BadgeBase } from '@/components/shared/BadgeRol';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { formatearFechaCorta } from '@/lib/utils';
 
-export const metadata: Metadata = { title: "Mis tareas" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: 'Mis tareas' };
 
-type Filtro = "activas" | "completadas" | "todas";
+type Filtro = 'activas' | 'completadas' | 'todas';
 
 function parsearFiltro(raw: string | undefined): Filtro {
-  if (raw === "completadas" || raw === "todas") return raw;
-  return "activas";
+  if (raw === 'completadas' || raw === 'todas') return raw;
+  return 'activas';
 }
 
-const ETIQUETA_ESTADO: Record<string, { texto: string; tono: "info" | "alerta" | "neutro" }> = {
-  PENDIENTE: { texto: "Pendiente", tono: "neutro" },
-  EN_CURSO: { texto: "En curso", tono: "info" },
-  COMPLETADA: { texto: "Completada", tono: "info" },
-  CANCELADA: { texto: "Cancelada", tono: "neutro" },
+const ETIQUETA_ESTADO: Record<string, { texto: string; tono: 'info' | 'alerta' | 'neutro' }> = {
+  PENDIENTE: { texto: 'Pendiente', tono: 'neutro' },
+  EN_CURSO: { texto: 'En curso', tono: 'info' },
+  COMPLETADA: { texto: 'Completada', tono: 'info' },
+  CANCELADA: { texto: 'Cancelada', tono: 'neutro' },
 };
 
 function IconoEstado({ estado }: { estado: string }) {
-  const clase = "h-4 w-4 shrink-0";
-  if (estado === "COMPLETADA") return <CheckCircle2 className={`${clase} text-zelanda-verde-700`} />;
-  if (estado === "EN_CURSO") return <Pause className={`${clase} text-zelanda-ocre-600`} />;
-  if (estado === "CANCELADA") return <Ban className={`${clase} text-zelanda-verde-700/40`} />;
+  const clase = 'h-4 w-4 shrink-0';
+  if (estado === 'COMPLETADA')
+    return <CheckCircle2 className={`${clase} text-zelanda-verde-700`} />;
+  if (estado === 'EN_CURSO') return <Pause className={`${clase} text-zelanda-ocre-600`} />;
+  if (estado === 'CANCELADA') return <Ban className={`${clase} text-zelanda-verde-700/40`} />;
   return <Circle className={`${clase} text-zelanda-verde-700/60`} />;
 }
 
@@ -44,7 +37,7 @@ export default async function PaginaTareasTrabajador({
 }: {
   searchParams: Promise<{ filtro?: string }>;
 }) {
-  const usuario = await requerirUsuario("TRABAJADOR");
+  const usuario = await requerirUsuario('TRABAJADOR');
   const sp = await searchParams;
   const filtro = parsearFiltro(sp.filtro);
 
@@ -62,16 +55,16 @@ export default async function PaginaTareasTrabajador({
   }
 
   const whereEstado =
-    filtro === "activas"
-      ? { in: ["PENDIENTE" as const, "EN_CURSO" as const] }
-      : filtro === "completadas"
-        ? { equals: "COMPLETADA" as const }
-        : undefined;
+    filtro === 'activas'
+      ? { in: ['PENDIENTE' as const, 'EN_CURSO' as const] }
+      : filtro === 'completadas'
+      ? { equals: 'COMPLETADA' as const }
+      : undefined;
 
   const orderBy =
-    filtro === "completadas"
-      ? [{ fecha_completada: "desc" as const }]
-      : [{ estado: "asc" as const }, { fecha_inicio: "asc" as const }];
+    filtro === 'completadas'
+      ? [{ fecha_completada: 'desc' as const }]
+      : [{ estado: 'asc' as const }, { fecha_inicio: 'asc' as const }];
 
   const asignaciones = await prisma.asignaciones.findMany({
     where: {
@@ -99,21 +92,18 @@ export default async function PaginaTareasTrabajador({
 
       <header>
         <Eyebrow>Mis tareas</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Histórico
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Histórico</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          {asignaciones.length}{" "}
-          {asignaciones.length === 1 ? "tarea" : "tareas"}
+          {asignaciones.length} {asignaciones.length === 1 ? 'tarea' : 'tareas'}
         </p>
       </header>
 
       <nav className="grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
         {(
           [
-            ["activas", "Activas"],
-            ["completadas", "Completadas"],
-            ["todas", "Todas"],
+            ['activas', 'Activas'],
+            ['completadas', 'Completadas'],
+            ['todas', 'Todas'],
           ] as const
         ).map(([clave, etiqueta]) => (
           <Link
@@ -121,8 +111,8 @@ export default async function PaginaTareasTrabajador({
             href={`/trabajador/tareas?filtro=${clave}`}
             className={`rounded-lg px-2 py-2 text-center text-[13px] font-semibold transition ${
               filtro === clave
-                ? "bg-white text-zelanda-verde-900 shadow-suave"
-                : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
+                ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                : 'text-zelanda-verde-700 hover:text-zelanda-verde-900'
             }`}
           >
             {etiqueta}
@@ -132,11 +122,11 @@ export default async function PaginaTareasTrabajador({
 
       {asignaciones.length === 0 ? (
         <p className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
-          {filtro === "completadas"
-            ? "Aún no hay tareas completadas."
-            : filtro === "activas"
-              ? "No tenés tareas activas en este momento."
-              : "No hay tareas registradas."}
+          {filtro === 'completadas'
+            ? 'Aún no hay tareas completadas.'
+            : filtro === 'activas'
+            ? 'No tenés tareas activas en este momento.'
+            : 'No hay tareas registradas.'}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -144,42 +134,36 @@ export default async function PaginaTareasTrabajador({
             const destino = a.lote_id
               ? `Lote ${a.lotes!.nombre}`
               : a.apiario_id
-                ? `Apiario ${a.apiarios!.nombre}`
-                : "—";
-            const total = a.lote_id
-              ? (a.lotes?.total_arboles ?? 0)
-              : (a.apiarios?.total_colmenas ?? 0);
+              ? `Apiario ${a.apiarios!.nombre}`
+              : '—';
+            const total = a.lote_id ? a.lotes?.total_arboles ?? 0 : a.apiarios?.total_colmenas ?? 0;
             const progreso = a.lote_id
               ? `${a.arboles_completados} / ${total} árboles`
               : `${total} colmenas`;
             const meta = ETIQUETA_ESTADO[a.estado] ?? {
               texto: a.estado,
-              tono: "neutro" as const,
+              tono: 'neutro' as const,
             };
-            const esActiva = a.estado === "PENDIENTE" || a.estado === "EN_CURSO";
+            const esActiva = a.estado === 'PENDIENTE' || a.estado === 'EN_CURSO';
 
             const contenido = (
               <>
                 <IconoEstado estado={a.estado} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-zelanda-verde-900">
-                    {a.tipos_tarea.nombre}
-                  </p>
+                  <p className="font-medium text-zelanda-verde-900">{a.tipos_tarea.nombre}</p>
                   <p className="text-xs text-zelanda-verde-700">
                     {destino} · {progreso}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
                     <BadgeBase tono={meta.tono}>{meta.texto}</BadgeBase>
-                    {a.estado === "COMPLETADA" && a.fecha_completada ? (
+                    {a.estado === 'COMPLETADA' && a.fecha_completada ? (
                       <span className="text-[11px] text-zelanda-verde-700/70">
                         {formatearFechaCorta(a.fecha_completada)}
                       </span>
                     ) : null}
                   </div>
                 </div>
-                {esActiva ? (
-                  <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" />
-                ) : null}
+                {esActiva ? <ChevronRight className="h-4 w-4 text-zelanda-verde-700/40" /> : null}
               </>
             );
 
@@ -189,10 +173,7 @@ export default async function PaginaTareasTrabajador({
                 className="rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300"
               >
                 {esActiva ? (
-                  <Link
-                    href={`/trabajador/avance/${a.id}`}
-                    className="flex items-center gap-3"
-                  >
+                  <Link href={`/trabajador/avance/${a.id}`} className="flex items-center gap-3">
                     {contenido}
                   </Link>
                 ) : (

@@ -1,10 +1,9 @@
-import { redirect, notFound } from "next/navigation";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AsignacionCerradaSuccess } from "@/components/shared/AsignacionCerradaSuccess";
+import { redirect, notFound } from 'next/navigation';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { AsignacionCerradaSuccess } from '@/components/shared/AsignacionCerradaSuccess';
 
-export const metadata = { title: "Tarea cerrada" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Tarea cerrada' };
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -17,7 +16,7 @@ function parsearId(raw: string): bigint | null {
 
 function formatearDuracion(inicio: Date, fin: Date): string {
   const ms = fin.getTime() - inicio.getTime();
-  if (ms < 0) return "—";
+  if (ms < 0) return '—';
   const min = Math.floor(ms / 60000);
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
@@ -28,11 +27,11 @@ function formatearDuracion(inicio: Date, fin: Date): string {
 }
 
 function formatearProxima(diasFreq: number): string {
-  if (diasFreq <= 0) return "—";
-  if (diasFreq === 1) return "mañana";
+  if (diasFreq <= 0) return '—';
+  if (diasFreq === 1) return 'mañana';
   if (diasFreq < 30) return `en ${diasFreq} d`;
   const meses = Math.round(diasFreq / 30);
-  return meses === 1 ? "en 1 mes" : `en ${meses} meses`;
+  return meses === 1 ? 'en 1 mes' : `en ${meses} meses`;
 }
 
 export default async function PaginaExitoAsignacion({
@@ -40,7 +39,7 @@ export default async function PaginaExitoAsignacion({
 }: {
   params: Promise<{ asignacion_id: string }>;
 }) {
-  await requerirUsuario("TRABAJADOR");
+  await requerirUsuario('TRABAJADOR');
   const { asignacion_id } = await params;
   const id = parsearId(asignacion_id);
   if (!id) notFound();
@@ -64,8 +63,8 @@ export default async function PaginaExitoAsignacion({
   if (!asignacion) notFound();
 
   // Si todavía no está cerrada, mandamos al inicio del trabajador
-  if (asignacion.estado !== "COMPLETADA" || !asignacion.fecha_completada) {
-    redirect("/trabajador");
+  if (asignacion.estado !== 'COMPLETADA' || !asignacion.fecha_completada) {
+    redirect('/trabajador');
   }
 
   // Frecuencia override por lote si existe
@@ -93,8 +92,7 @@ export default async function PaginaExitoAsignacion({
       })
     : 0;
 
-  const destinoNombre =
-    asignacion.lotes?.nombre ?? asignacion.apiarios?.nombre ?? "—";
+  const destinoNombre = asignacion.lotes?.nombre ?? asignacion.apiarios?.nombre ?? '—';
   let totalUnidades = asignacion.arboles_completados;
   if (!asignacion.lote_id && asignacion.apiario_id) {
     const ap = await prisma.apiarios.findUnique({
@@ -104,10 +102,7 @@ export default async function PaginaExitoAsignacion({
     totalUnidades = ap?.total_colmenas ?? 0;
   }
 
-  const duracion = formatearDuracion(
-    asignacion.fecha_inicio,
-    asignacion.fecha_completada,
-  );
+  const duracion = formatearDuracion(asignacion.fecha_inicio, asignacion.fecha_completada);
   const proxima = formatearProxima(freq);
 
   return (

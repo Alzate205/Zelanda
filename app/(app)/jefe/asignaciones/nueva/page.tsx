@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { calcularResumen } from "@/lib/fechas-tarea";
-import { WizardNuevaAsignacion } from "./WizardNuevaAsignacion";
+import type { Metadata } from 'next';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { calcularResumen } from '@/lib/fechas-tarea';
+import { WizardNuevaAsignacion } from './WizardNuevaAsignacion';
 
-export const metadata: Metadata = { title: "Nueva asignación" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: 'Nueva asignación' };
 
 type SearchParams = Promise<{
   lote_id?: string;
@@ -18,7 +17,7 @@ export default async function PaginaNuevaAsignacion({
 }: {
   searchParams: SearchParams;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
   const sp = await searchParams;
 
   const [lotes, apiarios, tipos, personas, completadasLote, frecuenciasOverride] =
@@ -31,17 +30,17 @@ export default async function PaginaNuevaAsignacion({
           total_arboles: true,
           hectareas: true,
         },
-        orderBy: { nombre: "asc" },
+        orderBy: { nombre: 'asc' },
       }),
       prisma.apiarios.findMany({
         where: { activo: true },
         select: { id: true, nombre: true, total_colmenas: true },
-        orderBy: { nombre: "asc" },
+        orderBy: { nombre: 'asc' },
       }),
       prisma.tipos_tarea.findMany({
         where: { activo: true },
         select: { id: true, nombre: true, area: true, frecuencia_dias_default: true },
-        orderBy: [{ area: "asc" }, { nombre: "asc" }],
+        orderBy: [{ area: 'asc' }, { nombre: 'asc' }],
       }),
       prisma.personas.findMany({
         where: {
@@ -58,11 +57,11 @@ export default async function PaginaNuevaAsignacion({
             take: 1,
           },
         },
-        orderBy: { nombre_completo: "asc" },
+        orderBy: { nombre_completo: 'asc' },
       }),
       prisma.asignaciones.groupBy({
-        by: ["lote_id", "tipo_tarea_id"],
-        where: { estado: "COMPLETADA", lote_id: { not: null } },
+        by: ['lote_id', 'tipo_tarea_id'],
+        where: { estado: 'COMPLETADA', lote_id: { not: null } },
         _max: { fecha_completada: true },
       }),
       prisma.frecuencias_lote.findMany({
@@ -72,8 +71,8 @@ export default async function PaginaNuevaAsignacion({
 
   // Carga actual: asignaciones abiertas por persona
   const cargaPorPersona = await prisma.asignaciones.groupBy({
-    by: ["persona_id"],
-    where: { estado: { in: ["PENDIENTE", "EN_CURSO"] } },
+    by: ['persona_id'],
+    where: { estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
     _count: { _all: true },
   });
   const mapaCarga = new globalThis.Map<string, number>();
@@ -84,7 +83,7 @@ export default async function PaginaNuevaAsignacion({
   // Últimos lotes trabajados por persona (los 2 más recientes)
   const recientesPorPersona = await prisma.asignaciones.findMany({
     where: { lote_id: { not: null } },
-    orderBy: { fecha_inicio: "desc" },
+    orderBy: { fecha_inicio: 'desc' },
     take: 200,
     select: {
       persona_id: true,
@@ -102,7 +101,7 @@ export default async function PaginaNuevaAsignacion({
   }
 
   // Estado por lote (peor estado de sus tipos de tarea de cultivo)
-  const tiposCultivo = tipos.filter((t) => t.area === "CULTIVO");
+  const tiposCultivo = tipos.filter((t) => t.area === 'CULTIVO');
   const mapaFreq = new globalThis.Map<string, number>();
   for (const f of frecuenciasOverride) {
     mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
@@ -110,17 +109,14 @@ export default async function PaginaNuevaAsignacion({
   const mapaUltimaLote = new globalThis.Map<string, Date | null>();
   for (const c of completadasLote) {
     if (c.lote_id) {
-      mapaUltimaLote.set(
-        `${c.lote_id}_${c.tipo_tarea_id}`,
-        c._max.fecha_completada,
-      );
+      mapaUltimaLote.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
     }
   }
 
-  type EstadoLote = "vencida" | "proxima" | "aldia";
+  type EstadoLote = 'vencida' | 'proxima' | 'aldia';
   const lotesEnriquecidos = lotes.map((l) => {
-    let estado: EstadoLote = "aldia";
-    let proximaTarea = "—";
+    let estado: EstadoLote = 'aldia';
+    let proximaTarea = '—';
     let menorDias = Number.POSITIVE_INFINITY;
     let tipoMasUrgenteId: string | null = null;
 
@@ -130,12 +126,9 @@ export default async function PaginaNuevaAsignacion({
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
       const r = calcularResumen(ultima, freq);
 
-      if (
-        r.estado === "vencida" ||
-        r.estado === "sin_historial"
-      ) {
-        if (estado !== "vencida") {
-          estado = "vencida";
+      if (r.estado === 'vencida' || r.estado === 'sin_historial') {
+        if (estado !== 'vencida') {
+          estado = 'vencida';
           tipoMasUrgenteId = String(t.id);
           proximaTarea = `${t.nombre} vencida`;
           menorDias = r.dias_para_proxima ?? -999;
@@ -144,16 +137,13 @@ export default async function PaginaNuevaAsignacion({
           proximaTarea = `${t.nombre} vencida`;
           menorDias = r.dias_para_proxima ?? -999;
         }
-      } else if (r.estado === "proxima") {
-        if (estado === "aldia") {
-          estado = "proxima";
+      } else if (r.estado === 'proxima') {
+        if (estado === 'aldia') {
+          estado = 'proxima';
           tipoMasUrgenteId = String(t.id);
           proximaTarea = `${t.nombre} en ${r.dias_para_proxima} d`;
           menorDias = r.dias_para_proxima ?? 999;
-        } else if (
-          estado === "proxima" &&
-          (r.dias_para_proxima ?? 999) < menorDias
-        ) {
+        } else if (estado === 'proxima' && (r.dias_para_proxima ?? 999) < menorDias) {
           tipoMasUrgenteId = String(t.id);
           proximaTarea = `${t.nombre} en ${r.dias_para_proxima} d`;
           menorDias = r.dias_para_proxima ?? 999;
@@ -161,7 +151,7 @@ export default async function PaginaNuevaAsignacion({
       }
     }
 
-    if (estado === "aldia") {
+    if (estado === 'aldia') {
       // mostrar la siguiente tarea más próxima (positiva)
       let proxDias = Number.POSITIVE_INFINITY;
       for (const t of tiposCultivo) {
@@ -170,7 +160,7 @@ export default async function PaginaNuevaAsignacion({
         const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
         const r = calcularResumen(ultima, freq);
         if (
-          r.estado === "aldia" &&
+          r.estado === 'aldia' &&
           r.dias_para_proxima !== null &&
           r.dias_para_proxima < proxDias
         ) {
@@ -200,15 +190,15 @@ export default async function PaginaNuevaAsignacion({
   const tiposEnriquecidos = tipos.map((t) => ({
     id: String(t.id),
     nombre: t.nombre,
-    area: t.area as "CULTIVO" | "APICULTURA",
+    area: t.area as 'CULTIVO' | 'APICULTURA',
     freq: t.frecuencia_dias_default,
   }));
 
   const ETIQUETA_VINC: Record<string, string> = {
-    FIJO: "Fijo",
-    JORNALERO: "Jornalero",
-    CONTRATISTA: "Contratista",
-    FAMILIAR: "Familiar",
+    FIJO: 'Fijo',
+    JORNALERO: 'Jornalero',
+    CONTRATISTA: 'Contratista',
+    FAMILIAR: 'Familiar',
   };
 
   const personasEnriquecidas = personas.map((p) => {
@@ -216,7 +206,7 @@ export default async function PaginaNuevaAsignacion({
     return {
       id: String(p.id),
       nombre_completo: p.nombre_completo,
-      vinculo: v ? (ETIQUETA_VINC[v.tipo] ?? v.tipo) : "—",
+      vinculo: v ? ETIQUETA_VINC[v.tipo] ?? v.tipo : '—',
       rol_finca: v?.rol_finca ?? null,
       carga: mapaCarga.get(String(p.id)) ?? 0,
       ultimos: mapaRecientes.get(String(p.id)) ?? [],

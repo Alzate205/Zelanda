@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { FormAvance } from "./FormAvance";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { FormAvance } from './FormAvance';
 
-export const metadata: Metadata = { title: "Registrar avance" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: 'Registrar avance' };
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -36,7 +35,7 @@ export default async function PaginaAvance({
 
   if (!a) notFound();
   if (usuario.persona_id === null || BigInt(usuario.persona_id) !== a.persona_id) notFound();
-  if (a.estado !== "PENDIENTE" && a.estado !== "EN_CURSO") notFound();
+  if (a.estado !== 'PENDIENTE' && a.estado !== 'EN_CURSO') notFound();
 
   let apiarioNombre: string | null = null;
   let totalColmenas: number | null = null;
@@ -49,9 +48,8 @@ export default async function PaginaAvance({
     totalColmenas = ap?.total_colmenas ?? null;
   }
 
-  const esApicultura = a.tipos_tarea.area === "APICULTURA";
-  const esCosechaMiel =
-    esApicultura && /\bcosecha\b/i.test(a.tipos_tarea.nombre);
+  const esApicultura = a.tipos_tarea.area === 'APICULTURA';
+  const esCosechaMiel = esApicultura && /\bcosecha\b/i.test(a.tipos_tarea.nombre);
 
   return (
     <FormAvance

@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { enviarPushAUsuarios } from "@/lib/push/enviar";
-
-export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { enviarPushAUsuarios } from '@/lib/push/enviar';
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
+  const auth = req.headers.get('authorization');
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   const hoy = new Date();
@@ -45,9 +43,9 @@ export async function GET(req: NextRequest) {
     }
     try {
       await enviarPushAUsuarios([usuarioId], {
-        titulo: "Recordatorio para hoy",
+        titulo: 'Recordatorio para hoy',
         cuerpo: r.titulo,
-        url: "/recordatorios",
+        url: '/recordatorios',
         tag: `recordatorio-${r.id}`,
       });
       await prisma.recordatorios.update({
@@ -56,9 +54,7 @@ export async function GET(req: NextRequest) {
       });
       enviados++;
     } catch (e) {
-      errores.push(
-        `${r.id}: ${e instanceof Error ? e.message : String(e)}`,
-      );
+      errores.push(`${r.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -88,9 +84,9 @@ export async function GET(req: NextRequest) {
     if (!usuarioId) continue;
     try {
       await enviarPushAUsuarios([usuarioId], {
-        titulo: "Recordatorio vencido",
+        titulo: 'Recordatorio vencido',
         cuerpo: `Ayer: ${r.titulo}`,
-        url: "/recordatorios",
+        url: '/recordatorios',
         tag: `recordatorio-vencido-${r.id}`,
       });
       await prisma.recordatorios.update({
@@ -99,9 +95,7 @@ export async function GET(req: NextRequest) {
       });
       vencidos++;
     } catch (e) {
-      errores.push(
-        `vencido ${r.id}: ${e instanceof Error ? e.message : String(e)}`,
-      );
+      errores.push(`vencido ${r.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 

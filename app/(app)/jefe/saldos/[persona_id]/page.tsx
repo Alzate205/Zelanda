@@ -1,58 +1,57 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { calcularSaldoPersona, periodoMes } from "@/lib/saldos";
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { calcularSaldoPersona, periodoMes } from '@/lib/saldos';
 
-export const metadata = { title: "Saldo de la persona" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Saldo de la persona' };
 
 const ETIQUETA_VINC: Record<string, string> = {
-  FIJO: "Fijo",
-  JORNALERO: "Jornalero",
-  CONTRATISTA: "Contratista",
-  FAMILIAR: "Familia",
+  FIJO: 'Fijo',
+  JORNALERO: 'Jornalero',
+  CONTRATISTA: 'Contratista',
+  FAMILIAR: 'Familia',
 };
 
 const ETIQUETA_TIPO_PAGO: Record<string, string> = {
-  SALARIO: "Salario",
-  ADELANTO: "Adelanto",
-  JORNAL: "Jornal",
-  SERVICIO: "Servicio",
-  BONO: "Bono",
-  AJUSTE: "Ajuste",
-  OTRO: "Otro",
+  SALARIO: 'Salario',
+  ADELANTO: 'Adelanto',
+  JORNAL: 'Jornal',
+  SERVICIO: 'Servicio',
+  BONO: 'Bono',
+  AJUSTE: 'Ajuste',
+  OTRO: 'Otro',
 };
 
 const MESES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ];
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
   });
 }
 
@@ -61,12 +60,12 @@ function parsearMes(raw: string | undefined): { anio: number; mes: number } {
   if (!raw || !/^\d{4}-\d{2}$/.test(raw)) {
     return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
   }
-  const [a, m] = raw.split("-");
+  const [a, m] = raw.split('-');
   return { anio: Number(a), mes: Number(m) - 1 };
 }
 
 function aClaveMes(anio: number, mes: number): string {
-  return `${anio}-${String(mes + 1).padStart(2, "0")}`;
+  return `${anio}-${String(mes + 1).padStart(2, '0')}`;
 }
 
 export default async function PaginaSaldoPersona({
@@ -76,7 +75,7 @@ export default async function PaginaSaldoPersona({
   params: Promise<{ persona_id: string }>;
   searchParams: Promise<{ mes?: string }>;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
   const { persona_id: idRaw } = await params;
   if (!/^\d+$/.test(idRaw)) notFound();
   const personaId = BigInt(idRaw);
@@ -95,7 +94,7 @@ export default async function PaginaSaldoPersona({
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
       },
-      orderBy: { fecha: "asc" },
+      orderBy: { fecha: 'asc' },
       include: { lotes: { select: { nombre: true } } },
     }),
     prisma.ausencias.findMany({
@@ -103,21 +102,21 @@ export default async function PaginaSaldoPersona({
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
       },
-      orderBy: { fecha: "asc" },
+      orderBy: { fecha: 'asc' },
     }),
     prisma.servicios_contratados.findMany({
       where: {
         persona_id: personaId,
         fecha_inicio: { gte: periodo.desde, lte: periodo.hasta },
       },
-      orderBy: { fecha_inicio: "asc" },
+      orderBy: { fecha_inicio: 'asc' },
     }),
     prisma.pagos.findMany({
       where: {
         persona_id: personaId,
         fecha: { gte: periodo.desde, lte: periodo.hasta },
       },
-      orderBy: { fecha: "asc" },
+      orderBy: { fecha: 'asc' },
     }),
   ]);
 
@@ -136,14 +135,10 @@ export default async function PaginaSaldoPersona({
 
       <header>
         <Eyebrow>
-          {MESES[mes]} {anio} ·{" "}
-          {saldo.tipo_vinculacion
-            ? ETIQUETA_VINC[saldo.tipo_vinculacion]
-            : "Sin vinculación"}
+          {MESES[mes]} {anio} ·{' '}
+          {saldo.tipo_vinculacion ? ETIQUETA_VINC[saldo.tipo_vinculacion] : 'Sin vinculación'}
         </Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          {saldo.nombre}
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{saldo.nombre}</h1>
       </header>
 
       <div className="flex items-center justify-between rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
@@ -189,10 +184,10 @@ export default async function PaginaSaldoPersona({
             <p
               className={`mt-1 font-serif text-[18px] ${
                 saldo.saldo > 0
-                  ? "text-zelanda-verde-900"
+                  ? 'text-zelanda-verde-900'
                   : saldo.saldo === 0
-                    ? "text-estado-aldia"
-                    : "text-estado-vencida"
+                  ? 'text-estado-aldia'
+                  : 'text-estado-vencida'
               }`}
             >
               {fmtMonto(saldo.saldo)}
@@ -210,23 +205,17 @@ export default async function PaginaSaldoPersona({
         </div>
       </section>
 
-      {saldo.tipo_vinculacion === "FIJO" ? (
+      {saldo.tipo_vinculacion === 'FIJO' ? (
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-            Desglose como fijo
-          </h2>
+          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Desglose como fijo</h2>
           <ul className="space-y-1.5 text-[13px] text-zelanda-verde-800">
             <li className="flex justify-between">
               <span>Salario base</span>
-              <span className="font-semibold">
-                {fmtMonto(saldo.salario_base ?? 0)}
-              </span>
+              <span className="font-semibold">{fmtMonto(saldo.salario_base ?? 0)}</span>
             </li>
             <li className="flex justify-between">
               <span>Salario diario</span>
-              <span className="font-semibold">
-                {fmtMonto(saldo.detalles.salario_diario)}
-              </span>
+              <span className="font-semibold">{fmtMonto(saldo.detalles.salario_diario)}</span>
             </li>
             <li className="flex justify-between">
               <span>Días del mes</span>
@@ -234,9 +223,7 @@ export default async function PaginaSaldoPersona({
             </li>
             <li className="flex justify-between">
               <span>Ausencias que descuentan</span>
-              <span className="font-semibold">
-                −{saldo.detalles.dias_ausencia_desc}
-              </span>
+              <span className="font-semibold">−{saldo.detalles.dias_ausencia_desc}</span>
             </li>
             <li className="flex justify-between border-t border-zelanda-beige-200 pt-1.5">
               <span className="font-semibold">Días efectivos</span>
@@ -249,17 +236,15 @@ export default async function PaginaSaldoPersona({
       {saldo.detalles.extras_destajo_items.length > 0 ? (
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="font-serif text-base text-zelanda-verde-900">
-              Destajo del mes
-            </h2>
+            <h2 className="font-serif text-base text-zelanda-verde-900">Destajo del mes</h2>
             <span className="text-[11.5px] text-zelanda-verde-700">
-              {saldo.esquema_pago_destajo === "ADICIONAL"
-                ? "suma al salario"
-                : saldo.esquema_pago_destajo === "REEMPLAZA_DIA"
-                  ? "reemplaza días con destajo"
-                  : saldo.esquema_pago_destajo === "SOLO_DESTAJO"
-                    ? "único pago"
-                    : "no aplica"}
+              {saldo.esquema_pago_destajo === 'ADICIONAL'
+                ? 'suma al salario'
+                : saldo.esquema_pago_destajo === 'REEMPLAZA_DIA'
+                ? 'reemplaza días con destajo'
+                : saldo.esquema_pago_destajo === 'SOLO_DESTAJO'
+                ? 'único pago'
+                : 'no aplica'}
             </span>
           </div>
           <ul className="space-y-1.5">
@@ -273,9 +258,9 @@ export default async function PaginaSaldoPersona({
                     {fmtFecha(x.fecha)} · {x.concepto}
                   </p>
                   <p className="text-[11.5px] text-zelanda-verde-700">
-                    {x.cantidad.toLocaleString("es-CO", {
+                    {x.cantidad.toLocaleString('es-CO', {
                       maximumFractionDigits: 1,
-                    })}{" "}
+                    })}{' '}
                     {x.unidad} × {fmtMonto(x.tarifa)}
                   </p>
                 </div>
@@ -286,30 +271,24 @@ export default async function PaginaSaldoPersona({
             ))}
           </ul>
           <p className="mt-2 flex items-center justify-between border-t border-zelanda-beige-200 pt-2 text-[13.5px]">
-            <span className="font-semibold text-zelanda-verde-900">
-              Total destajo
-            </span>
+            <span className="font-semibold text-zelanda-verde-900">Total destajo</span>
             <span className="font-serif text-[15px] text-zelanda-verde-900">
               {fmtMonto(saldo.detalles.extras_destajo)}
             </span>
           </p>
-          {saldo.esquema_pago_destajo === "REEMPLAZA_DIA" &&
-          saldo.detalles.dias_con_destajo > 0 ? (
+          {saldo.esquema_pago_destajo === 'REEMPLAZA_DIA' && saldo.detalles.dias_con_destajo > 0 ? (
             <p className="mt-1 text-[11.5px] text-zelanda-verde-700">
-              {saldo.detalles.dias_con_destajo} día(s) con destajo · base se
-              descuenta proporcional
+              {saldo.detalles.dias_con_destajo} día(s) con destajo · base se descuenta proporcional
             </p>
           ) : null}
         </section>
       ) : saldo.esquema_pago_destajo &&
-        saldo.esquema_pago_destajo !== "NUNCA" &&
-        (saldo.tipo_vinculacion === "FIJO" ||
-          saldo.tipo_vinculacion === "JORNALERO") ? (
+        saldo.esquema_pago_destajo !== 'NUNCA' &&
+        (saldo.tipo_vinculacion === 'FIJO' || saldo.tipo_vinculacion === 'JORNALERO') ? (
         <section className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-zelanda-beige-50 p-4 text-center">
           <p className="text-[12.5px] text-zelanda-verde-700">
-            Esta persona tiene esquema de destajo configurado, pero no hubo
-            registros (árboles trabajados o kg cosechados) con tarifas vigentes
-            este mes.
+            Esta persona tiene esquema de destajo configurado, pero no hubo registros (árboles
+            trabajados o kg cosechados) con tarifas vigentes este mes.
           </p>
         </section>
       ) : null}
@@ -328,7 +307,7 @@ export default async function PaginaSaldoPersona({
                 <div>
                   <p className="text-[13.5px] text-zelanda-verde-900">
                     {fmtFecha(j.fecha)}
-                    {j.lotes ? ` · Lote ${j.lotes.nombre}` : ""}
+                    {j.lotes ? ` · Lote ${j.lotes.nombre}` : ''}
                   </p>
                   {j.descripcion_actividad ? (
                     <p className="text-[11.5px] text-zelanda-verde-700">
@@ -389,13 +368,11 @@ export default async function PaginaSaldoPersona({
                     {fmtFecha(a.fecha)} · {a.tipo}
                   </p>
                   {a.observaciones ? (
-                    <p className="text-[11.5px] text-zelanda-verde-700">
-                      {a.observaciones}
-                    </p>
+                    <p className="text-[11.5px] text-zelanda-verde-700">{a.observaciones}</p>
                   ) : null}
                 </div>
                 <span className="text-[11.5px] text-zelanda-verde-700">
-                  {a.descontable ? "Descuenta" : "No descuenta"}
+                  {a.descontable ? 'Descuenta' : 'No descuenta'}
                 </span>
               </li>
             ))}
@@ -419,9 +396,7 @@ export default async function PaginaSaldoPersona({
                     {fmtFecha(p.fecha)} · {ETIQUETA_TIPO_PAGO[p.tipo] ?? p.tipo}
                   </p>
                   {p.metodo_pago ? (
-                    <p className="text-[11.5px] text-zelanda-verde-700">
-                      {p.metodo_pago}
-                    </p>
+                    <p className="text-[11.5px] text-zelanda-verde-700">{p.metodo_pago}</p>
                   ) : null}
                 </div>
                 <span className="font-serif text-[14px] text-zelanda-verde-900">

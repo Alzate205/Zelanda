@@ -1,21 +1,16 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
-import { KPI } from "@/components/ui/KPI";
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
+import { KPI } from '@/components/ui/KPI';
+import { Eyebrow } from '@/components/ui/Eyebrow';
 
-export const metadata = { title: "Reporte de lote" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Reporte de lote' };
 
-export default async function PaginaReporteLote({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function PaginaReporteLote({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
   const loteId = BigInt(id);
@@ -26,14 +21,13 @@ export default async function PaginaReporteLote({
   });
   if (!lote) notFound();
 
-  const [totales, cosechasMes, ultimaCosecha, topRecolectores, consumoInsumos] =
-    await Promise.all([
-      prisma.cosechas.aggregate({
-        where: { lote_id: loteId },
-        _count: { _all: true },
-        _sum: { peso_kg: true },
-      }),
-      prisma.$queryRaw<{ ym: string; total_kg: string; n_cosechas: number }[]>`
+  const [totales, cosechasMes, ultimaCosecha, topRecolectores, consumoInsumos] = await Promise.all([
+    prisma.cosechas.aggregate({
+      where: { lote_id: loteId },
+      _count: { _all: true },
+      _sum: { peso_kg: true },
+    }),
+    prisma.$queryRaw<{ ym: string; total_kg: string; n_cosechas: number }[]>`
         SELECT
           TO_CHAR(fecha, 'YYYY-MM')          AS ym,
           SUM(peso_kg)::text                  AS total_kg,
@@ -44,21 +38,21 @@ export default async function PaginaReporteLote({
         GROUP BY ym
         ORDER BY ym ASC
       `,
-      prisma.cosechas.findFirst({
-        where: { lote_id: loteId },
-        orderBy: { fecha: "desc" },
-        include: {
-          persona: { select: { nombre_completo: true } },
-        },
-      }),
-      prisma.$queryRaw<
-        {
-          persona_id: bigint;
-          nombre_completo: string;
-          total_kg: string;
-          n_cosechas: number;
-        }[]
-      >`
+    prisma.cosechas.findFirst({
+      where: { lote_id: loteId },
+      orderBy: { fecha: 'desc' },
+      include: {
+        persona: { select: { nombre_completo: true } },
+      },
+    }),
+    prisma.$queryRaw<
+      {
+        persona_id: bigint;
+        nombre_completo: string;
+        total_kg: string;
+        n_cosechas: number;
+      }[]
+    >`
         SELECT
           c.persona_id,
           p.nombre_completo,
@@ -71,14 +65,14 @@ export default async function PaginaReporteLote({
         ORDER BY SUM(c.peso_kg) DESC
         LIMIT 5
       `,
-      prisma.$queryRaw<
-        {
-          insumo_id: bigint;
-          nombre: string;
-          unidad: string;
-          total: string;
-        }[]
-      >`
+    prisma.$queryRaw<
+      {
+        insumo_id: bigint;
+        nombre: string;
+        unidad: string;
+        total: string;
+      }[]
+    >`
         SELECT
           i.id                                AS insumo_id,
           i.nombre,
@@ -95,35 +89,27 @@ export default async function PaginaReporteLote({
         GROUP BY i.id, i.nombre, i.unidad
         ORDER BY SUM(di.cantidad_consumida) DESC
       `,
-    ]);
+  ]);
 
   const totalKg = Number(totales._sum.peso_kg ?? 0);
-  const promedioKgArbol =
-    lote.total_arboles > 0 ? totalKg / lote.total_arboles : 0;
-  const maxMes = cosechasMes.reduce(
-    (m, r) => Math.max(m, Number(r.total_kg)),
-    0,
-  );
-  const maxRecolector = topRecolectores.reduce(
-    (m, r) => Math.max(m, Number(r.total_kg)),
-    0,
-  );
+  const promedioKgArbol = lote.total_arboles > 0 ? totalKg / lote.total_arboles : 0;
+  const maxMes = cosechasMes.reduce((m, r) => Math.max(m, Number(r.total_kg)), 0);
+  const maxRecolector = topRecolectores.reduce((m, r) => Math.max(m, Number(r.total_kg)), 0);
 
-  const fmtKg = (n: number) =>
-    n.toLocaleString("es-CO", { maximumFractionDigits: 0 });
+  const fmtKg = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 
   const fmtFecha = (d: Date) =>
-    d.toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+    d.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
 
   const fmtMes = (ym: string) => {
-    const [y, m] = ym.split("-").map(Number);
-    return new Date(y, m - 1, 1).toLocaleDateString("es-CO", {
-      month: "short",
-      year: "2-digit",
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString('es-CO', {
+      month: 'short',
+      year: '2-digit',
     });
   };
 
@@ -150,22 +136,20 @@ export default async function PaginaReporteLote({
         <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-zelanda-beige-100/85">
           <span>
             <strong className="font-serif text-sm text-white">
-              {lote.total_arboles.toLocaleString("es-CO")}
-            </strong>{" "}
+              {lote.total_arboles.toLocaleString('es-CO')}
+            </strong>{' '}
             árboles
           </span>
           {lote.hectareas ? (
             <span>
               <strong className="font-serif text-sm text-white">
                 {Number(lote.hectareas).toFixed(1)}
-              </strong>{" "}
+              </strong>{' '}
               ha
             </span>
           ) : null}
           <span>
-            <strong className="font-serif text-sm text-white">
-              {totales._count._all}
-            </strong>{" "}
+            <strong className="font-serif text-sm text-white">{totales._count._all}</strong>{' '}
             cosechas
           </span>
         </div>
@@ -193,7 +177,7 @@ export default async function PaginaReporteLote({
             </p>
             <div className="mt-2 flex items-baseline justify-between gap-2">
               <span className="font-serif text-[24px] text-zelanda-verde-900">
-                {fmtKg(Number(ultimaCosecha.peso_kg))}{" "}
+                {fmtKg(Number(ultimaCosecha.peso_kg))}{' '}
                 <span className="text-[14px] text-zelanda-verde-700">kg</span>
               </span>
               <span className="text-[12px] text-zelanda-verde-700">
@@ -225,13 +209,12 @@ export default async function PaginaReporteLote({
                 className="mt-4 grid items-end gap-1"
                 style={{
                   gridTemplateColumns: `repeat(${cosechasMes.length}, 1fr)`,
-                  height: "100px",
+                  height: '100px',
                 }}
               >
                 {cosechasMes.map((m, i) => {
                   const v = Number(m.total_kg);
-                  const altura =
-                    maxMes > 0 ? Math.max(4, Math.round((v / maxMes) * 80)) : 4;
+                  const altura = maxMes > 0 ? Math.max(4, Math.round((v / maxMes) * 80)) : 4;
                   const esUltimo = i === cosechasMes.length - 1;
                   return (
                     <div
@@ -243,7 +226,9 @@ export default async function PaginaReporteLote({
                         {fmtKg(v)}
                       </span>
                       <div
-                        className={`w-full rounded-t-[3px] ${esUltimo ? "bg-zelanda-ocre-500" : "bg-zelanda-verde-600"}`}
+                        className={`w-full rounded-t-[3px] ${
+                          esUltimo ? 'bg-zelanda-ocre-500' : 'bg-zelanda-verde-600'
+                        }`}
                         style={{ height: `${altura}px` }}
                       />
                     </div>
@@ -257,7 +242,7 @@ export default async function PaginaReporteLote({
                 }}
               >
                 {cosechasMes.map((m) => (
-                  <span key={m.ym}>{fmtMes(m.ym).split(" ")[0]}</span>
+                  <span key={m.ym}>{fmtMes(m.ym).split(' ')[0]}</span>
                 ))}
               </div>
             </>
@@ -265,13 +250,9 @@ export default async function PaginaReporteLote({
         </section>
 
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Top recolectores del lote
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Top recolectores del lote</h2>
           {topRecolectores.length === 0 ? (
-            <p className="mt-3 text-sm text-zelanda-verde-700">
-              Sin datos todavía.
-            </p>
+            <p className="mt-3 text-sm text-zelanda-verde-700">Sin datos todavía.</p>
           ) : (
             <ul className="mt-3 space-y-2.5">
               {topRecolectores.map((r, i) => {
@@ -295,10 +276,7 @@ export default async function PaginaReporteLote({
                         {r.n_cosechas} cos.
                       </span>
                       <span className="font-serif text-[14px] text-zelanda-verde-900">
-                        {fmtKg(kg)}{" "}
-                        <span className="text-[10px] text-zelanda-verde-700">
-                          kg
-                        </span>
+                        {fmtKg(kg)} <span className="text-[10px] text-zelanda-verde-700">kg</span>
                       </span>
                     </div>
                     <div className="ml-[34px] h-1.5 overflow-hidden rounded-full bg-zelanda-beige-200">
@@ -316,9 +294,7 @@ export default async function PaginaReporteLote({
 
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <div>
-            <h2 className="font-serif text-base text-zelanda-verde-900">
-              Insumos consumidos
-            </h2>
+            <h2 className="font-serif text-base text-zelanda-verde-900">Insumos consumidos</h2>
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
               Sumatoria de despachos asociados a asignaciones de este lote
             </p>
@@ -332,18 +308,16 @@ export default async function PaginaReporteLote({
               {consumoInsumos.map((c, i) => (
                 <li
                   key={c.insumo_id.toString()}
-                  className={`flex items-center justify-between py-2 text-[13px] ${i > 0 ? "border-t border-zelanda-beige-200" : ""}`}
+                  className={`flex items-center justify-between py-2 text-[13px] ${
+                    i > 0 ? 'border-t border-zelanda-beige-200' : ''
+                  }`}
                 >
-                  <span className="truncate text-zelanda-verde-900">
-                    {c.nombre}
-                  </span>
+                  <span className="truncate text-zelanda-verde-900">{c.nombre}</span>
                   <span className="font-serif text-zelanda-verde-900">
-                    {Number(c.total).toLocaleString("es-CO", {
+                    {Number(c.total).toLocaleString('es-CO', {
                       maximumFractionDigits: 1,
-                    })}{" "}
-                    <span className="text-[10px] text-zelanda-verde-700">
-                      {c.unidad}
-                    </span>
+                    })}{' '}
+                    <span className="text-[10px] text-zelanda-verde-700">{c.unidad}</span>
                   </span>
                 </li>
               ))}
@@ -352,11 +326,11 @@ export default async function PaginaReporteLote({
         </section>
 
         <Eyebrow className="pt-2 text-center">
-          Reporte generado{" "}
-          {new Date().toLocaleDateString("es-CO", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
+          Reporte generado{' '}
+          {new Date().toLocaleDateString('es-CO', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
           })}
         </Eyebrow>
       </div>

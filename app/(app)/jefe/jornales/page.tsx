@@ -1,26 +1,25 @@
-import Link from "next/link";
-import { Plus, CalendarCheck, ChevronLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { borrarJornal } from "./acciones";
+import Link from 'next/link';
+import { Plus, CalendarCheck, ChevronLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { borrarJornal } from './acciones';
 
-export const metadata = { title: "Jornales" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Jornales' };
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
-const FORMATEADOR_FECHA = new Intl.DateTimeFormat("es-CO", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
+const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
 });
 
 function tituloFecha(d: Date): string {
@@ -33,10 +32,10 @@ function claveFecha(d: Date): string {
 }
 
 export default async function PaginaJornales() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const jornales = await prisma.jornales.findMany({
-    orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+    orderBy: [{ fecha: 'desc' }, { created_at: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },
       lotes: { select: { nombre: true } },
@@ -52,24 +51,18 @@ export default async function PaginaJornales() {
     arr.push(j);
     grupos.set(k, arr);
   }
-  const ordenados = Array.from(grupos.entries()).sort((a, b) =>
-    b[0].localeCompare(a[0]),
-  );
+  const ordenados = Array.from(grupos.entries()).sort((a, b) => b[0].localeCompare(a[0]));
 
   // Totales del mes
   const hoy = new Date();
   const totalMes = jornales
     .filter(
-      (j) =>
-        j.fecha.getFullYear() === hoy.getFullYear() &&
-        j.fecha.getMonth() === hoy.getMonth(),
+      (j) => j.fecha.getFullYear() === hoy.getFullYear() && j.fecha.getMonth() === hoy.getMonth()
     )
     .reduce((acc, j) => acc + Number(j.tarifa_aplicada), 0);
 
   const jornalesMes = jornales.filter(
-    (j) =>
-      j.fecha.getFullYear() === hoy.getFullYear() &&
-      j.fecha.getMonth() === hoy.getMonth(),
+    (j) => j.fecha.getFullYear() === hoy.getFullYear() && j.fecha.getMonth() === hoy.getMonth()
   ).length;
 
   return (
@@ -85,11 +78,9 @@ export default async function PaginaJornales() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Finanzas · Jornales</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Días trabajados
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Días trabajados</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-            {jornalesMes} {jornalesMes === 1 ? "jornal" : "jornales"} este mes ·{" "}
+            {jornalesMes} {jornalesMes === 1 ? 'jornal' : 'jornales'} este mes ·{' '}
             {fmtMonto(totalMes)}
           </p>
         </div>
@@ -108,9 +99,8 @@ export default async function PaginaJornales() {
             Sin jornales registrados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá cada día trabajado de un jornalero. La tarifa queda
-            congelada al momento de registrar; si cambia después, los
-            registros anteriores no se ven afectados.
+            Registrá cada día trabajado de un jornalero. La tarifa queda congelada al momento de
+            registrar; si cambia después, los registros anteriores no se ven afectados.
           </p>
           <Link
             href="/jefe/jornales/nuevo"
@@ -123,10 +113,7 @@ export default async function PaginaJornales() {
         <div className="space-y-5">
           {ordenados.map(([clave, lista]) => {
             const fecha = new Date(`${clave}T00:00:00`);
-            const totalDia = lista.reduce(
-              (acc, j) => acc + Number(j.tarifa_aplicada),
-              0,
-            );
+            const totalDia = lista.reduce((acc, j) => acc + Number(j.tarifa_aplicada), 0);
             return (
               <section key={clave}>
                 <div className="mb-2 flex items-baseline justify-between">
@@ -134,7 +121,7 @@ export default async function PaginaJornales() {
                     {tituloFecha(fecha)}
                   </h2>
                   <span className="text-[11.5px] text-zelanda-verde-700">
-                    {lista.length} {lista.length === 1 ? "persona" : "personas"} ·{" "}
+                    {lista.length} {lista.length === 1 ? 'persona' : 'personas'} ·{' '}
                     {fmtMonto(totalDia)}
                   </span>
                 </div>
@@ -150,8 +137,8 @@ export default async function PaginaJornales() {
                             {j.persona.nombre_completo}
                           </p>
                           <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
-                            {j.descripcion_actividad ?? "Jornal del día"}
-                            {j.lotes ? ` · Lote ${j.lotes.nombre}` : ""}
+                            {j.descripcion_actividad ?? 'Jornal del día'}
+                            {j.lotes ? ` · Lote ${j.lotes.nombre}` : ''}
                           </p>
                         </div>
                         <span className="font-serif text-[18px] text-zelanda-verde-900">
@@ -159,9 +146,7 @@ export default async function PaginaJornales() {
                         </span>
                       </div>
                       {j.notas ? (
-                        <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">
-                          {j.notas}
-                        </p>
+                        <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">{j.notas}</p>
                       ) : null}
                       <div className="mt-2 flex justify-end">
                         <form action={borrarJornal}>

@@ -1,50 +1,46 @@
-import Link from "next/link";
-import { Plus, DollarSign, ChevronLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Badge } from "@/components/ui/Badge";
-import { cerrarTarifa, borrarTarifa } from "./acciones";
+import Link from 'next/link';
+import { Plus, DollarSign, ChevronLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Badge } from '@/components/ui/Badge';
+import { cerrarTarifa, borrarTarifa } from './acciones';
 
-export const metadata = { title: "Tarifas de tarea" };
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Tarifas de tarea' };
 
 const ETIQUETA_ESQUEMA: Record<string, string> = {
-  POR_JORNAL: "Por jornal",
-  POR_KG: "Por kg",
-  POR_ARBOL: "Por árbol",
-  POR_HECTAREA: "Por ha",
-  POR_HORA: "Por hora",
-  OTRO: "Otro",
+  POR_JORNAL: 'Por jornal',
+  POR_KG: 'Por kg',
+  POR_ARBOL: 'Por árbol',
+  POR_HECTAREA: 'Por ha',
+  POR_HORA: 'Por hora',
+  OTRO: 'Otro',
 };
 
 function fmtMonto(n: number): string {
-  return n.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
+  return n.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
     maximumFractionDigits: 0,
   });
 }
 
 function fmtFecha(d: Date): string {
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "2-digit",
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit',
   });
 }
 
 export default async function PaginaTarifas() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
   const tarifas = await prisma.tarifas_tarea.findMany({
-    orderBy: [
-      { vigente_hasta: { sort: "asc", nulls: "first" } },
-      { vigente_desde: "desc" },
-    ],
+    orderBy: [{ vigente_hasta: { sort: 'asc', nulls: 'first' } }, { vigente_desde: 'desc' }],
     include: {
       tipos_tarea: { select: { nombre: true, area: true } },
       lotes: { select: { nombre: true } },
@@ -53,22 +49,19 @@ export default async function PaginaTarifas() {
   });
 
   const vigentes = tarifas.filter(
-    (t) =>
-      (!t.vigente_hasta || t.vigente_hasta >= hoy) && t.vigente_desde <= hoy,
+    (t) => (!t.vigente_hasta || t.vigente_hasta >= hoy) && t.vigente_desde <= hoy
   );
   const futuras = tarifas.filter((t) => t.vigente_desde > hoy);
-  const cerradas = tarifas.filter(
-    (t) => t.vigente_hasta !== null && t.vigente_hasta < hoy,
-  );
+  const cerradas = tarifas.filter((t) => t.vigente_hasta !== null && t.vigente_hasta < hoy);
 
   function fila(t: (typeof tarifas)[number], permitirCerrar: boolean) {
     const monto = Number(t.monto);
-    const estado: "aldia" | "proxima" | "neutro" =
+    const estado: 'aldia' | 'proxima' | 'neutro' =
       !t.vigente_hasta || t.vigente_hasta >= hoy
         ? t.vigente_desde > hoy
-          ? "proxima"
-          : "aldia"
-        : "neutro";
+          ? 'proxima'
+          : 'aldia'
+        : 'neutro';
     return (
       <li
         key={String(t.id)}
@@ -86,25 +79,19 @@ export default async function PaginaTarifas() {
             </p>
             <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
               {ETIQUETA_ESQUEMA[t.esquema_pago]}
-              {t.unidad ? ` · ${t.unidad}` : ""}
+              {t.unidad ? ` · ${t.unidad}` : ''}
             </p>
           </div>
           <Badge estado={estado}>
-            {estado === "aldia"
-              ? "Vigente"
-              : estado === "proxima"
-                ? "A futuro"
-                : "Cerrada"}
+            {estado === 'aldia' ? 'Vigente' : estado === 'proxima' ? 'A futuro' : 'Cerrada'}
           </Badge>
         </div>
 
         <div className="mt-2 flex items-baseline justify-between gap-2">
-          <span className="font-serif text-[22px] text-zelanda-verde-900">
-            {fmtMonto(monto)}
-          </span>
+          <span className="font-serif text-[22px] text-zelanda-verde-900">{fmtMonto(monto)}</span>
           <span className="text-[11.5px] text-zelanda-verde-700">
             {fmtFecha(t.vigente_desde)}
-            {t.vigente_hasta ? ` → ${fmtFecha(t.vigente_hasta)}` : " → vigente"}
+            {t.vigente_hasta ? ` → ${fmtFecha(t.vigente_hasta)}` : ' → vigente'}
           </span>
         </div>
 
@@ -153,12 +140,9 @@ export default async function PaginaTarifas() {
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Finanzas · Catálogo</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Tarifas por tarea
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Tarifas por tarea</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-            {vigentes.length} vigentes · {futuras.length} a futuro ·{" "}
-            {cerradas.length} cerradas
+            {vigentes.length} vigentes · {futuras.length} a futuro · {cerradas.length} cerradas
           </p>
         </div>
         <Link
@@ -176,8 +160,8 @@ export default async function PaginaTarifas() {
             Sin tarifas configuradas
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Las tarifas son la base para calcular pagos por jornal, por kg
-            cosechado, por árbol, etc. Crea la primera.
+            Las tarifas son la base para calcular pagos por jornal, por kg cosechado, por árbol,
+            etc. Crea la primera.
           </p>
           <Link
             href="/jefe/tarifas/nueva"
@@ -191,40 +175,34 @@ export default async function PaginaTarifas() {
           {vigentes.length > 0 ? (
             <section>
               <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Vigentes{" "}
+                Vigentes{' '}
                 <span className="text-sm font-normal text-zelanda-verde-700">
                   ({vigentes.length})
                 </span>
               </h2>
-              <ul className="space-y-2">
-                {vigentes.map((t) => fila(t, true))}
-              </ul>
+              <ul className="space-y-2">{vigentes.map((t) => fila(t, true))}</ul>
             </section>
           ) : null}
           {futuras.length > 0 ? (
             <section>
               <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                A futuro{" "}
+                A futuro{' '}
                 <span className="text-sm font-normal text-zelanda-verde-700">
                   ({futuras.length})
                 </span>
               </h2>
-              <ul className="space-y-2">
-                {futuras.map((t) => fila(t, true))}
-              </ul>
+              <ul className="space-y-2">{futuras.map((t) => fila(t, true))}</ul>
             </section>
           ) : null}
           {cerradas.length > 0 ? (
             <section>
               <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-                Cerradas{" "}
+                Cerradas{' '}
                 <span className="text-sm font-normal text-zelanda-verde-700">
                   ({cerradas.length})
                 </span>
               </h2>
-              <ul className="space-y-2">
-                {cerradas.map((t) => fila(t, false))}
-              </ul>
+              <ul className="space-y-2">{cerradas.map((t) => fila(t, false))}</ul>
             </section>
           ) : null}
         </>

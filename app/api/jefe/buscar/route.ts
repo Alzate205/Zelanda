@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { obtenerUsuarioActual } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { sanitizarError } from "@/lib/errores";
-
-export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from 'next/server';
+import { obtenerUsuarioActual } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { sanitizarError } from '@/lib/errores';
 
 type ResultadoArbol = {
   lote_id: string;
@@ -38,7 +36,7 @@ async function buscarArbolParseado(q: string): Promise<ResultadoArbol | null> {
     const lote = await prisma.lotes.findFirst({
       where: {
         deleted_at: null,
-        nombre: { equals: c.nombre, mode: "insensitive" },
+        nombre: { equals: c.nombre, mode: 'insensitive' },
       },
       select: { id: true, nombre: true, total_arboles: true },
     });
@@ -56,14 +54,14 @@ async function buscarArbolParseado(q: string): Promise<ResultadoArbol | null> {
 
 export async function GET(req: NextRequest) {
   const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== "JEFE") {
+  if (!usuario || usuario.rol !== 'JEFE') {
     return NextResponse.json(
-      { error: "Solo el rol JEFE puede usar la búsqueda global." },
-      { status: 403 },
+      { error: 'Solo el rol JEFE puede usar la búsqueda global.' },
+      { status: 403 }
     );
   }
 
-  const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
+  const q = (req.nextUrl.searchParams.get('q') ?? '').trim();
   if (q.length < 2) {
     const vacio: Respuesta = {
       vacio: true,
@@ -74,7 +72,7 @@ export async function GET(req: NextRequest) {
       insumos: [],
     };
     return NextResponse.json(vacio, {
-      headers: { "Cache-Control": "no-store" },
+      headers: { 'Cache-Control': 'no-store' },
     });
   }
 
@@ -84,9 +82,9 @@ export async function GET(req: NextRequest) {
       prisma.lotes.findMany({
         where: {
           deleted_at: null,
-          nombre: { contains: q, mode: "insensitive" },
+          nombre: { contains: q, mode: 'insensitive' },
         },
-        orderBy: { nombre: "asc" },
+        orderBy: { nombre: 'asc' },
         take: 5,
         select: { id: true, nombre: true },
       }),
@@ -94,29 +92,29 @@ export async function GET(req: NextRequest) {
         where: {
           deleted_at: null,
           OR: [
-            { nombre_completo: { contains: q, mode: "insensitive" } },
-            { cedula: { contains: q, mode: "insensitive" } },
+            { nombre_completo: { contains: q, mode: 'insensitive' } },
+            { cedula: { contains: q, mode: 'insensitive' } },
           ],
         },
-        orderBy: { nombre_completo: "asc" },
+        orderBy: { nombre_completo: 'asc' },
         take: 5,
         select: { id: true, nombre_completo: true, cedula: true },
       }),
       prisma.herramientas.findMany({
         where: {
           activo: true,
-          nombre: { contains: q, mode: "insensitive" },
+          nombre: { contains: q, mode: 'insensitive' },
         },
-        orderBy: { nombre: "asc" },
+        orderBy: { nombre: 'asc' },
         take: 5,
         select: { id: true, nombre: true, categoria: true },
       }),
       prisma.insumos.findMany({
         where: {
           activo: true,
-          nombre: { contains: q, mode: "insensitive" },
+          nombre: { contains: q, mode: 'insensitive' },
         },
-        orderBy: { nombre: "asc" },
+        orderBy: { nombre: 'asc' },
         take: 5,
         select: { id: true, nombre: true, categoria: true, unidad: true },
       }),
@@ -144,12 +142,9 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(respuesta, {
-      headers: { "Cache-Control": "no-store" },
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: sanitizarError(e, "api/jefe/buscar") },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: sanitizarError(e, 'api/jefe/buscar') }, { status: 500 });
   }
 }
