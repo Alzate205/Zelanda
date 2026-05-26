@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
-import { obtenerUsuarioActual } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-
-export const dynamic = "force-dynamic";
+import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
+import { obtenerUsuarioActual } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 type FilaInsumoStock = {
   id: bigint;
@@ -15,42 +14,40 @@ type FilaInsumoStock = {
   stock_disponible: string;
 };
 
-type FilaHerramientaPrestada = {
-  herramienta_id: bigint;
-  prestadas: string;
-};
-
-export async function GET() {
-  const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== "BODEGA") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+async function construirSnapshotBodegaUncached(usuarioId: string) {
   // Herramientas activas + cuántas hay prestadas (en despachos abiertos, no devueltas).
-  const herramientasRaw = await prisma.herramientas.findMany({
-    where: { activo: true },
-    orderBy: { nombre: "asc" },
-    select: {
-      id: true,
-      nombre: true,
-      categoria: true,
-      total: true,
-    },
-  });
+  const [herramientasRaw, despachoItemsRaw] = await Promise.all([
+    prisma.herramientas.findMany({
+      where: { activo: true },
+      orderBy: { nombre: 'asc' },
+      select: {
+        id: true,
+        nombre: true,
+        categoria: true,
+        total: true,
+      },
+    }),
+    prisma.despacho_items.findMany({
+      where: {
+        tipo_item: 'HERRAMIENTA',
+        devuelto: false,
+        herramienta_id: { not: null },
+        despachos: { estado: 'ABIERTO' },
+      },
+      select: {
+        herramienta_id: true,
+        cantidad: true,
+      },
+    }),
+  ]);
 
-  const prestadasRaw = await prisma.$queryRaw<FilaHerramientaPrestada[]>`
-    SELECT di.herramienta_id, COALESCE(SUM(di.cantidad), 0)::text AS prestadas
-    FROM despacho_items di
-    INNER JOIN despachos d ON d.id = di.despacho_id
-    WHERE di.tipo_item = 'HERRAMIENTA'
-      AND di.devuelto = false
-      AND d.estado = 'ABIERTO'
-      AND di.herramienta_id IS NOT NULL
-    GROUP BY di.herramienta_id
-  `;
+  // Agregar prestadas por herramienta_id en JavaScript.
   const mapaPrestadas = new Map<string, number>();
-  for (const f of prestadasRaw) {
-    mapaPrestadas.set(String(f.herramienta_id), Number(f.prestadas));
+  for (const item of despachoItemsRaw) {
+    if (item.herramienta_id) {
+      const key = String(item.herramienta_id);
+      mapaPrestadas.set(key, (mapaPrestadas.get(key) ?? 0) + Number(item.cantidad));
+    }
   }
 
   const herramientas = herramientasRaw.map((h) => {
@@ -60,7 +57,7 @@ export async function GET() {
       id: String(h.id),
       nombre: h.nombre,
       categoria: String(h.categoria),
-      unidad: "unidades",
+      unidad: 'unidades',
       total,
       prestadas,
       disponibles: Math.max(total - prestadas, 0),
@@ -94,7 +91,7 @@ export async function GET() {
       deleted_at: null,
       vinculaciones: { some: { fecha_fin: null } },
     },
-    orderBy: { nombre_completo: "asc" },
+    orderBy: { nombre_completo: 'asc' },
     select: { id: true, nombre_completo: true },
   });
   const personas = personasRaw.map((p) => ({
@@ -104,8 +101,8 @@ export async function GET() {
 
   // Asignaciones PENDIENTE/EN_CURSO.
   const asignacionesRaw = await prisma.asignaciones.findMany({
-    where: { estado: { in: ["PENDIENTE", "EN_CURSO"] } },
-    orderBy: { fecha_inicio: "asc" },
+    where: { estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
+    orderBy: { fecha_inicio: 'asc' },
     select: {
       id: true,
       persona_id: true,
@@ -117,18 +114,16 @@ export async function GET() {
   const asignaciones = asignacionesRaw.map((a) => ({
     id: String(a.id),
     persona_id: String(a.persona_id),
-    etiqueta: `${a.tipos_tarea.nombre} · ${
-      a.lotes?.nombre ?? a.apiarios?.nombre ?? "—"
-    }`,
+    etiqueta: `${a.tipos_tarea.nombre} · ${a.lotes?.nombre ?? a.apiarios?.nombre ?? '—'}`,
   }));
 
   // Despachos abiertos del usuario actual.
   const despachosRaw = await prisma.despachos.findMany({
     where: {
-      estado: "ABIERTO",
-      despachado_por_usuario_id: usuario.id,
+      estado: 'ABIERTO',
+      despachado_por_usuario_id: usuarioId,
     },
-    orderBy: { fecha: "desc" },
+    orderBy: { fecha: 'desc' },
     include: {
       persona: { select: { nombre_completo: true } },
       despacho_items: {
@@ -145,23 +140,39 @@ export async function GET() {
     fecha_despacho: d.fecha.toISOString(),
     items: d.despacho_items.map((it) => ({
       id: String(it.id),
-      tipo: it.tipo_item as "HERRAMIENTA" | "INSUMO",
+      tipo: it.tipo_item as 'HERRAMIENTA' | 'INSUMO',
       nombre:
-        it.tipo_item === "HERRAMIENTA"
-          ? it.herramientas?.nombre ?? "?"
-          : it.insumos?.nombre ?? "?",
-      unidad:
-        it.tipo_item === "HERRAMIENTA" ? "unidades" : it.insumos?.unidad ?? "",
+        it.tipo_item === 'HERRAMIENTA' ? it.herramientas?.nombre ?? '?' : it.insumos?.nombre ?? '?',
+      unidad: it.tipo_item === 'HERRAMIENTA' ? 'unidades' : it.insumos?.unidad ?? '',
       cantidad: Number(it.cantidad),
     })),
   }));
 
-  return NextResponse.json({
+  return {
     herramientas,
     insumos,
     personas,
     asignaciones,
     despachos_abiertos,
+  };
+}
+
+const construirSnapshotBodega = unstable_cache(
+  construirSnapshotBodegaUncached,
+  ['snapshot-bodega-key'],
+  { revalidate: 5, tags: ['snapshot-bodega'] }
+);
+
+export async function GET() {
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario || usuario.rol !== 'BODEGA') {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  const snapshot = await construirSnapshotBodega(usuario.id);
+
+  return NextResponse.json({
+    ...snapshot,
     ts: new Date().toISOString(),
   });
 }
