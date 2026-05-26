@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   AlertTriangle,
   Clock,
@@ -20,24 +20,20 @@ import {
   TrendingUp,
   ShoppingCart,
   Truck,
-} from "lucide-react";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import {
-  guardarSnapshotJefe,
-  leerSnapshotJefe,
-  tsJefe,
-} from "@/lib/offline/cache";
-import type { SnapshotJefe, AlertaTareaJefe } from "@/lib/offline/tipos";
-import { ETIQUETA_NOVEDAD } from "@/lib/constantes";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { KPI } from "@/components/ui/KPI";
-import { AlertaItem } from "@/components/shared/AlertaItem";
-import { Atajo } from "@/components/shared/Atajo";
+} from 'lucide-react';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { guardarSnapshotJefe, leerSnapshotJefe, tsJefe } from '@/lib/offline/cache';
+import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
+import { ETIQUETA_NOVEDAD } from '@/lib/constantes';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { KPI } from '@/components/ui/KPI';
+import { AlertaItem } from '@/components/shared/AlertaItem';
+import { Atajo } from '@/components/shared/Atajo';
 
-const FORMATEADOR_FECHA = new Intl.DateTimeFormat("es-CO", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
+const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
 });
 
 function tituloFecha(fecha: Date): string {
@@ -46,10 +42,10 @@ function tituloFecha(fecha: Date): string {
 }
 
 function describirActualizacion(ts: number | null): string {
-  if (ts === null) return "Sin sincronizar";
+  if (ts === null) return 'Sin sincronizar';
   const diffMs = Date.now() - ts;
   const minutos = Math.floor(diffMs / 60000);
-  if (minutos < 1) return "Actualizado hace un momento";
+  if (minutos < 1) return 'Actualizado hace un momento';
   if (minutos < 60) return `Actualizado hace ${minutos} min`;
   const horas = Math.floor(minutos / 60);
   if (horas < 24) return `Actualizado hace ${horas} h`;
@@ -58,12 +54,12 @@ function describirActualizacion(ts: number | null): string {
 }
 
 function subtituloAlerta(alerta: AlertaTareaJefe): string {
-  if (alerta.estado === "sin_historial") {
+  if (alerta.estado === 'sin_historial') {
     return `Sin historial · Lote ${alerta.lote_nombre}`;
   }
-  if (alerta.estado === "vencida") {
+  if (alerta.estado === 'vencida') {
     const dias = Math.abs(alerta.dias_para_proxima ?? 0);
-    return `Vencida hace ${dias} ${dias === 1 ? "día" : "días"} · Lote ${alerta.lote_nombre}`;
+    return `Vencida hace ${dias} ${dias === 1 ? 'día' : 'días'} · Lote ${alerta.lote_nombre}`;
   }
   const dias = alerta.dias_para_proxima ?? 0;
   if (dias === 0) return `Hoy · Lote ${alerta.lote_nombre}`;
@@ -100,7 +96,7 @@ export function DashboardJefeCliente({
 
       if (online) {
         try {
-          const res = await fetch("/api/jefe/snapshot");
+          const res = await fetch('/api/jefe/snapshot');
           if (res.ok) {
             const fresco = (await res.json()) as SnapshotJefe;
             await guardarSnapshotJefe(fresco);
@@ -129,17 +125,15 @@ export function DashboardJefeCliente({
   const cosechaMes = contadores.cosecha_mes_kg;
   const cosechaPrev = contadores.cosecha_mes_anterior_kg;
   const variacion =
-    cosechaPrev > 0
-      ? Math.round(((cosechaMes - cosechaPrev) / cosechaPrev) * 100)
-      : null;
+    cosechaPrev > 0 ? Math.round(((cosechaMes - cosechaPrev) / cosechaPrev) * 100) : null;
   const subCosecha =
     variacion === null
-      ? "vs mes anterior"
-      : `${variacion >= 0 ? "+" : ""}${variacion}% vs mes anterior`;
+      ? 'vs mes anterior'
+      : `${variacion >= 0 ? '+' : ''}${variacion}% vs mes anterior`;
 
   const alertasOrdenadas: Array<{
     key: string;
-    estado: "vencida" | "proxima" | "neutro" | "aldia";
+    estado: 'vencida' | 'proxima' | 'neutro' | 'aldia';
     icono: typeof AlertTriangle;
     titulo: string;
     sub: string;
@@ -149,7 +143,7 @@ export function DashboardJefeCliente({
   for (const v of vencidas.slice(0, 4)) {
     alertasOrdenadas.push({
       key: `v_${v.tipo_id}_${v.lote_id}`,
-      estado: "vencida",
+      estado: 'vencida',
       icono: AlertTriangle,
       titulo: `${v.tipo_nombre} — ${v.lote_nombre}`,
       sub: subtituloAlerta(v),
@@ -160,7 +154,7 @@ export function DashboardJefeCliente({
     if (alertasOrdenadas.length >= 4) break;
     alertasOrdenadas.push({
       key: `p_${p.tipo_id}_${p.lote_id}`,
-      estado: "proxima",
+      estado: 'proxima',
       icono: Clock,
       titulo: `${p.tipo_nombre} — ${p.lote_nombre}`,
       sub: subtituloAlerta(p),
@@ -172,9 +166,7 @@ export function DashboardJefeCliente({
     <div className="space-y-5">
       <header>
         <Eyebrow>Panel del jefe</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Buen día, {nombrePila}
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Buen día, {nombrePila}</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">{fechaHoy}</p>
       </header>
 
@@ -191,7 +183,7 @@ export function DashboardJefeCliente({
         />
         <KPI
           etiqueta="Árboles"
-          valor={contadores.total_arboles.toLocaleString("es-CO")}
+          valor={contadores.total_arboles.toLocaleString('es-CO')}
           pie={`entre ${contadores.total_lotes} lotes`}
         />
         <KPI
@@ -203,7 +195,7 @@ export function DashboardJefeCliente({
         <KPI
           href="/jefe/almacen-vista"
           etiqueta="Cosecha mes"
-          valor={`${cosechaMes.toLocaleString("es-CO", { maximumFractionDigits: 0 })} kg`}
+          valor={`${cosechaMes.toLocaleString('es-CO', { maximumFractionDigits: 0 })} kg`}
           pie={subCosecha}
           acento="ocre"
         />
@@ -211,9 +203,7 @@ export function DashboardJefeCliente({
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Alertas recientes
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Alertas recientes</h2>
           <Link
             href="/jefe/alertas"
             className="text-xs text-zelanda-verde-700 hover:text-zelanda-verde-900"
@@ -248,16 +238,16 @@ export function DashboardJefeCliente({
               />
             ))}
             {recordatorios
-              .filter((r) => r.estado !== "proximo")
+              .filter((r) => r.estado !== 'proximo')
               .slice(0, 3)
               .map((r) => (
                 <AlertaItem
                   key={`rec_${r.id}`}
-                  estado={r.estado === "vencido" ? "vencida" : "proxima"}
+                  estado={r.estado === 'vencido' ? 'vencida' : 'proxima'}
                   icono={Bell}
                   titulo={r.titulo}
                   sub={
-                    r.estado === "hoy"
+                    r.estado === 'hoy'
                       ? `Hoy · Para ${r.asignado_a_nombre}`
                       : `Vencido · Para ${r.asignado_a_nombre}`
                   }
@@ -269,9 +259,7 @@ export function DashboardJefeCliente({
       </section>
 
       <section>
-        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-          Atajos
-        </h2>
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Atajos</h2>
         <div className="grid grid-cols-2 gap-2.5">
           <Atajo
             href="/jefe/asignaciones/nueva"
@@ -279,12 +267,7 @@ export function DashboardJefeCliente({
             titulo="Asignar tarea"
             sub="Crear nueva"
           />
-          <Atajo
-            href="/jefe/lotes"
-            icono={MapIcon}
-            titulo="Ver mapa"
-            sub="Lotes y apiarios"
-          />
+          <Atajo href="/jefe/lotes" icono={MapIcon} titulo="Ver mapa" sub="Lotes y apiarios" />
           <Atajo
             href="/jefe/equipo"
             icono={Users}
@@ -297,17 +280,17 @@ export function DashboardJefeCliente({
             titulo="Recordatorios"
             sub={
               recordatorios.length > 0
-                ? `${recordatorios.length} ${recordatorios.length === 1 ? "pendiente" : "pendientes"}`
-                : "Notas con fecha"
+                ? `${recordatorios.length} ${
+                    recordatorios.length === 1 ? 'pendiente' : 'pendientes'
+                  }`
+                : 'Notas con fecha'
             }
           />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-          Más
-        </h2>
+        <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Más</h2>
         <div className="grid grid-cols-2 gap-2.5">
           <Atajo
             href="/jefe/inventario"
@@ -317,28 +300,12 @@ export function DashboardJefeCliente({
           />
           <Atajo
             href="/bodega/despachos"
-            icono={ChevronRight}
+            icono={Truck}
             titulo="Despachos"
             sub={`${contadores.despachos_abiertos} abiertos`}
           />
-          <Atajo
-            href="/jefe/equipo"
-            icono={Users}
-            titulo="Equipo"
-            sub={`${snapshot.personas.length} personas`}
-          />
-          <Atajo
-            href="/jefe/tarifas"
-            icono={DollarSign}
-            titulo="Tarifas"
-            sub="Catálogo de pagos"
-          />
-          <Atajo
-            href="/jefe/pagos"
-            icono={DollarSign}
-            titulo="Pagos"
-            sub="Histórico de salidas"
-          />
+          <Atajo href="/jefe/tarifas" icono={DollarSign} titulo="Tarifas" sub="Catálogo de pagos" />
+          <Atajo href="/jefe/pagos" icono={DollarSign} titulo="Pagos" sub="Histórico de salidas" />
           <Atajo
             href="/jefe/servicios"
             icono={Briefcase}
@@ -357,24 +324,14 @@ export function DashboardJefeCliente({
             titulo="Ausencias"
             sub="Faltas y permisos"
           />
-          <Atajo
-            href="/jefe/saldos"
-            icono={Wallet}
-            titulo="Saldos"
-            sub="Cuánto se debe"
-          />
+          <Atajo href="/jefe/saldos" icono={Wallet} titulo="Saldos" sub="Cuánto se debe" />
           <Atajo
             href="/jefe/ventas"
             icono={TrendingUp}
             titulo="Ventas"
             sub="Ingresos por cliente"
           />
-          <Atajo
-            href="/jefe/clientes"
-            icono={Users}
-            titulo="Clientes"
-            sub="Compradores"
-          />
+          <Atajo href="/jefe/clientes" icono={Users} titulo="Clientes" sub="Compradores" />
           <Atajo
             href="/jefe/compras"
             icono={ShoppingCart}
@@ -393,12 +350,7 @@ export function DashboardJefeCliente({
             titulo="Reportes"
             sub="Cosecha y lotes"
           />
-          <Atajo
-            href="/jefe/apiarios/1"
-            icono={Hexagon}
-            titulo="Apiarios"
-            sub="Visitas y miel"
-          />
+          <Atajo href="/jefe/apiarios/1" icono={Hexagon} titulo="Apiarios" sub="Visitas y miel" />
         </div>
       </section>
 
