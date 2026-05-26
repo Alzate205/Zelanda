@@ -34,6 +34,7 @@ const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
+  timeZone: 'America/Bogota',
 });
 
 function tituloFecha(fecha: Date): string {

@@ -2,8 +2,8 @@
  * Utilitarios para manejar fechas en zona horaria de Bogotá (UTC-5)
  * Crítico para operaciones financieras: pagos, saldos, ausencias, jornales
  *
- * IMPORTANTE: La variable de entorno TZ=America/Bogota debe estar configurada
- * en .env.local (local) y en Vercel dashboard (production)
+ * Usa Intl.DateTimeFormat con timeZone: 'America/Bogota' explícito
+ * para asegurar consistencia sin depender de variables de entorno.
  */
 
 /**
