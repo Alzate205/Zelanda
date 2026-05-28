@@ -6,20 +6,26 @@ const nextConfig: NextConfig = {
     domains: ['gyburlhzvisgmdmfkqhx.supabase.co', 'lh3.googleusercontent.com'],
   },
 
-  // ← Muy importante para generar sourcemaps en producción
   productionBrowserSourceMaps: true,
 };
 
 export default withSentryConfig(nextConfig, {
   org: 'zelanda',
   project: 'javascript-nextjs',
-  silent: !process.env.CI,
+
+  // Silencia errores de Sentry para que no falle el build
+  silent: true,
 
   widenClientFileUpload: true,
   tunnelRoute: '/monitoring',
 
-  // ← Nueva sección recomendada
   sourcemaps: {
-    deleteSourcemapsAfterUpload: true, // Elimina los .map del cliente después de subirlos
+    deleteSourcemapsAfterUpload: true,
+  },
+
+  // Configuración para evitar errores de release
+  release: {
+    create: false,
+    finalize: false,
   },
 });
