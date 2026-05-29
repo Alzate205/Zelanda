@@ -20,6 +20,7 @@ import {
   TrendingUp,
   ShoppingCart,
   Truck,
+  Settings,
 } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { guardarSnapshotJefe, leerSnapshotJefe, tsJefe } from '@/lib/offline/cache';
@@ -340,6 +341,12 @@ export function DashboardJefeCliente({
             sub="Cosecha y lotes"
           />
           <Atajo href="/jefe/apiarios/1" icono={Hexagon} titulo="Apiarios" sub="Visitas y miel" />
+          <Atajo
+            href="/jefe/configuracion"
+            icono={Settings}
+            titulo="Configuración"
+            sub="Parámetros de la finca"
+          />
         </div>
       </section>
 
