@@ -31,7 +31,7 @@ export async function guardarConfiguracion(
 
   if (!fincaNombre) return { error: 'El nombre de la finca no puede estar vacío.' };
 
-  const canasta = Number(canastasRaw.replace(/\./g, ''));
+  const canasta = Number(canastasRaw);
   if (!Number.isFinite(canasta) || canasta <= 0) {
     return { error: 'Capacidad de canasta debe ser mayor a 0.' };
   }
@@ -44,8 +44,12 @@ export async function guardarConfiguracion(
   if (!/^\d{2}:\d{2}$/.test(horaCierre)) {
     return { error: 'Hora de corte debe tener formato HH:MM.' };
   }
+  const [hh, mm] = horaCierre.split(':').map(Number);
+  if (hh > 23 || mm > 59) {
+    return { error: 'Hora de corte inválida.' };
+  }
 
-  const stockMinimo = Number(stockMinimoRaw.replace(/\./g, ''));
+  const stockMinimo = Number(stockMinimoRaw);
   if (!Number.isFinite(stockMinimo) || stockMinimo < 0) {
     return { error: 'Stock mínimo por defecto debe ser 0 o mayor.' };
   }
