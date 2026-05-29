@@ -1417,7 +1417,7 @@ model configuracion_finca {
   finca_nombre                String
   finca_telefono              String?
   finca_correo                String?
-  updated_at                  DateTime         @default(now()) @db.Timestamptz
+  updated_at                  DateTime         @default(now()) @db.Timestamptz(6)
   updated_by                  String?          @db.Uuid
   updated_by_u                usuarios?        @relation("config_updated_by", fields: [updated_by], references: [id])
 
