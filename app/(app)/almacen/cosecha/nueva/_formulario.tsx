@@ -1,48 +1,50 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { CloudOff, Check } from "lucide-react";
-import { enviarCosecha } from "@/lib/offline/api-cliente";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { Segmented } from "@/components/ui/Segmented";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { CloudOff, Check } from 'lucide-react';
+import { enviarCosecha } from '@/lib/offline/api-cliente';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { Segmented } from '@/components/ui/Segmented';
 
 export function FormularioCosecha({
   personas,
   lotes,
   compacto = false,
+  canastaPorDefecto = 0,
 }: {
   personas: { id: string; nombre: string }[];
   lotes: { id: string; nombre: string }[];
   compacto?: boolean;
+  canastaPorDefecto?: number;
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [personaId, setPersonaId] = useState("");
-  const [loteId, setLoteId] = useState("");
-  const [metodo, setMetodo] = useState<"CANASTA" | "BASCULA">("CANASTA");
-  const [canastas, setCanastas] = useState("");
-  const [capacidad, setCapacidad] = useState("");
-  const [peso, setPeso] = useState("");
-  const [notas, setNotas] = useState("");
+  const [personaId, setPersonaId] = useState('');
+  const [loteId, setLoteId] = useState('');
+  const [metodo, setMetodo] = useState<'CANASTA' | 'BASCULA'>('CANASTA');
+  const [canastas, setCanastas] = useState('');
+  const [capacidad, setCapacidad] = useState(
+    canastaPorDefecto > 0 ? String(canastaPorDefecto) : ''
+  );
+  const [peso, setPeso] = useState('');
+  const [notas, setNotas] = useState('');
 
   const pesoCalculado =
-    metodo === "CANASTA" && canastas && capacidad
-      ? Number(canastas) * Number(capacidad)
-      : null;
+    metodo === 'CANASTA' && canastas && capacidad ? Number(canastas) * Number(capacidad) : null;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
     if (!personaId) {
-      setError("Selecciona un recolector.");
+      setError('Selecciona un recolector.');
       return;
     }
     if (!loteId) {
-      setError("Selecciona un lote.");
+      setError('Selecciona un lote.');
       return;
     }
 
@@ -50,15 +52,15 @@ export function FormularioCosecha({
     let cantidadCanastas: number | null = null;
     let capacidadCanastaKg: number | null = null;
 
-    if (metodo === "CANASTA") {
+    if (metodo === 'CANASTA') {
       const c = Number(canastas);
       const cap = Number(capacidad);
       if (!Number.isInteger(c) || c <= 0) {
-        setError("Cantidad de canastas debe ser entero positivo.");
+        setError('Cantidad de canastas debe ser entero positivo.');
         return;
       }
       if (!Number.isFinite(cap) || cap <= 0) {
-        setError("Capacidad de canasta debe ser positiva.");
+        setError('Capacidad de canasta debe ser positiva.');
         return;
       }
       cantidadCanastas = c;
@@ -67,7 +69,7 @@ export function FormularioCosecha({
     } else {
       const p = Number(peso);
       if (!Number.isFinite(p) || p <= 0) {
-        setError("Peso debe ser positivo.");
+        setError('Peso debe ser positivo.');
         return;
       }
       pesoKg = p;
@@ -88,23 +90,23 @@ export function FormularioCosecha({
         return;
       }
       if (compacto) {
-        setPersonaId("");
-        setLoteId("");
-        setCanastas("");
-        setCapacidad("");
-        setPeso("");
-        setNotas("");
+        setPersonaId('');
+        setLoteId('');
+        setCanastas('');
+        setCapacidad('');
+        setPeso('');
+        setNotas('');
         router.refresh();
       } else {
-        router.push("/almacen/cosecha");
+        router.push('/almacen/cosecha');
       }
     });
   }
 
   const labelClase =
-    "mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+    'mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
   const inputClase =
-    "h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+    'h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
   return (
     <form onSubmit={onSubmit} className="space-y-3" noValidate>
@@ -112,8 +114,8 @@ export function FormularioCosecha({
         <label className={labelClase}>Método</label>
         <Segmented
           opciones={[
-            { id: "CANASTA", etiqueta: "Canastas" },
-            { id: "BASCULA", etiqueta: "Báscula" },
+            { id: 'CANASTA', etiqueta: 'Canastas' },
+            { id: 'BASCULA', etiqueta: 'Báscula' },
           ]}
           valor={metodo}
           onCambio={setMetodo}
@@ -161,7 +163,7 @@ export function FormularioCosecha({
         </div>
       </div>
 
-      {metodo === "CANASTA" ? (
+      {metodo === 'CANASTA' ? (
         <div className="grid grid-cols-2 gap-2.5">
           <div>
             <label htmlFor="canastas" className={labelClase}>
@@ -197,9 +199,7 @@ export function FormularioCosecha({
           </div>
           {pesoCalculado !== null ? (
             <div className="col-span-2 flex items-center justify-between rounded-[10px] border border-zelanda-verde-200 bg-zelanda-verde-50 px-3 py-2.5">
-              <span className="text-xs text-zelanda-verde-700">
-                Total calculado
-              </span>
+              <span className="text-xs text-zelanda-verde-700">Total calculado</span>
               <span className="font-serif text-[22px] text-zelanda-verde-900">
                 {pesoCalculado.toFixed(0)} kg
               </span>
@@ -262,7 +262,7 @@ export function FormularioCosecha({
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
         <Check className="h-[18px] w-[18px]" />
-        {pendiente ? "Registrando…" : "Registrar ingreso"}
+        {pendiente ? 'Registrando…' : 'Registrar ingreso'}
       </button>
     </form>
   );
