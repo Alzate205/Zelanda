@@ -76,6 +76,53 @@ export async function crearAusencia(
   redirect('/jefe/ausencias');
 }
 
+export async function editarAusencia(
+  _prev: EstadoAusencia,
+  formData: FormData
+): Promise<EstadoAusencia> {
+  await requerirUsuario('JEFE');
+
+  const id = parsearId(String(formData.get('id') ?? ''));
+  if (!id) return { error: 'Ausencia no encontrada.' };
+
+  const tipoRaw = String(formData.get('tipo') ?? '').trim();
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const descontableRaw = formData.get('descontable');
+  const observaciones = String(formData.get('observaciones') ?? '').trim();
+
+  if (!TIPOS_VALIDOS.includes(tipoRaw as tipo_ausencia)) {
+    return { error: 'Tipo de ausencia inválido.' };
+  }
+  const tipo = tipoRaw as tipo_ausencia;
+
+  if (!fechaRaw) return { error: 'Elegí la fecha.' };
+  const fecha = new Date(`${fechaRaw}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) return { error: 'Fecha inválida.' };
+
+  const descontable = descontableRaw === 'true' || descontableRaw === 'on';
+
+  try {
+    await prisma.ausencias.update({
+      where: { id, borrado_en: null },
+      data: {
+        tipo,
+        fecha,
+        descontable,
+        observaciones: observaciones || null,
+      },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('unique') || msg.includes('duplicate') || msg.includes('P2002')) {
+      return { error: 'Ya existe una ausencia para esa persona en esa fecha.' };
+    }
+    return { error: sanitizarError(e, 'ausencias/editar') };
+  }
+
+  revalidatePath('/jefe/ausencias');
+  redirect('/jefe/ausencias');
+}
+
 export async function borrarAusencia(formData: FormData) {
   const usuario = await requerirUsuario('JEFE');
   const id = parsearId(String(formData.get('id') ?? ''));

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, UserMinus, ChevronLeft } from 'lucide-react';
+import { Plus, UserMinus, ChevronLeft, Pencil } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -123,7 +123,13 @@ export default async function PaginaAusencias() {
                     {a.observaciones}
                   </p>
                 ) : null}
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex items-center justify-end gap-2">
+                  <Link
+                    href={`/jefe/ausencias/${a.id}`}
+                    className="inline-flex items-center gap-1 rounded-lg border border-zelanda-beige-200 bg-white px-2.5 py-1 text-xs text-zelanda-verde-700 transition hover:bg-zelanda-beige-50"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </Link>
                   <ConfirmarBorrado
                     action={borrarAusencia}
                     id={a.id}

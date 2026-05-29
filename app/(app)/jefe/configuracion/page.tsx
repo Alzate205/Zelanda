@@ -29,6 +29,21 @@ export default async function PaginaConfiguracion() {
         </p>
       </header>
 
+      {config.updated_at && (
+        <p className="text-[11.5px] text-zelanda-verde-700">
+          Última modificación:{' '}
+          {config.updated_at.toLocaleDateString('es-CO', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'America/Bogota',
+          })}
+          {config.updated_by_u ? ` · ${config.updated_by_u.nombre_completo}` : ''}
+        </p>
+      )}
+
       <FormularioConfiguracion
         config={{
           finca_nombre: config.finca_nombre,
