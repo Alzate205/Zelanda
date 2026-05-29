@@ -102,7 +102,6 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
             insumo_id: parsearId(it.insumo_id)!,
             cantidad: it.cantidad,
             costo_unitario: it.costo_unitario,
-            subtotal: it.cantidad * it.costo_unitario,
             notas: it.notas?.trim() || null,
           },
         });
@@ -124,10 +123,10 @@ export async function borrarCompra(formData: FormData) {
   try {
     await prisma.$transaction(async (tx) => {
       const compra = await tx.compras.findUnique({
-        where: { id, borrado_en: null },
+        where: { id: id },
         include: { items: true },
       });
-      if (!compra) return;
+      if (!compra || compra.borrado_en !== null) return;
 
       // Revertir stock por cada item antes de soft-delete
       for (const item of compra.items) {
