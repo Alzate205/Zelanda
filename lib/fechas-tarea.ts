@@ -1,6 +1,6 @@
-import "server-only";
+import 'server-only';
 
-export type EstadoAlerta = "aldia" | "proxima" | "vencida" | "sin_historial";
+export type EstadoAlerta = 'aldia' | 'proxima' | 'vencida' | 'sin_historial';
 
 export type ResumenTarea = {
   ultima: Date | null;
@@ -15,12 +15,13 @@ export function calcularResumen(
   ultimaCompletada: Date | null,
   frecuenciaDias: number,
   ahora: Date = new Date(),
+  diasAlerta: number = 7
 ): ResumenTarea {
   if (!ultimaCompletada) {
     return {
       ultima: null,
       proxima: null,
-      estado: "sin_historial",
+      estado: 'sin_historial',
       dias_para_proxima: null,
     };
   }
@@ -29,36 +30,44 @@ export function calcularResumen(
   const dias = Math.ceil((proxima.getTime() - ahora.getTime()) / MS_DIA);
 
   let estado: EstadoAlerta;
-  if (dias <= 0) estado = "vencida";
-  else if (dias <= 7) estado = "proxima";
-  else estado = "aldia";
+  if (dias <= 0) estado = 'vencida';
+  else if (dias <= diasAlerta) estado = 'proxima';
+  else estado = 'aldia';
 
   return { ultima: ultimaCompletada, proxima, estado, dias_para_proxima: dias };
 }
 
 export function formatearDias(dias: number | null): string {
-  if (dias === null) return "—";
-  if (dias === 0) return "hoy";
-  if (dias === 1) return "mañana";
-  if (dias === -1) return "ayer";
+  if (dias === null) return '—';
+  if (dias === 0) return 'hoy';
+  if (dias === 1) return 'mañana';
+  if (dias === -1) return 'ayer';
   if (dias > 0) return `en ${dias} días`;
   return `hace ${Math.abs(dias)} días`;
 }
 
 export function etiquetaEstado(estado: EstadoAlerta): string {
   switch (estado) {
-    case "aldia": return "Al día";
-    case "proxima": return "Próxima";
-    case "vencida": return "Vencida";
-    case "sin_historial": return "Nunca hecho";
+    case 'aldia':
+      return 'Al día';
+    case 'proxima':
+      return 'Próxima';
+    case 'vencida':
+      return 'Vencida';
+    case 'sin_historial':
+      return 'Nunca hecho';
   }
 }
 
-export function tonoEstado(estado: EstadoAlerta): "aldia" | "proxima" | "vencida" | "neutro" {
+export function tonoEstado(estado: EstadoAlerta): 'aldia' | 'proxima' | 'vencida' | 'neutro' {
   switch (estado) {
-    case "aldia": return "aldia";
-    case "proxima": return "proxima";
-    case "vencida": return "vencida";
-    case "sin_historial": return "vencida";
+    case 'aldia':
+      return 'aldia';
+    case 'proxima':
+      return 'proxima';
+    case 'vencida':
+      return 'vencida';
+    case 'sin_historial':
+      return 'vencida';
   }
 }

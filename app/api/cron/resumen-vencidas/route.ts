@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularResumen } from '@/lib/fechas-tarea';
+import { obtenerConfiguracion } from '@/lib/configuracion';
 import { enviarPushAUsuarios } from '@/lib/push/enviar';
 
 export async function GET(req: NextRequest) {
@@ -8,6 +9,8 @@ export async function GET(req: NextRequest) {
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
+
+  const config = await obtenerConfiguracion();
 
   const [lotes, tiposCultivo, frecuenciasOverride, completadasLote] = await Promise.all([
     prisma.lotes.findMany({
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
       const key = `${l.id}_${t.id}`;
       const ultima = mapaUlt.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const r = calcularResumen(ultima, freq);
+      const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
       if (r.estado === 'vencida' || r.estado === 'sin_historial') totalVencidas++;
       else if (r.estado === 'proxima') totalProximas++;
     }

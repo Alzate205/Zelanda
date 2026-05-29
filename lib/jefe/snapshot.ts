@@ -3,6 +3,7 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { calcularResumen } from '@/lib/fechas-tarea';
+import { obtenerConfiguracion } from '@/lib/configuracion';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
 
 /**
@@ -18,6 +19,8 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
     where: { estado: 'COMPLETADA', lote_id: { not: null } },
     _max: { fecha_completada: true },
   });
+
+  const config = await obtenerConfiguracion();
 
   const [lotes, tiposCultivo, frecuenciasOverride] = await Promise.all([
     prisma.lotes.findMany({
@@ -53,7 +56,7 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
       const key = `${l.id}_${t.id}`;
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const resumen = calcularResumen(ultima, freq);
+      const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
 
       if (
         resumen.estado === 'vencida' ||
