@@ -1,34 +1,50 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { crearMiembro, type EstadoFormulario } from "../acciones";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import type { TipoPeriodoPago } from '@prisma/client';
+import { crearMiembro, type EstadoFormulario } from '../acciones';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+
+interface Props {
+  jornalTarifaDefault: number | null;
+  fijoSalarioDefault: number | null;
+  fijoPeriodoPagoDefault: TipoPeriodoPago | null;
+}
 
 const ESTADO_INICIAL: EstadoFormulario = { error: null, exito: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+const labelBase =
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
 const ROLES_FINCA_SUGERIDOS = [
-  "Jefe de finca",
-  "Bodeguero",
-  "Almacenista",
-  "Recolector",
-  "Trabajador de campo",
+  'Jefe de finca',
+  'Bodeguero',
+  'Almacenista',
+  'Recolector',
+  'Trabajador de campo',
 ];
 
-export function FormularioNuevoMiembro() {
+export function FormularioNuevoMiembro({
+  jornalTarifaDefault,
+  fijoSalarioDefault,
+  fijoPeriodoPagoDefault,
+}: Props) {
   const [estado, accion, pendiente] = useActionState(crearMiembro, ESTADO_INICIAL);
   const [tipoVinculacion, setTipoVinculacion] = useState<
-    "FIJO" | "JORNALERO" | "CONTRATISTA" | "FAMILIAR"
-  >("FIJO");
+    'FIJO' | 'JORNALERO' | 'CONTRATISTA' | 'FAMILIAR'
+  >('FIJO');
   const [crearAcceso, setCrearAcceso] = useState(true);
-  const [salarioBase, setSalarioBase] = useState("");
-  const [tarifaJornal, setTarifaJornal] = useState("");
+  const [salarioBase, setSalarioBase] = useState(
+    fijoSalarioDefault != null ? fijoSalarioDefault.toString() : ''
+  );
+  const [tarifaJornal, setTarifaJornal] = useState(
+    jornalTarifaDefault != null ? jornalTarifaDefault.toString() : ''
+  );
 
   return (
     <form action={accion} className="space-y-6" noValidate>
@@ -44,16 +60,12 @@ export function FormularioNuevoMiembro() {
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Nuevo miembro
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Agregar al equipo
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Agregar al equipo</h1>
       </header>
 
       {/* Sección 1: Datos de la persona */}
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Datos de la persona
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Datos de la persona</h2>
 
         <div>
           <label htmlFor="nombre_completo" className={labelBase}>
@@ -127,9 +139,7 @@ export function FormularioNuevoMiembro() {
 
       {/* Sección 2: Vinculación con la finca */}
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Vinculación con la finca
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Vinculación con la finca</h2>
 
         <div>
           <label htmlFor="tipo_vinculacion" className={labelBase}>
@@ -142,7 +152,7 @@ export function FormularioNuevoMiembro() {
             value={tipoVinculacion}
             onChange={(e) =>
               setTipoVinculacion(
-                e.target.value as "FIJO" | "JORNALERO" | "CONTRATISTA" | "FAMILIAR",
+                e.target.value as 'FIJO' | 'JORNALERO' | 'CONTRATISTA' | 'FAMILIAR'
               )
             }
             className={inputBase}
@@ -176,7 +186,7 @@ export function FormularioNuevoMiembro() {
           </p>
         </div>
 
-        {tipoVinculacion === "FIJO" ? (
+        {tipoVinculacion === 'FIJO' ? (
           <div className="grid grid-cols-1 gap-4 border-t border-zelanda-beige-200 pt-4 sm:grid-cols-2">
             <div>
               <label htmlFor="salario_base" className={labelBase}>
@@ -190,9 +200,7 @@ export function FormularioNuevoMiembro() {
                 required
                 placeholder="Ej. 1.300.000"
                 value={formatearMiles(salarioBase)}
-                onChange={(e) =>
-                  setSalarioBase(normalizarEntradaNumerica(e.target.value))
-                }
+                onChange={(e) => setSalarioBase(normalizarEntradaNumerica(e.target.value))}
                 className={inputBase}
               />
             </div>
@@ -204,7 +212,7 @@ export function FormularioNuevoMiembro() {
                 id="periodo_pago"
                 name="periodo_pago"
                 required
-                defaultValue="QUINCENAL"
+                defaultValue={fijoPeriodoPagoDefault ?? 'QUINCENAL'}
                 className={inputBase}
               >
                 <option value="MENSUAL">Mensual</option>
@@ -215,7 +223,7 @@ export function FormularioNuevoMiembro() {
           </div>
         ) : null}
 
-        {tipoVinculacion === "JORNALERO" ? (
+        {tipoVinculacion === 'JORNALERO' ? (
           <div className="border-t border-zelanda-beige-200 pt-4">
             <label htmlFor="tarifa_jornal" className={labelBase}>
               Tarifa por jornal <span className="text-estado-vencida">*</span>
@@ -228,9 +236,7 @@ export function FormularioNuevoMiembro() {
               required
               placeholder="Ej. 50.000"
               value={formatearMiles(tarifaJornal)}
-              onChange={(e) =>
-                setTarifaJornal(normalizarEntradaNumerica(e.target.value))
-              }
+              onChange={(e) => setTarifaJornal(normalizarEntradaNumerica(e.target.value))}
               className={inputBase}
             />
             <p className="mt-1.5 text-xs text-zelanda-verde-700">
@@ -239,7 +245,7 @@ export function FormularioNuevoMiembro() {
           </div>
         ) : null}
 
-        {tipoVinculacion === "FIJO" || tipoVinculacion === "JORNALERO" ? (
+        {tipoVinculacion === 'FIJO' || tipoVinculacion === 'JORNALERO' ? (
           <div className="border-t border-zelanda-beige-200 pt-4">
             <label htmlFor="esquema_pago_destajo" className={labelBase}>
               Destajo (extras por kg / árbol)
@@ -252,14 +258,12 @@ export function FormularioNuevoMiembro() {
             >
               <option value="NUNCA">No cobra destajo</option>
               <option value="ADICIONAL">Adicional al salario</option>
-              <option value="REEMPLAZA_DIA">
-                Reemplaza el día (cuando hace destajo)
-              </option>
+              <option value="REEMPLAZA_DIA">Reemplaza el día (cuando hace destajo)</option>
               <option value="SOLO_DESTAJO">Solo cobra destajo</option>
             </select>
             <p className="mt-1.5 text-xs text-zelanda-verde-700">
-              Define cómo se suman al saldo los pagos extra por kg cosechados o
-              árboles trabajados con tarifa POR_KG / POR_ARBOL.
+              Define cómo se suman al saldo los pagos extra por kg cosechados o árboles trabajados
+              con tarifa POR_KG / POR_ARBOL.
             </p>
           </div>
         ) : null}
@@ -267,9 +271,7 @@ export function FormularioNuevoMiembro() {
 
       {/* Sección 3: Acceso al sistema */}
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Acceso al sistema
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Acceso al sistema</h2>
 
         <label className="flex items-start gap-3 rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
           <input
@@ -284,8 +286,8 @@ export function FormularioNuevoMiembro() {
               Crear cuenta para entrar a la app
             </span>
             <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-              Si la persona no usará la app (contratista de un servicio puntual,
-              jornalero ocasional, familia que ya tiene acceso), déjalo sin marcar.
+              Si la persona no usará la app (contratista de un servicio puntual, jornalero
+              ocasional, familia que ya tiene acceso), déjalo sin marcar.
             </span>
           </span>
         </label>
@@ -366,7 +368,7 @@ export function FormularioNuevoMiembro() {
           disabled={pendiente}
           className="flex-1 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pendiente ? "Guardando…" : "Crear miembro"}
+          {pendiente ? 'Guardando…' : 'Crear miembro'}
         </button>
       </div>
     </form>
