@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import {
-  crearInsumo,
-  actualizarInsumo,
-  type EstadoEdicion,
-} from "../acciones";
+import { useActionState } from 'react';
+import { crearInsumo, actualizarInsumo, type EstadoEdicion } from '../acciones';
 
 type Valores = {
   id?: string;
   nombre: string;
-  categoria: "CULTIVO" | "COSECHA" | "APICULTURA";
+  categoria: 'CULTIVO' | 'COSECHA' | 'APICULTURA';
   unidad: string;
   stock_minimo: string;
   costo_unitario: string | null;
@@ -21,11 +17,13 @@ const ESTADO_INICIAL: EstadoEdicion = { error: null };
 export function FormularioInsumo({
   modo,
   valores,
+  stockMinimoDefault,
 }: {
-  modo: "crear" | "editar";
+  modo: 'crear' | 'editar';
   valores?: Valores;
+  stockMinimoDefault?: number;
 }) {
-  const accion = modo === "crear" ? crearInsumo : actualizarInsumo;
+  const accion = modo === 'crear' ? crearInsumo : actualizarInsumo;
   const [estado, formAction, pending] = useActionState(accion, ESTADO_INICIAL);
 
   return (
@@ -40,7 +38,7 @@ export function FormularioInsumo({
           id="nombre"
           name="nombre"
           required
-          defaultValue={valores?.nombre ?? ""}
+          defaultValue={valores?.nombre ?? ''}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
@@ -53,7 +51,7 @@ export function FormularioInsumo({
           id="categoria"
           name="categoria"
           required
-          defaultValue={valores?.categoria ?? "CULTIVO"}
+          defaultValue={valores?.categoria ?? 'CULTIVO'}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         >
           <option value="CULTIVO">Cultivo</option>
@@ -71,7 +69,7 @@ export function FormularioInsumo({
           name="unidad"
           required
           placeholder="L, kg, unidades, m..."
-          defaultValue={valores?.unidad ?? ""}
+          defaultValue={valores?.unidad ?? ''}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
@@ -87,13 +85,18 @@ export function FormularioInsumo({
           min="0"
           step="0.001"
           required
-          defaultValue={valores?.stock_minimo ?? "0"}
+          defaultValue={
+            valores?.stock_minimo ?? (stockMinimoDefault != null ? String(stockMinimoDefault) : '0')
+          }
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
 
       <div>
-        <label htmlFor="costo_unitario" className="block text-sm font-medium text-zelanda-verde-900">
+        <label
+          htmlFor="costo_unitario"
+          className="block text-sm font-medium text-zelanda-verde-900"
+        >
           Costo unitario (opcional)
         </label>
         <input
@@ -102,7 +105,7 @@ export function FormularioInsumo({
           type="number"
           min="0.01"
           step="0.01"
-          defaultValue={valores?.costo_unitario ?? ""}
+          defaultValue={valores?.costo_unitario ?? ''}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
@@ -118,7 +121,7 @@ export function FormularioInsumo({
         disabled={pending}
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pending ? "Guardando..." : modo === "crear" ? "Crear" : "Guardar"}
+        {pending ? 'Guardando...' : modo === 'crear' ? 'Crear' : 'Guardar'}
       </button>
     </form>
   );
