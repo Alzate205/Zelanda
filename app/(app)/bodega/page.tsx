@@ -1,17 +1,18 @@
-import Link from "next/link";
-import { AlertTriangle, Plus, Clock, Check } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { KPI } from "@/components/ui/KPI";
-import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
+import Link from 'next/link';
+import { AlertTriangle, Plus, Clock, Check } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { obtenerConfiguracion } from '@/lib/configuracion';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { KPI } from '@/components/ui/KPI';
+import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 
-export const metadata = { title: "Bodega" };
+export const metadata = { title: 'Bodega' };
 
-const FORMATEADOR_FECHA = new Intl.DateTimeFormat("es-CO", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
+const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
 });
 
 function tituloFecha(fecha: Date): string {
@@ -20,22 +21,37 @@ function tituloFecha(fecha: Date): string {
 }
 
 function fmtHora(d: Date): string {
-  return d.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
+  return d.toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 export default async function PaginaInicioBodega() {
-  const usuario = await requerirUsuario("BODEGA");
+  const usuario = await requerirUsuario('BODEGA');
+
+  const config = await obtenerConfiguracion();
+
+  // Calcular hora actual en Bogotá (UTC-5, sin horario de verano)
+  const ahoraBogota = new Date()
+    .toLocaleString('en-CA', {
+      timeZone: 'America/Bogota',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    .replace(',', '')
+    .trim(); // formato "HH:MM"
+
+  const pasaronHoraCorte = ahoraBogota >= config.despacho_hora_corte;
 
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
   const [abiertos, cerradosHoy, stockBajo, stockBajoTotal] = await Promise.all([
     prisma.despachos.findMany({
-      where: { estado: "ABIERTO" },
-      orderBy: { fecha: "desc" },
+      where: { estado: 'ABIERTO' },
+      orderBy: { fecha: 'desc' },
       take: 5,
       include: {
         persona: { select: { id: true, nombre_completo: true } },
@@ -58,11 +74,9 @@ export default async function PaginaInicioBodega() {
       },
     }),
     prisma.despachos.count({
-      where: { estado: "CERRADO", fecha_devolucion: { gte: inicioDia } },
+      where: { estado: 'CERRADO', fecha_devolucion: { gte: inicioDia } },
     }),
-    prisma.$queryRaw<
-      { id: bigint; nombre: string; unidad: string; stock_disponible: string }[]
-    >`
+    prisma.$queryRaw<{ id: bigint; nombre: string; unidad: string; stock_disponible: string }[]>`
       SELECT id, nombre, unidad, stock_disponible::text
       FROM v_insumos_stock
       WHERE activo = TRUE AND por_debajo_minimo = TRUE
@@ -82,28 +96,31 @@ export default async function PaginaInicioBodega() {
   return (
     <div className="space-y-5">
       <header>
-        <Eyebrow>Bodega · {usuario.nombre_completo.split(" ")[0]}</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Despachos del día
-        </h1>
+        <Eyebrow>Bodega · {usuario.nombre_completo.split(' ')[0]}</Eyebrow>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Despachos del día</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          {fechaHoy} · {abiertos.length}{" "}
-          {abiertos.length === 1 ? "abierto" : "abiertos"}
+          {fechaHoy} · {abiertos.length} {abiertos.length === 1 ? 'abierto' : 'abiertos'}
         </p>
       </header>
 
+      {pasaronHoraCorte && abiertos.length > 0 && (
+        <div className="rounded-xl border border-estado-vencida/30 bg-estado-vencida/10 px-4 py-3 text-sm text-estado-vencida">
+          <strong>
+            {abiertos.length} despacho{abiertos.length > 1 ? 's' : ''} abierto
+            {abiertos.length > 1 ? 's' : ''}
+          </strong>{' '}
+          sin cerrar — son las {ahoraBogota} (hora de corte: {config.despacho_hora_corte}).
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2">
-        <KPI
-          href="/bodega/despachos"
-          etiqueta="Abiertos"
-          valor={abiertos.length}
-        />
+        <KPI href="/bodega/despachos" etiqueta="Abiertos" valor={abiertos.length} />
         <KPI etiqueta="Cerrados" valor={cerradosHoy} pie="Hoy" />
         <KPI
           href="/bodega/inventario"
           etiqueta="Bajo stock"
           valor={totalStockBajo}
-          acento={totalStockBajo > 0 ? "ocre" : "verde"}
+          acento={totalStockBajo > 0 ? 'ocre' : 'verde'}
         />
       </div>
 
@@ -116,9 +133,7 @@ export default async function PaginaInicioBodega() {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Abiertos
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Abiertos</h2>
           {abiertos.length > 0 ? (
             <span className="text-[11.5px] font-semibold text-estado-vencida">
               {abiertos.length}
@@ -133,13 +148,8 @@ export default async function PaginaInicioBodega() {
           <div className="flex flex-col gap-2.5">
             {abiertos.map((d) => {
               const tarea = d.asignacion?.tipos_tarea?.nombre;
-              const lote =
-                d.asignacion?.lotes?.nombre ??
-                d.asignacion?.apiarios?.nombre ??
-                null;
-              const subtitulo = tarea
-                ? `${tarea}${lote ? ` · ${lote}` : ""}`
-                : "Sin asignación";
+              const lote = d.asignacion?.lotes?.nombre ?? d.asignacion?.apiarios?.nombre ?? null;
+              const subtitulo = tarea ? `${tarea}${lote ? ` · ${lote}` : ''}` : 'Sin asignación';
               return (
                 <article
                   key={d.id.toString()}
@@ -155,9 +165,7 @@ export default async function PaginaInicioBodega() {
                       <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
                         {d.persona.nombre_completo}
                       </p>
-                      <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                        {subtitulo}
-                      </p>
+                      <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">{subtitulo}</p>
                     </div>
                     <span className="flex items-center gap-1 text-[11.5px] text-zelanda-verde-700">
                       <Clock className="h-3 w-3" /> {fmtHora(d.fecha)}
@@ -166,27 +174,22 @@ export default async function PaginaInicioBodega() {
                   <div className="mt-2.5 flex flex-col gap-1 border-t border-zelanda-beige-200 pt-2">
                     {d.despacho_items.slice(0, 4).map((it) => {
                       const nombre =
-                        it.tipo_item === "HERRAMIENTA"
-                          ? (it.herramientas?.nombre ?? "Herramienta")
-                          : (it.insumos?.nombre ?? "Insumo");
+                        it.tipo_item === 'HERRAMIENTA'
+                          ? it.herramientas?.nombre ?? 'Herramienta'
+                          : it.insumos?.nombre ?? 'Insumo';
                       const tipoLabel =
-                        it.tipo_item === "HERRAMIENTA"
-                          ? "herramienta"
-                          : `insumo · ${it.insumos?.unidad ?? ""}`;
+                        it.tipo_item === 'HERRAMIENTA'
+                          ? 'herramienta'
+                          : `insumo · ${it.insumos?.unidad ?? ''}`;
                       return (
-                        <div
-                          key={it.id.toString()}
-                          className="flex justify-between text-[13px]"
-                        >
+                        <div key={it.id.toString()} className="flex justify-between text-[13px]">
                           <span className="text-zelanda-verde-900">
-                            {Number(it.cantidad).toLocaleString("es-CO", {
+                            {Number(it.cantidad).toLocaleString('es-CO', {
                               maximumFractionDigits: 2,
                             })}
                             × {nombre}
                           </span>
-                          <span className="text-[11px] text-zelanda-verde-700">
-                            {tipoLabel}
-                          </span>
+                          <span className="text-[11px] text-zelanda-verde-700">{tipoLabel}</span>
                         </div>
                       );
                     })}
@@ -219,9 +222,7 @@ export default async function PaginaInicioBodega() {
 
       {stockBajo.length > 0 ? (
         <section>
-          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-            Alertas de stock
-          </h2>
+          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Alertas de stock</h2>
           <div className="flex flex-col gap-2">
             {stockBajo.map((i) => (
               <div
@@ -232,9 +233,7 @@ export default async function PaginaInicioBodega() {
                   <AlertTriangle className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="m-0 text-sm text-zelanda-verde-900">
-                    {i.nombre}
-                  </p>
+                  <p className="m-0 text-sm text-zelanda-verde-900">{i.nombre}</p>
                   <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
                     Stock {i.stock_disponible} {i.unidad}
                   </p>
@@ -249,7 +248,7 @@ export default async function PaginaInicioBodega() {
             ))}
             {totalStockBajo > stockBajo.length ? (
               <p className="mt-1 text-xs text-zelanda-verde-700/70">
-                y {totalStockBajo - stockBajo.length} más — ver{" "}
+                y {totalStockBajo - stockBajo.length} más — ver{' '}
                 <Link href="/bodega/inventario" className="underline">
                   inventario
                 </Link>
