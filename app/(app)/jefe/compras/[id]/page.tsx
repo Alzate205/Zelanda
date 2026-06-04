@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, Package, FileText } from 'lucide-react';
+import { ChevronLeft, Package, FileText, Pencil } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -126,7 +126,14 @@ export default async function PaginaDetalleCompra({ params }: { params: Promise<
         </section>
       ) : null}
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href={`/jefe/compras/${compra.id}/editar`}
+          className="inline-flex min-h-touch items-center gap-1.5 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-[14px] text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+        >
+          <Pencil className="h-4 w-4" />
+          Editar
+        </Link>
         <ConfirmarBorrado
           action={borrarCompra}
           id={compra.id}

@@ -116,6 +116,62 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
   redirect('/jefe/compras');
 }
 
+export async function editarCompra(_prev: EstadoCompra, formData: FormData): Promise<EstadoCompra> {
+  const usuario = await requerirUsuario('JEFE');
+
+  const idRaw = String(formData.get('id') ?? '').trim();
+  const id = parsearId(idRaw);
+  if (!id) return { error: 'ID de compra inválido.' };
+
+  const proveedorIdRaw = String(formData.get('proveedor_id') ?? '').trim();
+  const proveedorNuevoNombre = String(formData.get('proveedor_nuevo_nombre') ?? '').trim();
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const numeroFactura = String(formData.get('numero_factura') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
+
+  let proveedorId = proveedorIdRaw ? parsearId(proveedorIdRaw) : null;
+  if (!proveedorId && !proveedorNuevoNombre) {
+    return { error: 'Elegí un proveedor o escribí el nombre.' };
+  }
+
+  if (!fechaRaw) return { error: 'Elegí la fecha de la compra.' };
+  const fecha = new Date(`${fechaRaw}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) {
+    return { error: 'Fecha inválida.' };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Crear proveedor sobre la marcha si fue nuevo
+      if (!proveedorId && proveedorNuevoNombre) {
+        const nuevo = await tx.proveedores.create({
+          data: {
+            nombre: proveedorNuevoNombre,
+            registrado_por_usuario_id: usuario.id,
+          },
+        });
+        proveedorId = nuevo.id;
+      }
+
+      await tx.compras.update({
+        where: { id, borrado_en: null },
+        data: {
+          proveedor_id: proveedorId,
+          fecha,
+          numero_factura: numeroFactura || null,
+          notas: notas || null,
+        },
+      });
+    });
+  } catch (e) {
+    return { error: sanitizarError(e, 'compras/editar') };
+  }
+
+  revalidatePath('/jefe/compras');
+  revalidatePath(`/jefe/compras/${id}`);
+  redirect(`/jefe/compras/${id}`);
+}
+
 export async function borrarCompra(formData: FormData) {
   const usuario = await requerirUsuario('JEFE');
   const id = parsearId(String(formData.get('id') ?? ''));
