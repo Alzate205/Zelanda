@@ -8,7 +8,8 @@
   --color-borde: #ede0c8;
 }
 
-html, body {
+html,
+body {
   background-color: var(--color-fondo);
   color: var(--color-texto);
   overscroll-behavior: none;
@@ -21,16 +22,31 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: theme('fontFamily.serif');
   letter-spacing: -0.01em;
 }
 
-button, a, [role="button"] {
+button,
+a,
+[role='button'] {
   touch-action: manipulation;
 }
 
-header, nav {
+header,
+nav {
   -webkit-user-select: none;
   user-select: none;
+}
+
+@layer utilities {
+  /* Respeta el home-indicator / gesture bar en celulares (notch inferior) */
+  .safe-bottom {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
 }

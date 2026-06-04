@@ -274,16 +274,16 @@ export default async function PaginaReportesAvanzados({
           />
         </div>
 
-        <div className="mt-4 space-y-2 rounded-[10px] bg-zelanda-beige-50 p-3 text-[12.5px]">
-          <div className="flex justify-between text-zelanda-verde-800">
+        <div className="mt-4 space-y-2 rounded-[10px] bg-zelanda-beige-50 p-3 text-[12.5px] tabular-nums">
+          <div className="flex justify-between gap-2 text-zelanda-verde-800">
             <span>Ventas</span>
             <span className="font-semibold">{fmtMonto(ingresos)}</span>
           </div>
-          <div className="flex justify-between text-zelanda-verde-800">
+          <div className="flex justify-between gap-2 text-zelanda-verde-800">
             <span>− Compras de insumos</span>
             <span className="font-semibold">{fmtMonto(costoCompras)}</span>
           </div>
-          <div className="flex justify-between text-zelanda-verde-800">
+          <div className="flex justify-between gap-2 text-zelanda-verde-800">
             <span>− Pagos a personas</span>
             <span className="font-semibold">{fmtMonto(costoPagos)}</span>
           </div>

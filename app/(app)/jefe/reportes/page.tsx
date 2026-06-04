@@ -216,7 +216,7 @@ export default async function PaginaReportes() {
             <TrendingUp className="h-3.5 w-3.5" />
             <span className="text-[10.5px] uppercase tracking-[0.14em]">Cosecha total</span>
           </div>
-          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+          <span className="mt-0.5 font-serif text-[28px] leading-tight tabular-nums break-words text-zelanda-verde-900">
             {fmtKg(totalCosechaKg)}
           </span>
           <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>
@@ -226,7 +226,7 @@ export default async function PaginaReportes() {
             <ShoppingBag className="h-3.5 w-3.5" />
             <span className="text-[10.5px] uppercase tracking-[0.14em]">Cosechas</span>
           </div>
-          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+          <span className="mt-0.5 font-serif text-[28px] leading-tight tabular-nums break-words text-zelanda-verde-900">
             {nCosechas.toLocaleString('es-CO')}
           </span>
           <span className="mt-1 text-xs text-zelanda-verde-700">registros</span>
@@ -236,7 +236,7 @@ export default async function PaginaReportes() {
             <TrendingDown className="h-3.5 w-3.5" />
             <span className="text-[10.5px] uppercase tracking-[0.14em]">Salidas totales</span>
           </div>
-          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+          <span className="mt-0.5 font-serif text-[28px] leading-tight tabular-nums break-words text-zelanda-verde-900">
             {fmtKg(totalSalidasKg)}
           </span>
           <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>
@@ -246,7 +246,7 @@ export default async function PaginaReportes() {
             <Warehouse className="h-3.5 w-3.5" />
             <span className="text-[10.5px] uppercase tracking-[0.14em]">Stock actual</span>
           </div>
-          <span className="mt-0.5 font-serif text-[28px] leading-none text-zelanda-verde-900">
+          <span className="mt-0.5 font-serif text-[28px] leading-tight tabular-nums break-words text-zelanda-verde-900">
             {fmtKg(stockKg)}
           </span>
           <span className="mt-1 text-xs text-zelanda-verde-700">kg</span>

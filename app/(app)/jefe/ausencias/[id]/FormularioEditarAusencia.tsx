@@ -132,7 +132,7 @@ export function FormularioEditarAusencia({
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{estado.error}</p>
       ) : null}
 
-      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-zelanda-beige-200 bg-white p-4 safe-bottom">
+      <div className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-3 backdrop-blur safe-bottom">
         <button
           type="submit"
           disabled={pendiente}

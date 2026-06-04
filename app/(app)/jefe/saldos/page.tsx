@@ -114,13 +114,13 @@ export default async function PaginaSaldos({
         </Link>
       </div>
 
-      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <div className="grid grid-cols-3 gap-3 text-center">
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave">
+        <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
               Devengado
             </p>
-            <p className="mt-1 font-serif text-[16px] text-zelanda-verde-900">
+            <p className="mt-1 font-serif text-[15px] leading-tight tabular-nums break-words text-zelanda-verde-900">
               {fmtMonto(totalDevengado)}
             </p>
           </div>
@@ -128,7 +128,7 @@ export default async function PaginaSaldos({
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
               Pagado
             </p>
-            <p className="mt-1 font-serif text-[16px] text-zelanda-verde-900">
+            <p className="mt-1 font-serif text-[15px] leading-tight tabular-nums break-words text-zelanda-verde-900">
               {fmtMonto(totalPagado)}
             </p>
           </div>
@@ -137,7 +137,7 @@ export default async function PaginaSaldos({
               Saldo
             </p>
             <p
-              className={`mt-1 font-serif text-[16px] ${
+              className={`mt-1 font-serif text-[15px] leading-tight tabular-nums break-words ${
                 totalSaldo > 0
                   ? 'text-zelanda-verde-900'
                   : totalSaldo === 0
@@ -188,7 +188,7 @@ export default async function PaginaSaldos({
                   </div>
                   {aplicaSaldo ? (
                     <>
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-[11.5px]">
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-[11.5px] tabular-nums [overflow-wrap:anywhere]">
                         <div>
                           <span className="block text-zelanda-verde-700">Dev.</span>
                           <span className="font-semibold text-zelanda-verde-900">

@@ -165,12 +165,12 @@ export default async function PaginaSaldoPersona({
       </div>
 
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
               Devengado
             </p>
-            <p className="mt-1 font-serif text-[18px] text-zelanda-verde-900">
+            <p className="mt-1 font-serif text-[16px] leading-tight tabular-nums break-words text-zelanda-verde-900">
               {fmtMonto(saldo.devengado)}
             </p>
           </div>
@@ -178,7 +178,7 @@ export default async function PaginaSaldoPersona({
             <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
               Pagado
             </p>
-            <p className="mt-1 font-serif text-[18px] text-zelanda-verde-900">
+            <p className="mt-1 font-serif text-[16px] leading-tight tabular-nums break-words text-zelanda-verde-900">
               {fmtMonto(saldo.pagado)}
             </p>
           </div>
@@ -187,7 +187,7 @@ export default async function PaginaSaldoPersona({
               Saldo
             </p>
             <p
-              className={`mt-1 font-serif text-[18px] ${
+              className={`mt-1 font-serif text-[16px] leading-tight tabular-nums break-words ${
                 saldo.saldo > 0
                   ? 'text-zelanda-verde-900'
                   : saldo.saldo === 0
