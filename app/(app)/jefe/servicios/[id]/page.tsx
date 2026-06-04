@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Pencil, Plus } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -50,7 +50,7 @@ export default async function PaginaDetalleServicio({
   const id = BigInt(idRaw);
 
   const servicio = await prisma.servicios_contratados.findUnique({
-    where: { id },
+    where: { id, borrado_en: null },
     include: {
       persona: { select: { id: true, nombre_completo: true } },
       lotes: { select: { nombre: true } },
@@ -167,6 +167,12 @@ export default async function PaginaDetalleServicio({
               </button>
             </form>
           ) : null}
+          <Link
+            href={`/jefe/servicios/${servicio.id}/editar`}
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 py-1.5 text-[12.5px] font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Editar
+          </Link>
           <form action={borrarServicio} className="ml-auto">
             <input type="hidden" name="id" value={String(servicio.id)} />
             <button

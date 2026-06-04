@@ -41,6 +41,7 @@ export default async function PaginaServicios() {
   await requerirUsuario('JEFE');
 
   const servicios = await prisma.servicios_contratados.findMany({
+    where: { borrado_en: null },
     orderBy: [{ estado: 'asc' }, { fecha_inicio: 'desc' }],
     include: {
       persona: { select: { nombre_completo: true } },

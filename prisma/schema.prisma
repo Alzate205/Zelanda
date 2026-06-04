@@ -1038,15 +1038,19 @@ model servicios_contratados {
   estado                    estado_servicio @default(ACUERDO)
   notas                     String?
   registrado_por_usuario_id String          @db.Uuid
+  borrado_en                DateTime?       @db.Timestamptz(6)
+  borrado_por               String?         @db.Uuid
   created_at                DateTime        @default(now()) @db.Timestamptz(6)
   updated_at                DateTime        @default(now()) @db.Timestamptz(6)
   pagos                     pagos[]
   lotes                     lotes?          @relation(fields: [lote_id], references: [id], onUpdate: NoAction)
   persona                   personas        @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuarios                  usuarios        @relation(fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                  usuarios        @relation("servicios_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  borrado_por_u             usuarios?       @relation("servicios_borrado_por", fields: [borrado_por], references: [id], onUpdate: NoAction)
 
   @@index([persona_id], map: "idx_servicios_persona")
   @@index([estado], map: "idx_servicios_estado")
+  @@index([borrado_en], map: "idx_servicios_borrado_en")
   @@schema("public")
 }
 
@@ -1143,7 +1147,8 @@ model usuarios {
   push_subscriptions    push_subscriptions[]
   recordatorios         recordatorios[]
   salidas_cosecha       salidas_cosecha[]
-  servicios_contratados servicios_contratados[]
+  servicios_contratados servicios_contratados[] @relation("servicios_registrado_por")
+  servicios_borrados    servicios_contratados[] @relation("servicios_borrado_por")
   tarifas_tarea         tarifas_tarea[]         @relation("tarifas_tarea_registrado_por")
   users                 users                   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   persona               personas?               @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

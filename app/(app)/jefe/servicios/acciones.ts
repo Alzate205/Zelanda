@@ -115,14 +115,81 @@ export async function cambiarEstadoServicio(formData: FormData) {
 }
 
 export async function borrarServicio(formData: FormData) {
-  await requerirUsuario('JEFE');
+  const usuario = await requerirUsuario('JEFE');
   const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
   try {
-    await prisma.servicios_contratados.delete({ where: { id } });
+    await prisma.servicios_contratados.update({
+      where: { id, borrado_en: null },
+      data: { borrado_en: new Date(), borrado_por: usuario.id },
+    });
   } catch {
-    // best-effort: puede fallar si hay pagos relacionados que no son SET NULL
+    // ya borrado o no existe
   }
   revalidatePath('/jefe/servicios');
   redirect('/jefe/servicios');
+}
+
+export async function editarServicio(
+  _prev: EstadoServicio,
+  formData: FormData
+): Promise<EstadoServicio> {
+  await requerirUsuario('JEFE');
+
+  const id = parsearId(String(formData.get('id') ?? ''));
+  if (!id) return { error: 'Servicio no encontrado.' };
+
+  const descripcion = String(formData.get('descripcion') ?? '').trim();
+  const loteIdRaw = String(formData.get('lote_id') ?? '').trim();
+  const montoRaw = String(formData.get('monto_pactado') ?? '').trim();
+  const fechaInicioRaw = String(formData.get('fecha_inicio') ?? '').trim();
+  const fechaFinRaw = String(formData.get('fecha_fin') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
+
+  if (!descripcion) return { error: 'Describí el servicio.' };
+
+  const monto = Number(montoRaw.replace(/\./g, ''));
+  if (!Number.isFinite(monto) || monto <= 0) {
+    return { error: 'Monto pactado inválido.' };
+  }
+
+  if (!fechaInicioRaw) return { error: 'Elegí la fecha de inicio.' };
+  const fechaInicio = new Date(`${fechaInicioRaw}T00:00:00`);
+  if (Number.isNaN(fechaInicio.getTime())) {
+    return { error: 'Fecha de inicio inválida.' };
+  }
+
+  let fechaFin: Date | null = null;
+  if (fechaFinRaw) {
+    fechaFin = new Date(`${fechaFinRaw}T00:00:00`);
+    if (Number.isNaN(fechaFin.getTime())) {
+      return { error: 'Fecha de fin inválida.' };
+    }
+    if (fechaFin < fechaInicio) {
+      return { error: 'Fin no puede ser anterior a Inicio.' };
+    }
+  }
+
+  const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;
+  if (loteIdRaw && !loteId) return { error: 'Lote inválido.' };
+
+  try {
+    await prisma.servicios_contratados.update({
+      where: { id, borrado_en: null },
+      data: {
+        descripcion,
+        lote_id: loteId,
+        monto_pactado: monto,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        notas: notas || null,
+      },
+    });
+  } catch (e) {
+    return { error: sanitizarError(e, 'servicios/editar') };
+  }
+
+  revalidatePath('/jefe/servicios');
+  revalidatePath(`/jefe/servicios/${id}`);
+  redirect(`/jefe/servicios/${id}`);
 }
