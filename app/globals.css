@@ -50,3 +50,23 @@ nav {
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
 }
+
+/* Impresión / Guardar como PDF: ocultar chrome de la app y dejar solo el contenido */
+@media print {
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .print-limpio {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

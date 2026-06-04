@@ -21,6 +21,8 @@ import {
   ShoppingCart,
   Truck,
   Settings,
+  History,
+  Download,
 } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { guardarSnapshotJefe, leerSnapshotJefe, tsJefe } from '@/lib/offline/cache';
@@ -346,6 +348,18 @@ export function DashboardJefeCliente({
             icono={Settings}
             titulo="Configuración"
             sub="Parámetros de la finca"
+          />
+          <Atajo
+            href="/jefe/movimientos"
+            icono={History}
+            titulo="Movimientos"
+            sub="Quién registró y anuló"
+          />
+          <Atajo
+            href="/jefe/respaldo"
+            icono={Download}
+            titulo="Respaldo"
+            sub="Exportar datos a CSV"
           />
         </div>
       </section>

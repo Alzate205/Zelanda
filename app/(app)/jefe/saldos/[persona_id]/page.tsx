@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Printer } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -145,6 +145,13 @@ export default async function PaginaSaldoPersona({
         </Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{saldo.nombre}</h1>
       </header>
+
+      <Link
+        href={`/jefe/saldos/${personaId}/recibo?mes=${aClaveMes(anio, mes)}`}
+        className="inline-flex min-h-touch items-center gap-2 rounded-xl border border-zelanda-beige-300 bg-white px-4 text-[13px] font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-50"
+      >
+        <Printer className="h-4 w-4" /> Recibo / Imprimir
+      </Link>
 
       <div className="flex items-center justify-between rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
         <Link
