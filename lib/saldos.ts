@@ -167,6 +167,7 @@ export async function calcularSaldosPeriodo(periodo: PeriodoSaldo): Promise<Sald
           fecha_inicio: { gte: desde, lte: hasta },
           // Solo servicios que efectivamente se prestaron (no meros acuerdos sin iniciar)
           estado: { in: ['EN_CURSO', 'TERMINADO'] },
+          borrado_en: null,
         },
         select: { persona_id: true, monto_pactado: true },
       }),
