@@ -6,6 +6,7 @@ import { CloudOff, Check } from 'lucide-react';
 import { enviarCosecha } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Segmented } from '@/components/ui/Segmented';
+import { pesoCanastas } from '@/lib/comercio';
 
 export function FormularioCosecha({
   personas,
@@ -33,7 +34,9 @@ export function FormularioCosecha({
   const [notas, setNotas] = useState('');
 
   const pesoCalculado =
-    metodo === 'CANASTA' && canastas && capacidad ? Number(canastas) * Number(capacidad) : null;
+    metodo === 'CANASTA' && canastas && capacidad
+      ? pesoCanastas(Number(canastas), Number(capacidad))
+      : null;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

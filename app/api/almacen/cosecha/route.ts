@@ -3,6 +3,7 @@ import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sanitizarError } from '@/lib/errores';
 import { revalidarSnapshotAlmacen, revalidarDashboards } from '@/lib/revalidar';
+import { pesoCanastas } from '@/lib/comercio';
 
 type Body = {
   id_local: string;
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
     }
     cantidadCanastas = c;
     capacidadCanastaKg = cap;
-    pesoKg = (c as number) * cap;
+    pesoKg = pesoCanastas(c as number, cap);
   } else {
     const p = body.peso_kg;
     if (typeof p !== 'number' || !Number.isFinite(p) || p <= 0) {
