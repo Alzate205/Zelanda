@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { mesBogota, periodoMesBogota } from '@/lib/fecha';
+import { margenMes } from '@/lib/comercio';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -162,9 +163,11 @@ export default async function PaginaReportesAvanzados({
   const kgVendidos = Number(ventasMes._sum.cantidad_kg ?? 0);
   const costoCompras = Number(comprasMes._sum.total ?? 0);
   const costoPagos = Number(pagosMes._sum.monto ?? 0);
-  const costosTotal = costoCompras + costoPagos;
-  const margen = ingresos - costosTotal;
-  const margenPct = ingresos > 0 ? (margen / ingresos) * 100 : 0;
+  const {
+    costos: costosTotal,
+    margen,
+    porcentaje: margenPct,
+  } = margenMes({ ingresos, costoCompras, costoPagos });
 
   // Cosecha comparativa: mapas año actual y anterior
   const mapaActual = new Map<number, number>();

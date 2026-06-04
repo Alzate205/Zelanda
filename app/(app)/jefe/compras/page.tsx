@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { mesBogota } from '@/lib/fecha';
+import { resumenCompras } from '@/lib/comercio';
 
 export const metadata = { title: 'Compras' };
 const MESES = [
@@ -74,8 +75,9 @@ export default async function PaginaCompras({
     },
   });
 
-  const totalGastado = compras.reduce((acc, c) => acc + Number(c.total), 0);
-  const itemsTotales = compras.reduce((acc, c) => acc + c.items.length, 0);
+  const { totalGastado, itemsTotales } = resumenCompras(
+    compras.map((c) => ({ total: Number(c.total), nItems: c.items.length }))
+  );
 
   // Ranking por proveedor
   const porProveedor = new Map<

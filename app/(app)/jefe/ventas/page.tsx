@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { mesBogota, periodoMesBogota } from '@/lib/fecha';
+import { resumenVentas } from '@/lib/comercio';
 
 export const metadata = { title: 'Ventas' };
 const MESES = [
@@ -75,10 +76,12 @@ export default async function PaginaVentas({
     },
   });
 
-  const totalKg = ventas.reduce((acc, v) => acc + Number(v.cantidad_kg), 0);
-  const totalIngreso = ventas.reduce((acc, v) => acc + Number(v.precio_total ?? 0), 0);
-  const ticketPromedio = ventas.length > 0 ? totalIngreso / ventas.length : 0;
-  const precioPromedioKg = totalKg > 0 ? totalIngreso / totalKg : 0;
+  const { totalKg, totalIngreso, ticketPromedio, precioPromedioKg } = resumenVentas(
+    ventas.map((v) => ({
+      cantidad_kg: Number(v.cantidad_kg),
+      precio_total: v.precio_total == null ? null : Number(v.precio_total),
+    }))
+  );
 
   // Ingresos por cliente del periodo
   const ingresosPorCliente = new Map<
