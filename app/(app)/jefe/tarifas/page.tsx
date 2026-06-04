@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, DollarSign, ChevronLeft } from 'lucide-react';
+import { Plus, DollarSign, ChevronLeft, Pencil } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -103,7 +103,14 @@ export default async function PaginaTarifas() {
           </p>
         ) : null}
 
-        <div className="mt-2 flex justify-end gap-2">
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href={`/jefe/tarifas/${String(t.id)}`}
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 py-1.5 text-[12px] font-semibold text-zelanda-verde-700 hover:bg-zelanda-beige-200"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </Link>
           {permitirCerrar ? (
             <form action={cerrarTarifa}>
               <input type="hidden" name="id" value={String(t.id)} />

@@ -88,6 +88,69 @@ export async function crearTarifa(_prev: EstadoTarifa, formData: FormData): Prom
   redirect('/jefe/tarifas');
 }
 
+export async function editarTarifa(_prev: EstadoTarifa, formData: FormData): Promise<EstadoTarifa> {
+  await requerirUsuario('JEFE');
+
+  const id = parsearId(String(formData.get('id') ?? ''));
+  if (!id) return { error: 'ID de tarifa inválido.' };
+
+  const tipoTareaId = parsearId(String(formData.get('tipo_tarea_id') ?? ''));
+  const esquemaRaw = String(formData.get('esquema_pago') ?? '').trim();
+  const montoRaw = String(formData.get('monto') ?? '').trim();
+  const unidad = String(formData.get('unidad') ?? '').trim();
+  const desdeRaw = String(formData.get('vigente_desde') ?? '').trim();
+  const hastaRaw = String(formData.get('vigente_hasta') ?? '').trim();
+  const loteIdRaw = String(formData.get('lote_id') ?? '').trim();
+  const notas = String(formData.get('notas') ?? '').trim();
+
+  if (!tipoTareaId) return { error: 'Selecciona un tipo de tarea.' };
+  if (!ESQUEMAS_VALIDOS.includes(esquemaRaw as esquema_pago_actividad)) {
+    return { error: 'Esquema de pago inválido.' };
+  }
+  const monto = Number(montoRaw.replace(/\./g, ''));
+  if (!Number.isFinite(monto) || monto < 0) {
+    return { error: 'Monto inválido.' };
+  }
+  if (!desdeRaw) return { error: 'Elegí la fecha desde la cual rige.' };
+  const desde = new Date(`${desdeRaw}T00:00:00`);
+  if (Number.isNaN(desde.getTime())) {
+    return { error: 'Fecha desde inválida.' };
+  }
+  let hasta: Date | null = null;
+  if (hastaRaw) {
+    hasta = new Date(`${hastaRaw}T00:00:00`);
+    if (Number.isNaN(hasta.getTime())) {
+      return { error: 'Fecha hasta inválida.' };
+    }
+    if (hasta < desde) {
+      return { error: 'Hasta no puede ser anterior a Desde.' };
+    }
+  }
+  const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;
+  if (loteIdRaw && !loteId) return { error: 'Lote inválido.' };
+
+  try {
+    await prisma.tarifas_tarea.update({
+      where: { id, borrado_en: null },
+      data: {
+        tipo_tarea_id: tipoTareaId,
+        esquema_pago: esquemaRaw as esquema_pago_actividad,
+        monto,
+        unidad: unidad || null,
+        vigente_desde: desde,
+        vigente_hasta: hasta,
+        lote_id: loteId,
+        notas: notas || null,
+      },
+    });
+  } catch (e) {
+    return { error: sanitizarError(e, 'tarifas/editar') };
+  }
+
+  revalidatePath('/jefe/tarifas');
+  redirect('/jefe/tarifas');
+}
+
 export async function cerrarTarifa(formData: FormData) {
   await requerirUsuario('JEFE');
   const id = parsearId(String(formData.get('id') ?? ''));
