@@ -1,46 +1,47 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
-import { Badge, type EstadoBadge } from "@/components/ui/Badge";
-import { Bar } from "@/components/ui/Bar";
-import { Card } from "@/components/ui/Card";
-import { formatearFechaCorta } from "@/lib/utils";
-import { ETIQUETA_ESTADO_ASIGNACION } from "@/lib/constantes";
-import { cancelarAsignacion, reabrirAsignacion } from "../acciones";
-import { BotonSubmit } from "./_botones";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ChevronLeft, Pencil } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
+import { Badge, type EstadoBadge } from '@/components/ui/Badge';
+import { Bar } from '@/components/ui/Bar';
+import { Card } from '@/components/ui/Card';
+import { formatearFechaCorta } from '@/lib/utils';
+import { ETIQUETA_ESTADO_ASIGNACION } from '@/lib/constantes';
+import { cancelarAsignacion, reabrirAsignacion } from '../acciones';
+import { BotonSubmit } from './_botones';
 
-export const metadata: Metadata = { title: "Asignación" };
+export const metadata: Metadata = { title: 'Asignación' };
 
-function badgeEstado(
-  estado: "PENDIENTE" | "EN_CURSO" | "COMPLETADA" | "CANCELADA",
-): EstadoBadge {
-  if (estado === "COMPLETADA") return "aldia";
-  if (estado === "CANCELADA") return "vencida";
-  if (estado === "EN_CURSO") return "proxima";
-  return "neutro";
+function badgeEstado(estado: 'PENDIENTE' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA'): EstadoBadge {
+  if (estado === 'COMPLETADA') return 'aldia';
+  if (estado === 'CANCELADA') return 'vencida';
+  if (estado === 'EN_CURSO') return 'proxima';
+  return 'neutro';
 }
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
-  try { return BigInt(raw); } catch { return null; }
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
 }
 
 function formatearFechaHora(d: Date): string {
-  return d.toLocaleString("es-CO", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  return d.toLocaleString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-export default async function DetalleAsignacion({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function DetalleAsignacion({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   const idBig = parsearId(id);
   if (!idBig) notFound();
@@ -52,7 +53,7 @@ export default async function DetalleAsignacion({
       tipos_tarea: { select: { nombre: true, area: true } },
       lotes: { select: { nombre: true, total_arboles: true } },
       registros_avance: {
-        orderBy: { fecha_registro: "desc" },
+        orderBy: { fecha_registro: 'desc' },
         include: { persona: { select: { nombre_completo: true } } },
       },
     },
@@ -70,15 +71,12 @@ export default async function DetalleAsignacion({
   }
 
   const destino = a.lote_id
-    ? { tipo: "lote" as const, nombre: a.lotes!.nombre, total: a.lotes!.total_arboles }
-    : { tipo: "apiario" as const, nombre: apiarioNombre ?? "?", total: null };
+    ? { tipo: 'lote' as const, nombre: a.lotes!.nombre, total: a.lotes!.total_arboles }
+    : { tipo: 'apiario' as const, nombre: apiarioNombre ?? '?', total: null };
 
-  const abierta = a.estado === "PENDIENTE" || a.estado === "EN_CURSO";
+  const abierta = a.estado === 'PENDIENTE' || a.estado === 'EN_CURSO';
 
-  const pct =
-    destino.total && destino.total > 0
-      ? a.arboles_completados / destino.total
-      : 0;
+  const pct = destino.total && destino.total > 0 ? a.arboles_completados / destino.total : 0;
 
   return (
     <div className="-mx-4 -mt-4 space-y-5">
@@ -93,7 +91,7 @@ export default async function DetalleAsignacion({
           </Link>
           <div className="min-w-0 flex-1">
             <p className="m-0 text-[10.5px] uppercase tracking-[0.16em] text-zelanda-beige-100/72">
-              {destino.tipo === "lote" ? "Lote" : "Apiario"} · {destino.nombre}
+              {destino.tipo === 'lote' ? 'Lote' : 'Apiario'} · {destino.nombre}
             </p>
             <h1 className="m-0 mt-0.5 font-serif text-[22px] font-medium leading-tight">
               {a.tipos_tarea.nombre}
@@ -147,13 +145,11 @@ export default async function DetalleAsignacion({
                 <dd className="mt-0.5 flex items-center justify-between text-zelanda-verde-900">
                   <span>
                     <strong className="font-serif">
-                      {a.arboles_completados.toLocaleString("es-CO")}
-                    </strong>{" "}
-                    / {destino.total.toLocaleString("es-CO")} árboles
+                      {a.arboles_completados.toLocaleString('es-CO')}
+                    </strong>{' '}
+                    / {destino.total.toLocaleString('es-CO')} árboles
                   </span>
-                  <span className="font-serif text-[15px]">
-                    {Math.round(pct * 100)}%
-                  </span>
+                  <span className="font-serif text-[15px]">{Math.round(pct * 100)}%</span>
                 </dd>
                 <Bar valor={pct} estado="aldia" className="mt-2" />
               </div>
@@ -163,7 +159,7 @@ export default async function DetalleAsignacion({
 
         <section>
           <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-            Historial de registros{" "}
+            Historial de registros{' '}
             <span className="text-[11px] normal-case tracking-normal text-zelanda-verde-700/80">
               ({a.registros_avance.length})
             </span>
@@ -182,12 +178,10 @@ export default async function DetalleAsignacion({
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">
                       {r.tipo_registro}
-                      {r.tipo_registro === "TRAMO"
+                      {r.tipo_registro === 'TRAMO'
                         ? ` · árboles ${r.arbol_desde}–${r.arbol_hasta}`
-                        : ""}
-                      {r.tipo_registro === "SUELTOS"
-                        ? ` · ${r.cantidad_arboles} árboles`
-                        : ""}
+                        : ''}
+                      {r.tipo_registro === 'SUELTOS' ? ` · ${r.cantidad_arboles} árboles` : ''}
                     </p>
                     <span className="whitespace-nowrap text-[11px] text-zelanda-verde-700">
                       {formatearFechaHora(r.fecha_registro)}
@@ -197,9 +191,7 @@ export default async function DetalleAsignacion({
                     Por {r.persona.nombre_completo}
                   </p>
                   {r.observaciones ? (
-                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">
-                      {r.observaciones}
-                    </p>
+                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">{r.observaciones}</p>
                   ) : null}
                 </li>
               ))}
@@ -209,25 +201,26 @@ export default async function DetalleAsignacion({
 
         <div className="flex gap-2 pb-2">
           {abierta ? (
-            <form action={cancelarAsignacion} className="flex-1">
-              <input
-                type="hidden"
-                name="asignacion_id"
-                value={String(a.id)}
-              />
-              <BotonSubmit
-                texto="Cancelar asignación"
-                textoPendiente="Cancelando…"
-                className="flex min-h-touch w-full items-center justify-center rounded-xl border border-[#e8b3ad] bg-[#f4dad7] px-4 font-semibold text-[#7b2a23] hover:bg-[#efc7c2] disabled:opacity-60"
-              />
-            </form>
-          ) : a.estado === "COMPLETADA" ? (
+            <>
+              <Link
+                href={`/jefe/asignaciones/${id}/editar`}
+                className="flex min-h-touch items-center justify-center gap-1.5 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar
+              </Link>
+              <form action={cancelarAsignacion} className="flex-1">
+                <input type="hidden" name="asignacion_id" value={String(a.id)} />
+                <BotonSubmit
+                  texto="Cancelar"
+                  textoPendiente="Cancelando…"
+                  className="flex min-h-touch w-full items-center justify-center rounded-xl border border-[#e8b3ad] bg-[#f4dad7] px-4 font-semibold text-[#7b2a23] hover:bg-[#efc7c2] disabled:opacity-60"
+                />
+              </form>
+            </>
+          ) : a.estado === 'COMPLETADA' ? (
             <form action={reabrirAsignacion} className="flex-1">
-              <input
-                type="hidden"
-                name="asignacion_id"
-                value={String(a.id)}
-              />
+              <input type="hidden" name="asignacion_id" value={String(a.id)} />
               <BotonSubmit
                 texto="Reabrir"
                 textoPendiente="Reabriendo…"
