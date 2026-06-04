@@ -130,7 +130,7 @@ describe('FIJO — cálculo de salario', () => {
     expect(r.devengado).toBe(1_500_000); // 50.000 × 30 días
   });
 
-  it('mes de 31 días paga 31/30 del salario (comportamiento actual a confirmar)', () => {
+  it('un mes completo paga el salario exacto sin importar que tenga 31 días', () => {
     const r = calcularSaldoPersona(
       persona({
         vinculacion: {
@@ -145,7 +145,45 @@ describe('FIJO — cálculo de salario', () => {
       MAYO
     );
     expect(r.detalles.dias_periodo).toBe(31);
-    expect(r.devengado).toBe(1_550_000); // 50.000 × 31
+    expect(r.devengado).toBe(1_500_000); // salario exacto, no 31/30
+  });
+
+  it('en un mes de 31 días, una ausencia descuenta proporcionalmente (1/31)', () => {
+    const r = calcularSaldoPersona(
+      persona({
+        vinculacion: {
+          tipo: 'FIJO',
+          salario_base: 1_550_000, // divisible por 31 para número limpio
+          periodo_pago: 'MENSUAL',
+          tarifa_jornal: null,
+          esquema_pago_destajo: null,
+        },
+        ausencias_descontables: 1,
+      }),
+      [],
+      MAYO
+    );
+    expect(r.detalles.salario_diario).toBe(50_000); // 1.550.000 / 31
+    expect(r.devengado).toBe(1_500_000); // 50.000 × 30 días efectivos
+  });
+
+  it('febrero (28 días) también paga el salario exacto en un mes completo', () => {
+    const FEB = periodoMes(2026, 1);
+    const r = calcularSaldoPersona(
+      persona({
+        vinculacion: {
+          tipo: 'FIJO',
+          salario_base: 1_500_000,
+          periodo_pago: 'MENSUAL',
+          tarifa_jornal: null,
+          esquema_pago_destajo: null,
+        },
+      }),
+      [],
+      FEB
+    );
+    expect(r.detalles.dias_periodo).toBe(28);
+    expect(r.devengado).toBe(1_500_000);
   });
 });
 

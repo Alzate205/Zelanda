@@ -178,7 +178,11 @@ export function calcularSaldoPersona(
 
   const diasAusenciaDesc = datos.ausencias_descontables;
   const diasEfectivos = Math.max(0, diasPeriodo - diasAusenciaDesc);
-  const diasEst = diasEstandar(periodoPago);
+  // MENSUAL: el salario cubre todo el mes, así que el divisor son los días reales
+  // del período (28/30/31). Un mes completo paga el salario exacto y cada ausencia
+  // descuenta proporcionalmente. QUINCENAL/SEMANAL conservan su divisor canónico
+  // (15/7) porque el mes contiene varias de esas unidades.
+  const diasEst = periodoPago === 'MENSUAL' ? diasPeriodo : diasEstandar(periodoPago);
   const salarioDiario = salarioBase != null && diasEst > 0 ? salarioBase / diasEst : 0;
   const jornalesTotal = jorns.reduce((acc, j) => acc + j.tarifa_aplicada, 0);
   const serviciosTotalPactado = servs.reduce((acc, s) => acc + s.monto_pactado, 0);
@@ -295,6 +299,10 @@ export function calcularSaldoPersona(
     }
   }
 
+  // El peso colombiano no maneja centavos: redondeamos los montos a enteros para
+  // evitar residuos de punto flotante (p. ej. dividir el salario entre 31 días).
+  const devengadoRedondeado = Math.round(devengado);
+
   return {
     persona_id: datos.persona_id,
     nombre: datos.nombre,
@@ -303,15 +311,15 @@ export function calcularSaldoPersona(
     periodo_pago: periodoPago,
     tarifa_jornal: tarifaJornal,
     esquema_pago_destajo: esquemaDestajo,
-    devengado,
+    devengado: devengadoRedondeado,
     pagado,
-    saldo: devengado - pagado,
+    saldo: devengadoRedondeado - pagado,
     detalles: {
       dias_periodo: diasPeriodo,
       dias_ausencia_desc: diasAusenciaDesc,
       dias_efectivos: diasEfectivos,
-      salario_diario: salarioDiario,
-      pago_base: pagoBase,
+      salario_diario: Math.round(salarioDiario),
+      pago_base: Math.round(pagoBase),
       jornales_count: jorns.length,
       jornales_total: jornalesTotal,
       servicios_count: servs.length,

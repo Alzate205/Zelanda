@@ -13,7 +13,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    // Los tests son lógica pura (sin DOM): 'node' es más rápido y estable que jsdom.
+    environment: 'node',
     setupFiles: [],
     exclude: ['node_modules', 'dist', 'tests/e2e/**'],
   },
