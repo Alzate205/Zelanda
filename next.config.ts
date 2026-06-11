@@ -3,7 +3,11 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['gyburlhzvisgmdmfkqhx.supabase.co', 'lh3.googleusercontent.com'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'gyburlhzvisgmdmfkqhx.supabase.co' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+    ],
+    formats: ['image/avif', 'image/webp'],
   },
 
   productionBrowserSourceMaps: true,

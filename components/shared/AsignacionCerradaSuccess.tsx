@@ -1,7 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import Image from 'next/image';
+import Link from 'next/link';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function AsignacionCerradaSuccess({
   loteNombre,
@@ -11,7 +11,7 @@ export function AsignacionCerradaSuccess({
   tramos,
   novedades,
   proxima,
-  href = "/trabajador",
+  href = '/trabajador',
 }: {
   loteNombre: string;
   tareaNombre: string;
@@ -26,18 +26,18 @@ export function AsignacionCerradaSuccess({
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
       <div className="relative">
         <Image
-          src="/logo-zelanda.png"
+          src="/logo-zelanda.webp"
           alt=""
           width={200}
           height={336}
-          style={{ height: 200, width: "auto" }}
+          style={{ height: 200, width: 'auto' }}
           className="drop-shadow-lg"
         />
         <span
           className={cn(
-            "absolute -right-2 top-1.5",
-            "flex h-14 w-14 items-center justify-center rounded-full",
-            "border-[3px] border-zelanda-beige-50 bg-zelanda-verde-700 text-zelanda-beige-50 shadow-card",
+            'absolute -right-2 top-1.5',
+            'flex h-14 w-14 items-center justify-center rounded-full',
+            'border-[3px] border-zelanda-beige-50 bg-zelanda-verde-700 text-zelanda-beige-50 shadow-card'
           )}
         >
           <Check className="h-7 w-7" strokeWidth={2.8} />
@@ -46,15 +46,13 @@ export function AsignacionCerradaSuccess({
       <p className="mt-5 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
         Tarea cerrada
       </p>
-      <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-        ¡{loteNombre}, listo!
-      </h1>
+      <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">¡{loteNombre}, listo!</h1>
       <p className="mt-1 max-w-[280px] text-sm text-zelanda-verde-700">
-        {tareaNombre} · {arboles.toLocaleString("es-CO")} árboles · {duracion}
+        {tareaNombre} · {arboles.toLocaleString('es-CO')} árboles · {duracion}
       </p>
 
       <div className="mt-5 grid w-full max-w-xs grid-cols-2 gap-2.5 rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave">
-        <Stat label="Árboles" valor={arboles.toLocaleString("es-CO")} />
+        <Stat label="Árboles" valor={arboles.toLocaleString('es-CO')} />
         <Stat label="Tramos" valor={String(tramos)} />
         <Stat label="Novedades" valor={String(novedades)} />
         <Stat label="Próximo" valor={proxima} />
@@ -73,12 +71,8 @@ export function AsignacionCerradaSuccess({
 function Stat({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="rounded-lg bg-zelanda-beige-50 px-2.5 py-2">
-      <p className="m-0 text-[10px] uppercase tracking-[0.12em] text-zelanda-verde-700">
-        {label}
-      </p>
-      <p className="m-0 mt-0.5 font-serif text-lg text-zelanda-verde-900">
-        {valor}
-      </p>
+      <p className="m-0 text-[10px] uppercase tracking-[0.12em] text-zelanda-verde-700">{label}</p>
+      <p className="m-0 mt-0.5 font-serif text-lg text-zelanda-verde-900">{valor}</p>
     </div>
   );
 }

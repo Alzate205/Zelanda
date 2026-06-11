@@ -33,7 +33,7 @@ export default async function PaginaLogin({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo.png"
+                src="/logo-zelanda.webp"
                 alt="La Zelanda"
                 style={{
                   height: '75%',
