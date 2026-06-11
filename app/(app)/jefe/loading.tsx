@@ -2,19 +2,14 @@ import { Esqueleto } from '@/components/shared/Esqueleto';
 
 export default function CargandoJefe() {
   return (
-    <div className="space-y-4" role="status" aria-label="Cargando panel">
-      <div className="space-y-2">
-        <Esqueleto className="h-3 w-28" />
-        <Esqueleto className="h-7 w-56" />
+    <div className="relative -mx-4 -my-6 h-[70svh]" role="status" aria-label="Cargando mapa">
+      <Esqueleto className="h-full w-full rounded-none" />
+      <div className="absolute left-3 top-3">
+        <Esqueleto className="h-16 w-44 bg-zelanda-beige-300/60" />
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <Esqueleto className="h-20" />
-        <Esqueleto className="h-20" />
-        <Esqueleto className="h-20" />
-        <Esqueleto className="h-20" />
+      <div className="absolute inset-x-3 bottom-3">
+        <Esqueleto className="h-16 bg-zelanda-beige-300/60" />
       </div>
-      <Esqueleto className="h-40" />
-      <Esqueleto className="h-40" />
     </div>
   );
 }
