@@ -60,7 +60,7 @@ ehthumbs.db
 Desktop.ini
 
 # Claude Code (local, no debe ir al repo)
-.claude/settings.local.json
+.claude/
 
 # Superpowers (mockups de brainstorming, locales)
 .superpowers/
