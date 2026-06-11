@@ -119,6 +119,8 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
     cosechaMes,
     cosechaMesAnterior,
     recordatoriosRaw,
+    cosechaPorLoteRaw,
+    equipoHoyRaw,
   ] = await Promise.all([
     prisma.novedades.findMany({
       where: { resuelta: false },
@@ -172,6 +174,20 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
         asignado_a: { select: { id: true, nombre_completo: true } },
       },
     }),
+    prisma.cosechas.groupBy({
+      by: ['lote_id'],
+      where: { fecha: { gte: inicioMes } },
+      _sum: { peso_kg: true },
+    }),
+    prisma.asignaciones.findMany({
+      where: { estado: { in: ['PENDIENTE', 'EN_CURSO'] } },
+      select: {
+        lote_id: true,
+        persona: { select: { id: true, nombre_completo: true } },
+        tipos_tarea: { select: { nombre: true } },
+        lotes: { select: { nombre: true } },
+      },
+    }),
   ]);
 
   const recordatorios = recordatoriosRaw.map((r) => {
@@ -211,6 +227,24 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
     else lotesAldia++;
   }
 
+  const lotes_estado = Array.from(lotesPorEstado.entries()).map(([lote_id, estado]) => ({
+    lote_id,
+    estado,
+  }));
+
+  const cosecha_mes_por_lote = cosechaPorLoteRaw.map((c) => ({
+    lote_id: String(c.lote_id),
+    kg: Number(c._sum.peso_kg ?? 0),
+  }));
+
+  const equipo_hoy = equipoHoyRaw.map((a) => ({
+    persona_id: String(a.persona.id),
+    persona_nombre: a.persona.nombre_completo,
+    lote_id: a.lote_id !== null ? String(a.lote_id) : null,
+    lote_nombre: a.lotes?.nombre ?? null,
+    tarea_nombre: a.tipos_tarea.nombre,
+  }));
+
   const novedades_pendientes = novedadesPendientesRaw.map((n) => ({
     id: String(n.id),
     tipo: String(n.tipo),
@@ -244,6 +278,9 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
       cosecha_mes_anterior_kg: Number(cosechaMesAnterior._sum.peso_kg ?? 0),
     },
     personas,
+    lotes_estado,
+    cosecha_mes_por_lote,
+    equipo_hoy,
     ts: new Date().toISOString(),
   };
 };

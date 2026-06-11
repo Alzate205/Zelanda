@@ -1,10 +1,10 @@
 // Tipos compartidos para cache y cola offline.
 
-export type AreaTarea = "CULTIVO" | "APICULTURA";
-export type EstadoAsignacion = "PENDIENTE" | "EN_CURSO" | "COMPLETADA" | "CANCELADA";
-export type TipoRegistro = "TRAMO" | "SUELTOS" | "VISITA";
-export type TipoNovedad = "PLAGA" | "DANO_FISICO" | "ENFERMEDAD" | "OBSERVACION" | "OTRO";
-export type EstadoCola = "pendiente" | "subiendo" | "subido" | "error_permanente";
+export type AreaTarea = 'CULTIVO' | 'APICULTURA';
+export type EstadoAsignacion = 'PENDIENTE' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA';
+export type TipoRegistro = 'TRAMO' | 'SUELTOS' | 'VISITA';
+export type TipoNovedad = 'PLAGA' | 'DANO_FISICO' | 'ENFERMEDAD' | 'OBSERVACION' | 'OTRO';
+export type EstadoCola = 'pendiente' | 'subiendo' | 'subido' | 'error_permanente';
 
 export type AsignacionCacheada = {
   id: string;
@@ -34,7 +34,7 @@ export type LoteCacheado = {
 
 export type MetaCache = { key: string; value: unknown };
 
-export type EstadoApiario = "BIEN" | "CON_PROBLEMAS" | "CRITICO";
+export type EstadoApiario = 'BIEN' | 'CON_PROBLEMAS' | 'CRITICO';
 
 export type ItemColaAvance = {
   id_local: string;
@@ -105,7 +105,7 @@ export type AsignacionResumenCacheada = {
 
 export type DespachoAbiertoItem = {
   id: string;
-  tipo: "HERRAMIENTA" | "INSUMO";
+  tipo: 'HERRAMIENTA' | 'INSUMO';
   nombre: string;
   unidad: string;
   cantidad: number;
@@ -150,7 +150,7 @@ export type AlertaTareaJefe = {
   tipo_nombre: string;
   tipo_id: string;
   dias_para_proxima: number | null;
-  estado: "vencida" | "sin_historial" | "proxima";
+  estado: 'vencida' | 'sin_historial' | 'proxima';
 };
 
 export type NovedadJefeResumen = {
@@ -167,7 +167,22 @@ export type RecordatorioResumen = {
   fecha: string;
   asignado_a_nombre: string;
   asignado_a_id: string;
-  estado: "vencido" | "hoy" | "proximo";
+  estado: 'vencido' | 'hoy' | 'proximo';
+};
+
+export type LoteEstadoResumen = {
+  lote_id: string;
+  estado: 'aldia' | 'proxima' | 'vencida';
+};
+
+export type CosechaLoteMes = { lote_id: string; kg: number };
+
+export type AsignacionHoyResumen = {
+  persona_id: string;
+  persona_nombre: string;
+  lote_id: string | null;
+  lote_nombre: string | null;
+  tarea_nombre: string;
 };
 
 export type SnapshotJefe = {
@@ -190,6 +205,10 @@ export type SnapshotJefe = {
     cosecha_mes_anterior_kg: number;
   };
   personas: PersonaCacheada[];
+  // Opcionales: snapshots viejos cacheados en IndexedDB no los traen.
+  lotes_estado?: LoteEstadoResumen[];
+  cosecha_mes_por_lote?: CosechaLoteMes[];
+  equipo_hoy?: AsignacionHoyResumen[];
   ts: string;
 };
 
@@ -199,7 +218,7 @@ export type ItemColaDespachoCrear = {
   id_local: string;
   persona_id: string;
   asignacion_id: string | null;
-  items: Array<{ tipo: "HERRAMIENTA" | "INSUMO"; ref_id: string; cantidad: number }>;
+  items: Array<{ tipo: 'HERRAMIENTA' | 'INSUMO'; ref_id: string; cantidad: number }>;
   notas: string | null;
   estado: EstadoCola;
   intentos: number;
@@ -212,7 +231,7 @@ export type ItemColaDespachoCerrar = {
   despacho_id: string;
   items: Array<{
     despacho_item_id: string;
-    tipo: "HERRAMIENTA" | "INSUMO";
+    tipo: 'HERRAMIENTA' | 'INSUMO';
     devuelto?: boolean;
     consumido?: number;
     condicion_devolucion?: string | null;
@@ -227,7 +246,7 @@ export type ItemColaCosecha = {
   id_local: string;
   persona_id: string;
   lote_id: string;
-  metodo: "CANASTA" | "BASCULA";
+  metodo: 'CANASTA' | 'BASCULA';
   cantidad_canastas: number | null;
   capacidad_canasta_kg: number | null;
   peso_kg: number;
@@ -240,7 +259,7 @@ export type ItemColaCosecha = {
 
 export type ItemColaSalida = {
   id_local: string;
-  tipo: "VENTA" | "CONSUMO" | "PERDIDA" | "OTRO";
+  tipo: 'VENTA' | 'CONSUMO' | 'PERDIDA' | 'OTRO';
   cantidad_kg: number;
   cliente_detalle: string | null;
   cliente_id: string | null;
