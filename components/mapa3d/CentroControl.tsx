@@ -10,6 +10,8 @@ import { PanelLote } from './PanelLote';
 import { PanelCentral } from './PanelCentral';
 import { VueloDron } from './VueloDron';
 import { HistoriaSlider } from './HistoriaSlider';
+import { PanelClima } from './PanelClima';
+import type { ClimaFinca } from '@/lib/jefe/clima';
 import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
 import { listaMeses } from '@/lib/historia-meses';
 import { ordenarPorCercania } from '@/lib/ruta-dron';
@@ -61,6 +63,7 @@ export function CentroControl({
     pausado: boolean;
   } | null>(null);
   const mapaRef = useRef<ManijaMapa3D>(null);
+  const [clima, setClima] = useState<ClimaFinca | 'error' | null>(null);
   const [mesesHistoria, setMesesHistoria] = useState<string[] | null>(null);
   const [indiceMes, setIndiceMes] = useState(0);
   const [datosPorMes, setDatosPorMes] = useState<
@@ -178,6 +181,24 @@ export function CentroControl({
     ? lotesMapa.find((l) => l.id === vuelo.ruta[vuelo.indice]) ?? null
     : null;
 
+  // Al entrar al modo clima: traer el pronóstico una sola vez por sesión.
+  useEffect(() => {
+    if (modo !== 'clima' || clima !== null) return;
+    let cancelado = false;
+    fetch('/api/jefe/clima')
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelado) return;
+        setClima(json.ok ? json.data : 'error');
+      })
+      .catch(() => {
+        if (!cancelado) setClima('error');
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [modo, clima]);
+
   // Al entrar al modo historia: traer el rango disponible una sola vez.
   useEffect(() => {
     if (modo !== 'historia' || mesesHistoria !== null) return;
@@ -291,6 +312,8 @@ export function CentroControl({
             onPausar={() => setVuelo((v) => (v ? { ...v, pausado: !v.pausado } : v))}
             onSalir={() => setVuelo(null)}
           />
+        ) : modo === 'clima' ? (
+          <PanelClima clima={clima} />
         ) : modo === 'historia' && mesesHistoria && mesesHistoria.length > 0 ? (
           <HistoriaSlider
             meses={mesesHistoria}

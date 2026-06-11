@@ -7,6 +7,7 @@ const MODOS: Array<{ id: ModoMapa; etiqueta: string }> = [
   { id: 'cosecha', etiqueta: 'Cosecha' },
   { id: 'equipo', etiqueta: 'Equipo' },
   { id: 'historia', etiqueta: 'Historia' },
+  { id: 'clima', etiqueta: 'Clima' },
 ];
 
 export function ChipsModos({

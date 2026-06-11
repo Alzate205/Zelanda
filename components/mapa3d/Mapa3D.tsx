@@ -18,7 +18,7 @@ export type LoteMapa3D = {
   geojson: GeoJsonPolygon;
 };
 
-export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia';
+export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia' | 'clima';
 
 const CENTRO_QUINDIO: [number, number] = [-75.681, 4.535];
 
@@ -94,6 +94,7 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
 function pinturaFill(modo: ModoMapa): maplibregl.ExpressionSpecification | string {
   if (modo === 'cosecha' || modo === 'historia') return ['get', 'colorCosecha'] as never;
   if (modo === 'equipo') return '#5a7d8a';
+  if (modo === 'clima') return '#4a708a';
   return [
     'match',
     ['get', 'estado'],
