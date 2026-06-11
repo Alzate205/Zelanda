@@ -6,6 +6,8 @@
  *   - Polígono llamado "Finca"      → finca.poligono (borde general)
  *   - Puntos con nombre de apiario  → apiarios.coordenadas ("El Cedro" o "Apiario El Cedro")
  *   - Puntos con nombre de instalación → instalaciones.coordenadas
+ *   - Puntos sin coincidencia → SE CREAN como instalaciones nuevas
+ *     (tipo inferido del nombre: casa→CASA, bodega→BODEGA, almacén→ALMACEN, resto→OTRO)
  *
  * Uso:
  *   npm run importar:kml                    → SIMULACIÓN (muestra qué haría, no toca la BD)
@@ -32,7 +34,18 @@ function normalizar(s) {
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s*\(.*?\)\s*/g, " ") // "Bodega (herramientas)" → "bodega"
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function inferirTipoInstalacion(nombre) {
+  const n = normalizar(nombre);
+  if (n.includes("casa")) return "CASA";
+  if (n.includes("bodega")) return "BODEGA";
+  if (n.includes("almacen")) return "ALMACEN";
+  return "OTRO";
 }
 
 function parsearCoordenadas(raw) {
@@ -206,9 +219,30 @@ async function main() {
       hechos.push(`Instalación ${inst.nombre} <- "${p.nombre}"`);
       continue;
     }
-    ignorados.push(
-      `Punto "${p.nombre}" — no coincide con ningún apiario ni instalación`,
-    );
+
+    // Punto con nombre de apiario pero sin coincidencia: no lo creamos como
+    // instalación — los apiarios llevan colmenas y se gestionan aparte.
+    if (clave.startsWith("apiario")) {
+      const nombres = [...porNombreApiario.values()].map((a) => a.nombre).join('", "');
+      ignorados.push(
+        `Punto "${p.nombre}" — renombralo en Google Earth como uno de los apiarios: "${nombres}"`,
+      );
+      continue;
+    }
+
+    // Instalación nueva de la finca real: se crea con tipo inferido.
+    const tipo = inferirTipoInstalacion(p.nombre);
+    const wkt = wktPoint(p.coords[0]);
+    if (!dry) {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO instalaciones (nombre, tipo, activo, coordenadas)
+         VALUES ($1, $2::tipo_instalacion, TRUE, ST_GeomFromText($3, 4326)::geography)`,
+        p.nombre.trim(),
+        tipo,
+        wkt,
+      );
+    }
+    hechos.push(`Instalación NUEVA "${p.nombre.trim()}" (${tipo})`);
   }
 
   console.log(
