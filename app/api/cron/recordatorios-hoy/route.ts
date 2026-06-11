@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enviarPushAUsuarios } from '@/lib/push/enviar';
+import { evaluarYEnviarAlertaClima } from '@/lib/push/alerta-clima';
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization');
@@ -99,11 +100,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Alerta de clima del día (comparte este cron: Vercel Hobby permite máx. 2)
+  const alertaClima = await evaluarYEnviarAlertaClima();
+
   return NextResponse.json({
     procesados: pendientes.length + vencidosAyer.length,
     enviados,
     vencidos,
     sin_usuario: sinUsuario,
+    alerta_clima: alertaClima,
     errores,
   });
 }
