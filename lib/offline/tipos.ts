@@ -185,6 +185,14 @@ export type AsignacionHoyResumen = {
   tarea_nombre: string;
 };
 
+export type PrediccionLoteResumen = {
+  lote_id: string;
+  kg_min: number;
+  kg_esperado: number;
+  kg_max: number;
+  confianza: 'alta' | 'media' | 'baja';
+};
+
 export type SnapshotJefe = {
   vencidas: AlertaTareaJefe[];
   proximas: AlertaTareaJefe[];
@@ -209,6 +217,7 @@ export type SnapshotJefe = {
   lotes_estado?: LoteEstadoResumen[];
   cosecha_mes_por_lote?: CosechaLoteMes[];
   equipo_hoy?: AsignacionHoyResumen[];
+  prediccion_por_lote?: PrediccionLoteResumen[];
   ts: string;
 };
 

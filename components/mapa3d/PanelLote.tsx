@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { X, Trees, AlertTriangle, Scale } from 'lucide-react';
-import type { SnapshotJefe } from '@/lib/offline/tipos';
+import type { SnapshotJefe, PrediccionLoteResumen } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
 import { COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
 
@@ -18,6 +18,7 @@ export function PanelLote({
   kgMes,
   alertas,
   trabajando,
+  prediccion,
   onCerrar,
 }: {
   lote: GeoFinca['lotesParaMapa'][number];
@@ -25,6 +26,7 @@ export function PanelLote({
   kgMes: number;
   alertas: SnapshotJefe['vencidas'];
   trabajando: string[];
+  prediccion?: PrediccionLoteResumen | null;
   onCerrar: () => void;
 }) {
   return (
@@ -66,6 +68,14 @@ export function PanelLote({
           {Math.round(kgMes).toLocaleString('es-CO')} kg este mes
         </span>
       </div>
+
+      {prediccion ? (
+        <p className="m-0 mt-1.5 text-[12px] text-zelanda-verde-700">
+          Próximo ciclo estimado: {prediccion.kg_min.toLocaleString('es-CO')}–
+          {prediccion.kg_max.toLocaleString('es-CO')} kg
+          <span className="text-zelanda-verde-700/70"> · confianza {prediccion.confianza}</span>
+        </p>
+      ) : null}
 
       {alertas.length > 0 ? (
         <ul className="mt-2.5 list-none space-y-1 p-0">

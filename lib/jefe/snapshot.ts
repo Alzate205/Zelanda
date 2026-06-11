@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { calcularResumen } from '@/lib/fechas-tarea';
 import { obtenerConfiguracion } from '@/lib/configuracion';
+import { obtenerPredicciones } from '@/lib/jefe/prediccion';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
 
 /**
@@ -281,6 +282,7 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
     lotes_estado,
     cosecha_mes_por_lote,
     equipo_hoy,
+    prediccion_por_lote: await obtenerPredicciones(),
     ts: new Date().toISOString(),
   };
 };

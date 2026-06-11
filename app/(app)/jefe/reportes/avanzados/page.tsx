@@ -6,6 +6,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { mesBogota, periodoMesBogota } from '@/lib/fecha';
 import { margenMes } from '@/lib/comercio';
+import { obtenerPredicciones } from '@/lib/jefe/prediccion';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -214,6 +215,13 @@ export default async function PaginaReportesAvanzados({
 
   const mesAnterior = mes === 0 ? aClaveMes(anio - 1, 11) : aClaveMes(anio, mes - 1);
   const mesSiguiente = mes === 11 ? aClaveMes(anio + 1, 0) : aClaveMes(anio, mes + 1);
+
+  // Predicción del próximo ciclo por lote
+  const predicciones = await obtenerPredicciones();
+  const nombresLote = new Map(rankingLotes.map((l) => [String(l.id), l.nombre]));
+  const prediccionesConNombre = predicciones
+    .map((p) => ({ ...p, nombre: nombresLote.get(p.lote_id) ?? `Lote ${p.lote_id}` }))
+    .sort((a, b) => b.kg_esperado - a.kg_esperado);
 
   return (
     <div className="space-y-5">
@@ -497,6 +505,41 @@ export default async function PaginaReportesAvanzados({
               ))}
             </div>
           </>
+        )}
+      </section>
+
+      {/* Sección 5: Predicción de cosecha */}
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="font-serif text-base text-zelanda-verde-900">Predicción de cosecha</h2>
+        <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+          Estimación del próximo ciclo por lote según el histórico
+        </p>
+        {prediccionesConNombre.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Aún no hay cosechas suficientes para estimar.
+          </p>
+        ) : (
+          <ul className="mt-3 list-none space-y-2 p-0">
+            {prediccionesConNombre.map((p) => (
+              <li key={p.lote_id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-zelanda-verde-900">{p.nombre}</span>
+                <span className="text-zelanda-verde-700">
+                  {fmtKg(p.kg_min)}–{fmtKg(p.kg_max)} kg
+                  <span
+                    className={
+                      p.confianza === 'alta'
+                        ? 'ml-2 rounded-full bg-zelanda-verde-600/15 px-2 py-0.5 text-[10.5px] text-zelanda-verde-800'
+                        : p.confianza === 'media'
+                        ? 'ml-2 rounded-full bg-zelanda-ocre-500/20 px-2 py-0.5 text-[10.5px] text-zelanda-ocre-700'
+                        : 'ml-2 rounded-full bg-zelanda-beige-300/60 px-2 py-0.5 text-[10.5px] text-zelanda-verde-700'
+                    }
+                  >
+                    {p.confianza}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

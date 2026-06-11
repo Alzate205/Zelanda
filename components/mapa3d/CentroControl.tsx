@@ -109,6 +109,12 @@ export function CentroControl({
     return m;
   }, [snapshot.cosecha_mes_por_lote]);
 
+  const prediccionPorLote = useMemo(() => {
+    const m = new Map<string, NonNullable<SnapshotJefe['prediccion_por_lote']>[number]>();
+    for (const p of snapshot.prediccion_por_lote ?? []) m.set(p.lote_id, p);
+    return m;
+  }, [snapshot.prediccion_por_lote]);
+
   const equipoPorLote = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const a of snapshot.equipo_hoy ?? []) {
@@ -331,6 +337,7 @@ export function CentroControl({
             kgMes={kgPorLote.get(loteSel.id) ?? 0}
             alertas={alertasDelLote}
             trabajando={equipoPorLote.get(loteSel.id) ?? []}
+            prediccion={prediccionPorLote.get(loteSel.id) ?? null}
             onCerrar={() => setLoteId(null)}
           />
         ) : (
