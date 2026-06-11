@@ -121,12 +121,13 @@ type PropsMapa3D = {
   bordeFinca: GeoJsonPolygon | null;
   apiarios: { id: string; nombre: string; geojson: GeoJsonPoint | null }[];
   modo: ModoMapa;
+  ndvi?: { url: string; bbox: [number, number, number, number] } | null;
   onSeleccionLote: (id: string | null) => void;
   onError: () => void;
 };
 
 const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
-  { lotes, bordeFinca, apiarios, modo, onSeleccionLote, onError },
+  { lotes, bordeFinca, apiarios, modo, ndvi = null, onSeleccionLote, onError },
   ref
 ) {
   const contRef = useRef<HTMLDivElement>(null);
@@ -295,6 +296,38 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
     }
     crearMarcadores(map, lotes, apiarios, marcadoresRef, modo, (id) => onSeleccionRef.current(id));
   }, [modo, lotes, apiarios]);
+
+  // Capa NDVI (imagen georreferenciada sobre el satélite)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !cargadoRef.current) return;
+    const quitar = () => {
+      if (map.getLayer('ndvi-capa')) map.removeLayer('ndvi-capa');
+      if (map.getSource('ndvi')) map.removeSource('ndvi');
+    };
+    if (!ndvi) {
+      quitar();
+      return;
+    }
+    quitar();
+    const [w, s, e, n] = ndvi.bbox;
+    map.addSource('ndvi', {
+      type: 'image',
+      url: ndvi.url,
+      coordinates: [
+        [w, n],
+        [e, n],
+        [e, s],
+        [w, s],
+      ],
+    });
+    // Debajo de los polígonos para no tapar la interacción con los lotes
+    map.addLayer(
+      { id: 'ndvi-capa', type: 'raster', source: 'ndvi', paint: { 'raster-opacity': 0.7 } },
+      'lotes-fill'
+    );
+    return quitar;
+  }, [ndvi]);
 
   useImperativeHandle(ref, () => ({
     volarA(opts) {

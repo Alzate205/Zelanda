@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Plane } from 'lucide-react';
+import { Plane, Satellite } from 'lucide-react';
 import Mapa3D, { type LoteMapa3D, type ManijaMapa3D, type ModoMapa } from './Mapa3D';
 import { ChipsModos } from './ChipsModos';
 import { DockKPIs } from './DockKPIs';
@@ -64,6 +64,11 @@ export function CentroControl({
   } | null>(null);
   const mapaRef = useRef<ManijaMapa3D>(null);
   const [clima, setClima] = useState<ClimaFinca | 'error' | null>(null);
+  const [ndvi, setNdvi] = useState<{
+    url: string;
+    bbox: [number, number, number, number];
+  } | null>(null);
+  const [avisoNdvi, setAvisoNdvi] = useState<string | null>(null);
   const [mesesHistoria, setMesesHistoria] = useState<string[] | null>(null);
   const [indiceMes, setIndiceMes] = useState(0);
   const [datosPorMes, setDatosPorMes] = useState<
@@ -149,6 +154,26 @@ export function CentroControl({
         geojson: l.geojson,
       }));
   }, [geo.lotesParaMapa, estadoPorLote, kgPorLote, equipoPorLote, modo, datosMes]);
+
+  async function alternarNdvi() {
+    if (ndvi) {
+      setNdvi(null);
+      return;
+    }
+    try {
+      const res = await fetch('/api/jefe/ndvi?info=1');
+      const json = await res.json();
+      if (!json.ok || !json.data.disponible) {
+        setAvisoNdvi(json.data?.razon ?? 'NDVI no disponible');
+        setTimeout(() => setAvisoNdvi(null), 5000);
+        return;
+      }
+      setNdvi({ url: '/api/jefe/ndvi', bbox: json.data.bbox });
+    } catch {
+      setAvisoNdvi('Sin señal para cargar el NDVI');
+      setTimeout(() => setAvisoNdvi(null), 5000);
+    }
+  }
 
   function iniciarVuelo() {
     if (lotesMapa.length === 0) return;
@@ -275,6 +300,7 @@ export function CentroControl({
           bordeFinca={geo.bordeFinca}
           apiarios={geo.apiariosParaMapa}
           modo={modo}
+          ndvi={ndvi}
           onSeleccionLote={(id) => {
             setVuelo(null);
             setLoteId(id);
@@ -304,6 +330,25 @@ export function CentroControl({
             <Plane className="h-3.5 w-3.5" aria-hidden />
             Vuelo de dron
           </button>
+        ) : null}
+        {conWebGL === true ? (
+          <button
+            type="button"
+            onClick={alternarNdvi}
+            className={
+              ndvi
+                ? 'pointer-events-auto flex items-center gap-1.5 self-start rounded-full bg-zelanda-verde-700 px-3.5 py-1.5 text-xs font-semibold text-zelanda-beige-50 shadow-card'
+                : 'pointer-events-auto flex items-center gap-1.5 self-start rounded-full border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-1.5 text-xs font-medium text-zelanda-verde-800 shadow-suave backdrop-blur-md'
+            }
+          >
+            <Satellite className="h-3.5 w-3.5" aria-hidden />
+            Salud del cultivo
+          </button>
+        ) : null}
+        {avisoNdvi ? (
+          <p className="pointer-events-auto m-0 self-start rounded-xl bg-zelanda-verde-900/85 px-3 py-1.5 text-[11.5px] text-zelanda-beige-50 backdrop-blur-md">
+            {avisoNdvi}
+          </p>
         ) : null}
       </div>
 
