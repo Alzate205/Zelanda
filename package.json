@@ -23,6 +23,8 @@
     "crear-jefe": "node --env-file=.env.local --env-file=.env scripts/crear-primer-jefe.mjs",
     "seed:fase2": "node --env-file=.env --env-file=.env.local scripts/seed-fase2.mjs",
     "verificar:migracion": "node --env-file=.env --env-file=.env.local scripts/verificar-migracion-nucleo.mjs",
+    "importar:kml": "node --env-file=.env --env-file=.env.local scripts/importar-kml.mjs",
+    "importar:kml:aplicar": "node --env-file=.env --env-file=.env.local scripts/importar-kml.mjs --aplicar",
     "ci": "npm run lint && npm run test && npm run build",
     "check:types": "tsc --noEmit"
   },
