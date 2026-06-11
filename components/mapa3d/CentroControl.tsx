@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Mapa3D, { type LoteMapa3D, type ModoMapa } from './Mapa3D';
+import { Plane } from 'lucide-react';
+import Mapa3D, { type LoteMapa3D, type ManijaMapa3D, type ModoMapa } from './Mapa3D';
 import { ChipsModos } from './ChipsModos';
 import { DockKPIs } from './DockKPIs';
 import { PanelLote } from './PanelLote';
 import { PanelCentral } from './PanelCentral';
+import { VueloDron } from './VueloDron';
 import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
-import { rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
+import { ordenarPorCercania } from '@/lib/ruta-dron';
+import { centroideDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
@@ -50,6 +53,12 @@ export function CentroControl({
   const [conWebGL, setConWebGL] = useState<boolean | null>(null);
   const contRef = useRef<HTMLDivElement>(null);
   const [altura, setAltura] = useState<number | null>(null);
+  const [vuelo, setVuelo] = useState<{
+    ruta: string[];
+    indice: number;
+    pausado: boolean;
+  } | null>(null);
+  const mapaRef = useRef<ManijaMapa3D>(null);
 
   useEffect(() => {
     setConWebGL(soportaWebGL());
@@ -108,6 +117,43 @@ export function CentroControl({
       }));
   }, [geo.lotesParaMapa, estadoPorLote, kgPorLote, equipoPorLote]);
 
+  function iniciarVuelo() {
+    if (lotesMapa.length === 0) return;
+    setLoteId(null);
+    setPanelAbierto(false);
+    const ruta = ordenarPorCercania(
+      lotesMapa.map((l) => ({ id: l.id, centro: centroideDePoligono(l.geojson) }))
+    );
+    setVuelo({ ruta, indice: 0, pausado: false });
+  }
+
+  // Cada parada: volar (2.6 s) + contemplar (2.6 s) y pasar a la siguiente.
+  useEffect(() => {
+    if (!vuelo || vuelo.pausado) return;
+    const lote = lotesMapa.find((l) => l.id === vuelo.ruta[vuelo.indice]);
+    if (!lote) {
+      setVuelo(null);
+      return;
+    }
+    mapaRef.current?.volarA({
+      center: centroideDePoligono(lote.geojson),
+      zoom: 15.3,
+      pitch: 58,
+      bearing: -15 + vuelo.indice * 30,
+      duration: 2600,
+    });
+    const timer = setTimeout(() => {
+      setVuelo((v) =>
+        v === null || v.indice >= v.ruta.length - 1 ? null : { ...v, indice: v.indice + 1 }
+      );
+    }, 5200);
+    return () => clearTimeout(timer);
+  }, [vuelo, lotesMapa]);
+
+  const loteEnVuelo = vuelo
+    ? lotesMapa.find((l) => l.id === vuelo.ruta[vuelo.indice]) ?? null
+    : null;
+
   const loteSel = loteId ? geo.lotesParaMapa.find((l) => l.id === loteId) ?? null : null;
   const alertasDelLote = useMemo(() => {
     if (!loteId) return [];
@@ -137,11 +183,15 @@ export function CentroControl({
         </div>
       ) : conWebGL === true ? (
         <Mapa3D
+          ref={mapaRef}
           lotes={lotesMapa}
           bordeFinca={geo.bordeFinca}
           apiarios={geo.apiariosParaMapa}
           modo={modo}
-          onSeleccionLote={setLoteId}
+          onSeleccionLote={(id) => {
+            setVuelo(null);
+            setLoteId(id);
+          }}
           onError={() => setConWebGL(false)}
         />
       ) : null}
@@ -158,11 +208,30 @@ export function CentroControl({
         <div className="pointer-events-auto">
           <ChipsModos modo={modo} onCambio={setModo} />
         </div>
+        {conWebGL === true && !vuelo ? (
+          <button
+            type="button"
+            onClick={iniciarVuelo}
+            className="pointer-events-auto flex items-center gap-1.5 self-start rounded-full border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-1.5 text-xs font-medium text-zelanda-verde-800 shadow-suave backdrop-blur-md"
+          >
+            <Plane className="h-3.5 w-3.5" aria-hidden />
+            Vuelo de dron
+          </button>
+        ) : null}
       </div>
 
-      {/* Dock o panel de lote */}
+      {/* Vuelo de dron, panel de lote o dock */}
       <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-2">
-        {loteSel ? (
+        {vuelo && loteEnVuelo ? (
+          <VueloDron
+            lote={loteEnVuelo}
+            numero={vuelo.indice + 1}
+            total={vuelo.ruta.length}
+            pausado={vuelo.pausado}
+            onPausar={() => setVuelo((v) => (v ? { ...v, pausado: !v.pausado } : v))}
+            onSalir={() => setVuelo(null)}
+          />
+        ) : loteSel ? (
           <PanelLote
             lote={loteSel}
             estado={estadoPorLote.get(loteSel.id) ?? 'aldia'}
