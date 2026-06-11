@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -24,8 +24,7 @@ import {
   History,
   Download,
 } from 'lucide-react';
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { guardarSnapshotJefe, leerSnapshotJefe, tsJefe } from '@/lib/offline/cache';
+import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
 import { ETIQUETA_NOVEDAD } from '@/lib/constantes';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -78,48 +77,7 @@ export function DashboardJefeCliente({
   nombrePila: string;
   snapshotInicial: SnapshotJefe;
 }) {
-  const online = useOnlineStatus();
-  const [snapshot, setSnapshot] = useState<SnapshotJefe>(snapshotInicial);
-  const [tsCache, setTsCache] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelado = false;
-
-    async function cargar() {
-      const cacheado = await leerSnapshotJefe();
-      if (!cacheado) {
-        await guardarSnapshotJefe(snapshotInicial);
-        if (!cancelado) {
-          setSnapshot(snapshotInicial);
-          setTsCache(await tsJefe());
-        }
-      } else if (!cancelado) {
-        setSnapshot(cacheado);
-        setTsCache(await tsJefe());
-      }
-
-      if (online) {
-        try {
-          const res = await fetch('/api/jefe/snapshot');
-          if (res.ok) {
-            const fresco = (await res.json()) as SnapshotJefe;
-            await guardarSnapshotJefe(fresco);
-            if (!cancelado) {
-              setSnapshot(fresco);
-              setTsCache(await tsJefe());
-            }
-          }
-        } catch {
-          // offline o error transitorio
-        }
-      }
-    }
-
-    cargar();
-    return () => {
-      cancelado = true;
-    };
-  }, [online, snapshotInicial]);
+  const { snapshot, tsCache } = useSnapshotJefe(snapshotInicial);
 
   const { vencidas, proximas, novedades_pendientes, contadores } = snapshot;
   const recordatorios = snapshot.recordatorios ?? [];
