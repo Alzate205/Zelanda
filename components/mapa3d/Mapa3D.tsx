@@ -22,6 +22,52 @@ export type ModoMapa = 'tareas' | 'cosecha' | 'equipo';
 
 const CENTRO_QUINDIO: [number, number] = [-75.681, 4.535];
 
+// Última posición de cámara del usuario, para no re-encuadrar la finca
+// cada vez que vuelve al centro de control.
+const CLAVE_CAMARA = 'zelanda_mapa3d_camara';
+
+type CamaraGuardada = {
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+};
+
+function leerCamaraGuardada(): CamaraGuardada | null {
+  try {
+    const raw = localStorage.getItem(CLAVE_CAMARA);
+    if (!raw) return null;
+    const c = JSON.parse(raw) as CamaraGuardada;
+    if (
+      !Array.isArray(c.center) ||
+      c.center.length !== 2 ||
+      typeof c.center[0] !== 'number' ||
+      typeof c.center[1] !== 'number' ||
+      typeof c.zoom !== 'number'
+    ) {
+      return null;
+    }
+    return c;
+  } catch {
+    return null;
+  }
+}
+
+function guardarCamara(map: maplibregl.Map) {
+  try {
+    const centro = map.getCenter();
+    const camara: CamaraGuardada = {
+      center: [centro.lng, centro.lat],
+      zoom: map.getZoom(),
+      pitch: map.getPitch(),
+      bearing: map.getBearing(),
+    };
+    localStorage.setItem(CLAVE_CAMARA, JSON.stringify(camara));
+  } catch {
+    // localStorage lleno o bloqueado: no es crítico
+  }
+}
+
 const ESTILO_BASE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -89,15 +135,16 @@ export default function Mapa3D({
   useEffect(() => {
     if (!contRef.current || mapRef.current) return;
 
+    const camaraGuardada = leerCamaraGuardada();
     let map: maplibregl.Map;
     try {
       map = new maplibregl.Map({
         container: contRef.current,
         style: ESTILO_BASE,
-        center: CENTRO_QUINDIO,
-        zoom: 13.2,
-        pitch: 52,
-        bearing: -15,
+        center: camaraGuardada?.center ?? CENTRO_QUINDIO,
+        zoom: camaraGuardada?.zoom ?? 13.2,
+        pitch: camaraGuardada?.pitch ?? 52,
+        bearing: camaraGuardada?.bearing ?? -15,
         maxPitch: 72,
         attributionControl: { compact: true },
       });
@@ -152,12 +199,18 @@ export default function Mapa3D({
             'line-dasharray': [3, 2],
           },
         });
-        const bounds = new maplibregl.LngLatBounds();
-        for (const v of bordeFinca.coordinates[0]) {
-          bounds.extend(v as [number, number]);
+        // Encuadre inicial solo si el usuario no tiene una posición guardada
+        if (!camaraGuardada) {
+          const bounds = new maplibregl.LngLatBounds();
+          for (const v of bordeFinca.coordinates[0]) {
+            bounds.extend(v as [number, number]);
+          }
+          map.fitBounds(bounds, { padding: 48, pitch: 52, bearing: -15, duration: 0 });
         }
-        map.fitBounds(bounds, { padding: 48, pitch: 52, bearing: -15, duration: 0 });
       }
+
+      // Recordar la posición cada vez que el usuario termina de mover el mapa
+      map.on('moveend', () => guardarCamara(map));
 
       map.on('click', 'lotes-fill', (e) => {
         const f = e.features?.[0];

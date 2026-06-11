@@ -1,7 +1,7 @@
 // Service worker para Hacienda La Zelanda — sub-fase 5.2b
 // Push + cache de app shell para navegación offline.
 
-const VERSION = 'a6-1';
+const VERSION = 'b1-1';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
@@ -88,6 +88,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Navegación client-side de Next (peticiones RSC): network-first con
+  // fallback a cache, para poder moverse entre páginas ya visitadas sin señal.
+  const esRsc = req.headers.get('rsc') === '1' || url.searchParams.has('_rsc');
+  if (esRsc && !url.pathname.startsWith('/api/')) {
+    event.respondWith(rscNetworkFirst(req, url));
+    return;
+  }
+
   // Navegación HTML: cualquier ruta de la app con revalidación
   if (req.mode === 'navigate') {
     const esRutaApp =
@@ -164,6 +172,34 @@ async function networkFirst(req, cacheName) {
       status: 503,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+}
+
+// El payload RSC de una misma página llega con `?_rsc=<hash>` distinto cada
+// vez; se normaliza la URL para que el cache funcione por página.
+function claveRsc(url) {
+  const u = new URL(url.href);
+  u.searchParams.delete('_rsc');
+  u.searchParams.append('_zelanda_rsc', '1');
+  return u.href;
+}
+
+async function rscNetworkFirst(req, url) {
+  const cache = await caches.open(CACHE_DATOS);
+  // Los prefetch traen payloads parciales: no sirven como respaldo offline.
+  const esPrefetch =
+    req.headers.get('next-router-prefetch') === '1' || req.headers.get('purpose') === 'prefetch';
+  const clave = claveRsc(url);
+  try {
+    const res = await fetch(req);
+    if (res.ok && !esPrefetch) {
+      cache.put(clave, res.clone());
+    }
+    return res;
+  } catch {
+    const hit = await cache.match(clave);
+    if (hit) return hit;
+    return Response.error();
   }
 }
 
