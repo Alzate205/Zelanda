@@ -18,7 +18,7 @@ export type LoteMapa3D = {
   geojson: GeoJsonPolygon;
 };
 
-export type ModoMapa = 'tareas' | 'cosecha' | 'equipo';
+export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia';
 
 const CENTRO_QUINDIO: [number, number] = [-75.681, 4.535];
 
@@ -92,7 +92,7 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
 };
 
 function pinturaFill(modo: ModoMapa): maplibregl.ExpressionSpecification | string {
-  if (modo === 'cosecha') return ['get', 'colorCosecha'] as never;
+  if (modo === 'cosecha' || modo === 'historia') return ['get', 'colorCosecha'] as never;
   if (modo === 'equipo') return '#5a7d8a';
   return [
     'match',
@@ -349,7 +349,7 @@ function crearMarcadores(
       'background:none;border:0;padding:0;cursor:pointer;font-family:Georgia,serif;' +
       'color:#fff;text-shadow:0 0 4px rgba(0,0,0,.85);font-size:12.5px;line-height:1.15;text-align:center;';
     const detalle =
-      modo === 'cosecha'
+      modo === 'cosecha' || modo === 'historia'
         ? `${Math.round(l.kgMes).toLocaleString('es-CO')} kg`
         : modo === 'equipo'
         ? l.trabajandoHoy > 0

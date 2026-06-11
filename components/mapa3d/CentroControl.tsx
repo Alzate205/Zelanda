@@ -9,7 +9,9 @@ import { DockKPIs } from './DockKPIs';
 import { PanelLote } from './PanelLote';
 import { PanelCentral } from './PanelCentral';
 import { VueloDron } from './VueloDron';
+import { HistoriaSlider } from './HistoriaSlider';
 import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
+import { listaMeses } from '@/lib/historia-meses';
 import { ordenarPorCercania } from '@/lib/ruta-dron';
 import { centroideDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -59,6 +61,19 @@ export function CentroControl({
     pausado: boolean;
   } | null>(null);
   const mapaRef = useRef<ManijaMapa3D>(null);
+  const [mesesHistoria, setMesesHistoria] = useState<string[] | null>(null);
+  const [indiceMes, setIndiceMes] = useState(0);
+  const [datosPorMes, setDatosPorMes] = useState<
+    Record<
+      string,
+      {
+        cosecha_por_lote: { lote_id: string; kg: number }[];
+        total_kg: number;
+        tareas_completadas: number;
+        novedades: number;
+      }
+    >
+  >({});
 
   useEffect(() => {
     setConWebGL(soportaWebGL());
@@ -102,20 +117,29 @@ export function CentroControl({
     return m;
   }, [snapshot.equipo_hoy]);
 
+  const mesElegido = mesesHistoria?.[indiceMes] ?? null;
+  const datosMes = mesElegido ? datosPorMes[mesElegido] ?? null : null;
+
   const lotesMapa: LoteMapa3D[] = useMemo(() => {
-    const maxKg = Math.max(0, ...Array.from(kgPorLote.values()));
+    // En modo historia los kg salen del mes elegido; en el resto, del snapshot.
+    const kgHistoria = new Map<string, number>();
+    if (modo === 'historia' && datosMes) {
+      for (const c of datosMes.cosecha_por_lote) kgHistoria.set(c.lote_id, c.kg);
+    }
+    const fuenteKg = modo === 'historia' ? kgHistoria : kgPorLote;
+    const maxKg = Math.max(0, ...Array.from(fuenteKg.values()));
     return geo.lotesParaMapa
       .filter((l): l is typeof l & { geojson: NonNullable<typeof l.geojson> } => l.geojson !== null)
       .map((l) => ({
         id: l.id,
         nombre: l.nombre,
         estado: estadoPorLote.get(l.id) ?? 'aldia',
-        kgMes: kgPorLote.get(l.id) ?? 0,
-        colorCosecha: rampaCosecha(kgPorLote.get(l.id) ?? 0, maxKg),
+        kgMes: fuenteKg.get(l.id) ?? 0,
+        colorCosecha: rampaCosecha(fuenteKg.get(l.id) ?? 0, maxKg),
         trabajandoHoy: (equipoPorLote.get(l.id) ?? []).length,
         geojson: l.geojson,
       }));
-  }, [geo.lotesParaMapa, estadoPorLote, kgPorLote, equipoPorLote]);
+  }, [geo.lotesParaMapa, estadoPorLote, kgPorLote, equipoPorLote, modo, datosMes]);
 
   function iniciarVuelo() {
     if (lotesMapa.length === 0) return;
@@ -153,6 +177,42 @@ export function CentroControl({
   const loteEnVuelo = vuelo
     ? lotesMapa.find((l) => l.id === vuelo.ruta[vuelo.indice]) ?? null
     : null;
+
+  // Al entrar al modo historia: traer el rango disponible una sola vez.
+  useEffect(() => {
+    if (modo !== 'historia' || mesesHistoria !== null) return;
+    let cancelado = false;
+    fetch('/api/jefe/historia')
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelado || !json.ok) return;
+        const meses = listaMeses(json.data.desde, json.data.hasta);
+        setMesesHistoria(meses);
+        setIndiceMes(meses.length - 1); // arranca en el mes actual
+      })
+      .catch(() => {
+        if (!cancelado) setMesesHistoria([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [modo, mesesHistoria]);
+
+  // Traer los datos del mes elegido (con cache en memoria por mes).
+  useEffect(() => {
+    if (modo !== 'historia' || !mesElegido || datosPorMes[mesElegido]) return;
+    let cancelado = false;
+    fetch(`/api/jefe/historia?mes=${mesElegido}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelado || !json.ok) return;
+        setDatosPorMes((prev) => ({ ...prev, [mesElegido]: json.data }));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelado = true;
+    };
+  }, [modo, mesElegido, datosPorMes]);
 
   const loteSel = loteId ? geo.lotesParaMapa.find((l) => l.id === loteId) ?? null : null;
   const alertasDelLote = useMemo(() => {
@@ -230,6 +290,16 @@ export function CentroControl({
             pausado={vuelo.pausado}
             onPausar={() => setVuelo((v) => (v ? { ...v, pausado: !v.pausado } : v))}
             onSalir={() => setVuelo(null)}
+          />
+        ) : modo === 'historia' && mesesHistoria && mesesHistoria.length > 0 ? (
+          <HistoriaSlider
+            meses={mesesHistoria}
+            indice={indiceMes}
+            onCambio={setIndiceMes}
+            totalKg={datosMes?.total_kg ?? 0}
+            tareas={datosMes?.tareas_completadas ?? 0}
+            novedades={datosMes?.novedades ?? 0}
+            cargando={datosMes === null}
           />
         ) : loteSel ? (
           <PanelLote
