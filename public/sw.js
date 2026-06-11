@@ -1,23 +1,16 @@
 // Service worker para Hacienda La Zelanda — sub-fase 5.2b
 // Push + cache de app shell para navegación offline.
 
-const VERSION = "5.2b-2";
+const VERSION = 'a6-1';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
+const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
+const HOSTS_BALDOSAS = ['server.arcgisonline.com', 'elevation-tiles-prod.s3.amazonaws.com'];
+const MAX_BALDOSAS = 300;
 
-const SHELL_URLS = [
-  "/manifest.webmanifest",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-];
+const SHELL_URLS = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
-const RUTAS_NAVEGABLES = [
-  "/trabajador",
-  "/bodega",
-  "/almacen",
-  "/jefe",
-  "/mi-perfil",
-];
+const RUTAS_NAVEGABLES = ['/trabajador', '/bodega', '/almacen', '/jefe', '/mi-perfil'];
 
 // HTML mínimo que decide a qué home ir según el rol guardado en localStorage.
 const LAUNCHER_HTML = `<!DOCTYPE html><html lang="es"><head>
@@ -38,64 +31,68 @@ const LAUNCHER_HTML = `<!DOCTYPE html><html lang="es"><head>
 </script>
 </body></html>`;
 
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_SHELL).then((c) => c.addAll(SHELL_URLS).catch(() => undefined)),
+    caches.open(CACHE_SHELL).then((c) => c.addAll(SHELL_URLS).catch(() => undefined))
   );
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const claves = await caches.keys();
       await Promise.all(
         claves
-          .filter((k) => k.startsWith("zelanda-") && !k.endsWith(VERSION))
-          .map((k) => caches.delete(k)),
+          .filter((k) => k.startsWith('zelanda-') && !k.endsWith(VERSION))
+          .map((k) => caches.delete(k))
       );
       await self.clients.claim();
-    })(),
+    })()
   );
 });
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== "GET") return;
+  if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    // Baldosas de mapa (satélite/terreno): cache-first con tope.
+    if (HOSTS_BALDOSAS.includes(url.hostname)) {
+      event.respondWith(cacheBaldosas(req));
+    }
+    return;
+  }
 
   // No cachear endpoints de mutación
   if (
-    url.pathname.startsWith("/api/trabajador/avance") ||
-    url.pathname.startsWith("/api/trabajador/novedad") ||
-    url.pathname.startsWith("/api/bodega/despacho") ||
-    url.pathname.startsWith("/api/almacen/cosecha") ||
-    url.pathname.startsWith("/api/almacen/salida") ||
-    url.pathname.startsWith("/api/push") ||
-    url.pathname.startsWith("/api/cron")
+    url.pathname.startsWith('/api/trabajador/avance') ||
+    url.pathname.startsWith('/api/trabajador/novedad') ||
+    url.pathname.startsWith('/api/bodega/despacho') ||
+    url.pathname.startsWith('/api/almacen/cosecha') ||
+    url.pathname.startsWith('/api/almacen/salida') ||
+    url.pathname.startsWith('/api/push') ||
+    url.pathname.startsWith('/api/cron')
   ) {
     return;
   }
 
   // Snapshots de cualquier rol: network-first con fallback a cache
   if (
-    url.pathname.startsWith("/api/trabajador/snapshot") ||
-    url.pathname.startsWith("/api/bodega/snapshot") ||
-    url.pathname.startsWith("/api/almacen/snapshot") ||
-    url.pathname.startsWith("/api/jefe/snapshot")
+    url.pathname.startsWith('/api/trabajador/snapshot') ||
+    url.pathname.startsWith('/api/bodega/snapshot') ||
+    url.pathname.startsWith('/api/almacen/snapshot') ||
+    url.pathname.startsWith('/api/jefe/snapshot')
   ) {
     event.respondWith(networkFirst(req, CACHE_DATOS));
     return;
   }
 
   // Navegación HTML: cualquier ruta de la app con revalidación
-  if (req.mode === "navigate") {
+  if (req.mode === 'navigate') {
     const esRutaApp =
-      url.pathname === "/" ||
-      RUTAS_NAVEGABLES.some(
-        (r) => url.pathname === r || url.pathname.startsWith(`${r}/`),
-      );
+      url.pathname === '/' ||
+      RUTAS_NAVEGABLES.some((r) => url.pathname === r || url.pathname.startsWith(`${r}/`));
     if (esRutaApp) {
       event.respondWith(navegacionConFallback(req, url));
       return;
@@ -103,7 +100,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Recursos estáticos de Next (_next/static) → cache-first
-  if (url.pathname.startsWith("/_next/static")) {
+  if (url.pathname.startsWith('/_next/static')) {
     event.respondWith(cacheFirst(req, CACHE_SHELL));
     return;
   }
@@ -120,24 +117,24 @@ async function navegacionConFallback(req, url) {
     return res;
   } catch {
     // Sin red. Si piden "/", devolvemos un launcher que redirige según el rol.
-    if (url.pathname === "/") {
+    if (url.pathname === '/') {
       return new Response(LAUNCHER_HTML, {
         status: 200,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }
     // Cache directo de la ruta pedida
     const hit = await cache.match(req);
     if (hit) return hit;
     // Fallback: cualquier home de rol que tengamos cacheada
-    for (const ruta of ["/trabajador", "/bodega", "/almacen", "/jefe"]) {
+    for (const ruta of ['/trabajador', '/bodega', '/almacen', '/jefe']) {
       const home = await cache.match(ruta);
       if (home) return home;
     }
-    return new Response(
-      "<h1>Sin señal</h1><p>Abrí la app con internet al menos una vez.</p>",
-      { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
-    );
+    return new Response('<h1>Sin señal</h1><p>Abrí la app con internet al menos una vez.</p>', {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
   }
 }
 
@@ -163,49 +160,68 @@ async function networkFirst(req, cacheName) {
   } catch {
     const hit = await cache.match(req);
     if (hit) return hit;
-    return new Response(JSON.stringify({ error: "offline" }), {
+    return new Response(JSON.stringify({ error: 'offline' }), {
       status: 503,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
+  }
+}
+
+async function cacheBaldosas(req) {
+  const cache = await caches.open(CACHE_BALDOSAS);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  try {
+    const res = await fetch(req);
+    // Las baldosas pueden llegar opacas (no-cors desde <img>); también se cachean.
+    if (res.ok || res.type === 'opaque') {
+      await cache.put(req, res.clone());
+      // Tope FIFO: borrar las más viejas si nos pasamos.
+      const claves = await cache.keys();
+      if (claves.length > MAX_BALDOSAS) {
+        for (const vieja of claves.slice(0, claves.length - MAX_BALDOSAS)) {
+          await cache.delete(vieja);
+        }
+      }
+    }
+    return res;
+  } catch {
+    return Response.error();
   }
 }
 
 // === Push ===
 
-self.addEventListener("push", (event) => {
+self.addEventListener('push', (event) => {
   if (!event.data) return;
   let payload = {};
   try {
     payload = event.data.json();
   } catch {
-    payload = { titulo: "La Zelanda", cuerpo: event.data.text() };
+    payload = { titulo: 'La Zelanda', cuerpo: event.data.text() };
   }
-  const titulo = payload.titulo || "La Zelanda";
+  const titulo = payload.titulo || 'La Zelanda';
   const opciones = {
-    body: payload.cuerpo || "",
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
-    data: { url: payload.url || "/" },
+    body: payload.cuerpo || '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: payload.url || '/' },
     tag: payload.tag || undefined,
     requireInteraction: false,
   };
   event.waitUntil(self.registration.showNotification(titulo, opciones));
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url =
-    event.notification.data && event.notification.data.url
-      ? event.notification.data.url
-      : "/";
+    event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((wins) => {
-        for (const w of wins) {
-          if (w.url.endsWith(url) && "focus" in w) return w.focus();
-        }
-        return self.clients.openWindow(url);
-      }),
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if (w.url.endsWith(url) && 'focus' in w) return w.focus();
+      }
+      return self.clients.openWindow(url);
+    })
   );
 });
