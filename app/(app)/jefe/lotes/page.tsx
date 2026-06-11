@@ -1,9 +1,7 @@
 import Link from 'next/link';
-import { Hexagon } from 'lucide-react';
+import { Hexagon, Map as MapIcon } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
-import { MapaFincaCargador } from '@/components/mapa/MapaFincaCargador';
 import { obtenerGeoFinca } from '@/lib/geo-finca';
-import { colorDeLote } from '@/lib/paleta-lotes';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
 
@@ -51,35 +49,18 @@ export default async function PaginaLotes() {
         </div>
       )}
 
-      <MapaFincaCargador
-        lotesPoligonos={lotesParaMapa}
-        apiariosPuntos={apiariosParaMapa}
-        instalacionesPuntos={instParaMapa}
-        bordeFinca={bordeFinca}
-      />
-
-      {lotesParaMapa.some((l) => l.geojson !== null) && (
-        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave">
-          <h2 className="font-serif text-base text-zelanda-verde-900">Leyenda de lotes</h2>
-          <ul className="mt-2 grid grid-cols-2 gap-1 text-xs text-zelanda-verde-700 sm:grid-cols-3">
-            {lotesParaMapa
-              .filter((l) => l.geojson !== null)
-              .map((l) => (
-                <li key={l.id} className="flex items-center gap-2">
-                  <span
-                    className="inline-block h-3 w-3 rounded-sm"
-                    style={{
-                      background: colorDeLote(l.id),
-                      opacity: 0.7,
-                      border: `1px solid ${colorDeLote(l.id)}`,
-                    }}
-                  />
-                  <span className="truncate">{l.nombre}</span>
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
+      <Link
+        href="/jefe"
+        className="flex items-center justify-between rounded-2xl border border-zelanda-verde-300 bg-gradient-to-r from-zelanda-verde-700 to-zelanda-verde-800 px-4 py-3.5 text-zelanda-beige-50 shadow-card"
+      >
+        <span>
+          <span className="block font-serif text-base">Abrir el mapa 3D</span>
+          <span className="block text-xs text-zelanda-beige-100/80">
+            Centro de control con relieve y semáforo de tareas
+          </span>
+        </span>
+        <MapIcon className="h-5 w-5 shrink-0" aria-hidden />
+      </Link>
 
       <section>
         <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">

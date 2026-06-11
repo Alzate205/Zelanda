@@ -7,7 +7,7 @@ export default function CargandoLotes() {
         <Esqueleto className="h-3 w-32" />
         <Esqueleto className="h-7 w-44" />
       </div>
-      <Esqueleto className="h-[60vh] rounded-xl" />
+      <Esqueleto className="h-14" />
       <div className="grid grid-cols-2 gap-2.5">
         <Esqueleto className="h-16" />
         <Esqueleto className="h-16" />
