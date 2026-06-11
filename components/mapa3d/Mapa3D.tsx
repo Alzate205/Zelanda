@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { centroideDePoligono, COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
@@ -105,21 +105,29 @@ function pinturaFill(modo: ModoMapa): maplibregl.ExpressionSpecification | strin
   ] as never;
 }
 
-export default function Mapa3D({
-  lotes,
-  bordeFinca,
-  apiarios,
-  modo,
-  onSeleccionLote,
-  onError,
-}: {
+export type ManijaMapa3D = {
+  volarA: (opts: {
+    center: [number, number];
+    zoom?: number;
+    bearing?: number;
+    pitch?: number;
+    duration?: number;
+  }) => void;
+};
+
+type PropsMapa3D = {
   lotes: LoteMapa3D[];
   bordeFinca: GeoJsonPolygon | null;
   apiarios: { id: string; nombre: string; geojson: GeoJsonPoint | null }[];
   modo: ModoMapa;
   onSeleccionLote: (id: string | null) => void;
   onError: () => void;
-}) {
+};
+
+const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
+  { lotes, bordeFinca, apiarios, modo, onSeleccionLote, onError },
+  ref
+) {
   const contRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const marcadoresRef = useRef<maplibregl.Marker[]>([]);
@@ -287,8 +295,25 @@ export default function Mapa3D({
     crearMarcadores(map, lotes, apiarios, marcadoresRef, modo, (id) => onSeleccionRef.current(id));
   }, [modo, lotes, apiarios]);
 
+  useImperativeHandle(ref, () => ({
+    volarA(opts) {
+      const map = mapRef.current;
+      if (!map || !cargadoRef.current) return;
+      map.flyTo({
+        center: opts.center,
+        zoom: opts.zoom ?? map.getZoom(),
+        bearing: opts.bearing ?? map.getBearing(),
+        pitch: opts.pitch ?? map.getPitch(),
+        duration: opts.duration ?? 2600,
+        essential: true,
+      });
+    },
+  }));
+
   return <div ref={contRef} className="h-full w-full" />;
-}
+});
+
+export default Mapa3D;
 
 function featuresDeLotes(lotes: LoteMapa3D[]): GeoJSON.FeatureCollection {
   return {
