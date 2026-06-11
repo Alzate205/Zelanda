@@ -61,3 +61,6 @@ Desktop.ini
 
 # Claude Code (local, no debe ir al repo)
 .claude/settings.local.json
+
+# Superpowers (mockups de brainstorming, locales)
+.superpowers/
