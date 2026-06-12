@@ -18,7 +18,7 @@ export type ClimaFinca = {
   actualizado: string;
 };
 
-const CENTRO_QUINDIO = { lat: 4.535, lng: -75.681 };
+const CENTRO_FINCA = { lat: 4.9409, lng: -75.5165 };
 
 async function centroideFinca(): Promise<{ lat: number; lng: number }> {
   try {
@@ -31,7 +31,7 @@ async function centroideFinca(): Promise<{ lat: number; lng: number }> {
   } catch {
     // sin borde cargado: usar centro por defecto
   }
-  return CENTRO_QUINDIO;
+  return CENTRO_FINCA;
 }
 
 const obtenerClimaUncached = async (): Promise<ClimaFinca> => {

@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { colorDeLote } from '@/lib/paleta-lotes';
 
-const CENTRO_QUINDIO: [number, number] = [4.535, -75.681];
+const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
 type LotePoly = {
   id: string;
@@ -139,7 +139,7 @@ export default function MapaFinca({
       style={{ height: altura }}
     >
       <MapContainer
-        center={CENTRO_QUINDIO}
+        center={CENTRO_FINCA}
         zoom={13}
         scrollWheelZoom
         style={{ height: '100%', width: '100%' }}
@@ -149,7 +149,7 @@ export default function MapaFinca({
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           maxZoom={19}
         />
-        <ControlesMapa borde={bordeFinca} fallback={CENTRO_QUINDIO} />
+        <ControlesMapa borde={bordeFinca} fallback={CENTRO_FINCA} />
 
         {bordeFinca && (
           <GeoJSON

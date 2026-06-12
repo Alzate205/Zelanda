@@ -19,7 +19,7 @@ import type { ReferenciasMapa } from '@/lib/referencias-mapa';
 type LngLat = [number, number];
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
-const CENTRO_QUINDIO: [number, number] = [4.535, -75.681];
+const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
 function AjustarVistaReferencias({
   borde,
@@ -89,7 +89,7 @@ export default function EditorPoligono({
   const previewCierre =
     vertices.length >= 3 ? [positions[positions.length - 1], positions[0]] : null;
   const centro: [number, number] =
-    iniciales.length > 0 ? [iniciales[0][1], iniciales[0][0]] : CENTRO_QUINDIO;
+    iniciales.length > 0 ? [iniciales[0][1], iniciales[0][0]] : CENTRO_FINCA;
 
   return (
     <div className="space-y-3">

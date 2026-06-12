@@ -20,7 +20,7 @@ export type LoteMapa3D = {
 
 export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia' | 'clima';
 
-const CENTRO_QUINDIO: [number, number] = [-75.681, 4.535];
+const CENTRO_FINCA: [number, number] = [-75.5165, 4.9409];
 
 // Última posición de cámara del usuario, para no re-encuadrar la finca
 // cada vez que vuelve al centro de control.
@@ -151,7 +151,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       map = new maplibregl.Map({
         container: contRef.current,
         style: ESTILO_BASE,
-        center: camaraGuardada?.center ?? CENTRO_QUINDIO,
+        center: camaraGuardada?.center ?? CENTRO_FINCA,
         zoom: camaraGuardada?.zoom ?? 13.2,
         pitch: camaraGuardada?.pitch ?? 52,
         bearing: camaraGuardada?.bearing ?? -15,
