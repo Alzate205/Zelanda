@@ -3,6 +3,10 @@ import type { NextRequest } from 'next/server';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { infoNdvi, obtenerNdvi } from '@/lib/jefe/ndvi';
 
+// La primera generación llama a Sentinel Hub (hasta ~30 s): margen amplio
+// para que Vercel no corte la función antes de recibir la imagen.
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
   const usuario = await obtenerUsuarioActual();
   if (!usuario || usuario.rol !== 'JEFE') {
