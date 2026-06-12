@@ -27,7 +27,7 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
     );
   }
 
-  const { reglas, dias } = clima;
+  const { reglas, dias, lluvia_7dias_mm } = clima;
   const bannerClase = reglas.riesgo_helada
     ? 'bg-estado-vencida/15 text-estado-vencida'
     : reglas.ventana_fumigacion
@@ -53,6 +53,13 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
         <BannerIcono className="h-4 w-4 shrink-0" aria-hidden />
         <span>{reglas.riesgo_helada ? 'Riesgo de helada esta noche' : reglas.motivo}</span>
       </div>
+
+      {typeof lluvia_7dias_mm === 'number' ? (
+        <p className="m-0 mt-2 flex items-center gap-1.5 text-[12px] text-zelanda-verde-700">
+          <CloudRain className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Llovieron {lluvia_7dias_mm} mm en los últimos 7 días
+        </p>
+      ) : null}
 
       <div className="mt-3 grid grid-cols-7 gap-1 text-center">
         {dias.map((d, i) => (

@@ -15,6 +15,8 @@ export type DiaPronostico = {
 export type ClimaFinca = {
   dias: DiaPronostico[];
   reglas: ReglasAgro;
+  /** Lluvia real caída en los últimos 7 días (mm), según Open-Meteo. */
+  lluvia_7dias_mm: number;
   actualizado: string;
 };
 
@@ -40,7 +42,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&hourly=precipitation,precipitation_probability` +
     `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max` +
-    `&timezone=America%2FBogota&forecast_days=7`;
+    `&timezone=America%2FBogota&forecast_days=7&past_days=7`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Open-Meteo respondió ${res.status}`);
   const j = (await res.json()) as {
@@ -55,18 +57,32 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
     };
   };
 
-  const dias: DiaPronostico[] = j.daily.time.map((fecha, i) => ({
-    fecha,
-    tmin: j.daily.temperature_2m_min[i],
-    tmax: j.daily.temperature_2m_max[i],
-    lluvia_mm: j.daily.precipitation_sum[i],
-    prob_lluvia: j.daily.precipitation_probability_max[i],
-    viento_max: j.daily.wind_speed_10m_max[i],
-  }));
+  // Con past_days=7 el daily trae 7 días pasados + 7 de pronóstico.
+  // Los pasados suman la lluvia real caída; el pronóstico arranca hoy.
+  const hoyBogota = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
+    new Date()
+  );
+  const lluvia7dias = j.daily.time.reduce(
+    (acc, fecha, i) => (fecha < hoyBogota ? acc + (j.daily.precipitation_sum[i] ?? 0) : acc),
+    0
+  );
 
-  // Próximas 6 horas desde ahora (las horas vienen en hora de Bogotá)
+  const dias: DiaPronostico[] = j.daily.time
+    .map((fecha, i) => ({
+      fecha,
+      tmin: j.daily.temperature_2m_min[i],
+      tmax: j.daily.temperature_2m_max[i],
+      lluvia_mm: j.daily.precipitation_sum[i],
+      prob_lluvia: j.daily.precipitation_probability_max[i],
+      viento_max: j.daily.wind_speed_10m_max[i],
+    }))
+    .filter((d) => d.fecha >= hoyBogota);
+
+  // Próximas 6 horas desde ahora. Las horas vienen en hora de Bogotá SIN
+  // offset ("2026-06-12T14:00"): hay que anclarlas a -05:00 o el servidor
+  // (UTC) las corre 5 horas y la ventana de fumigación queda desplazada.
   const ahora = new Date();
-  const idxAhora = j.hourly.time.findIndex((t) => new Date(t) >= ahora);
+  const idxAhora = j.hourly.time.findIndex((t) => new Date(`${t}:00-05:00`) >= ahora);
   const desde = idxAhora === -1 ? 0 : idxAhora;
   const lluvia6h = j.hourly.precipitation.slice(desde, desde + 6).reduce((a, b) => a + b, 0);
   const prob6h = Math.max(0, ...j.hourly.precipitation_probability.slice(desde, desde + 6));
@@ -78,10 +94,15 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
     tminProximaNocheC: Math.min(dias[0]?.tmin ?? 99, dias[1]?.tmin ?? 99),
   });
 
-  return { dias, reglas, actualizado: new Date().toISOString() };
+  return {
+    dias,
+    reglas,
+    lluvia_7dias_mm: Math.round(lluvia7dias),
+    actualizado: new Date().toISOString(),
+  };
 };
 
-/** Pronóstico cacheado 30 min. */
-export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca'], {
+/** Pronóstico cacheado 30 min. Clave versionada: v2 agrega lluvia_7dias_mm. */
+export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v2'], {
   revalidate: 1800,
 });
