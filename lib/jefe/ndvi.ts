@@ -7,8 +7,10 @@ export type InfoNdvi =
   | { disponible: true; bbox: [number, number, number, number]; desde: string; hasta: string };
 
 function credenciales(): { id: string; secreto: string } | null {
-  const id = process.env.CDSE_CLIENT_ID;
-  const secreto = process.env.CDSE_CLIENT_SECRET;
+  // trim: un espacio o salto de línea pegado al copiar el valor en Vercel
+  // hace que CDSE responda invalid_client.
+  const id = process.env.CDSE_CLIENT_ID?.trim();
+  const secreto = process.env.CDSE_CLIENT_SECRET?.trim();
   if (!id || !secreto) return null;
   return { id, secreto };
 }
@@ -49,7 +51,12 @@ async function tokenCdse(): Promise<string | null> {
       signal: AbortSignal.timeout(10000),
     }
   );
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // El motivo real (invalid_client, secret con espacios, etc.) solo se ve
+    // acá: en pantalla el mensaje es genérico.
+    console.error('CDSE token:', res.status, await res.text().catch(() => ''));
+    return null;
+  }
   const j = (await res.json()) as { access_token?: string };
   return j.access_token ?? null;
 }
