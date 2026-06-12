@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Plane, Satellite } from 'lucide-react';
+import { Plane, Satellite, Scan } from 'lucide-react';
 import Mapa3D, { type LoteMapa3D, type ManijaMapa3D, type ModoMapa } from './Mapa3D';
 import { ChipsModos } from './ChipsModos';
 import { DockKPIs } from './DockKPIs';
@@ -33,6 +33,12 @@ function soportaWebGL(): boolean {
     return false;
   }
 }
+
+// Botones redondos de acción sobre el mapa
+const BTN_MAPA =
+  'pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-zelanda-beige-50/85 text-zelanda-verde-800 shadow-suave backdrop-blur-md';
+const BTN_MAPA_ACTIVO =
+  'pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-zelanda-verde-700 text-zelanda-beige-50 shadow-card';
 
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
   weekday: 'long',
@@ -311,7 +317,7 @@ export function CentroControl({
       ) : null}
 
       {/* Saludo + chips */}
-      <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-col gap-2">
+      <div className="pointer-events-none absolute left-3 right-14 top-3 z-10 flex flex-col gap-2">
         <div className="pointer-events-auto self-start rounded-2xl border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-2 shadow-card backdrop-blur-md">
           <Eyebrow>Centro de control</Eyebrow>
           <p className="m-0 font-serif text-[17px] leading-tight text-zelanda-verde-900">
@@ -322,39 +328,52 @@ export function CentroControl({
         <div className="pointer-events-auto">
           <ChipsModos modo={modo} onCambio={setModo} />
         </div>
-        {conWebGL === true && !vuelo && lotesMapa.length > 0 ? (
-          <button
-            type="button"
-            onClick={iniciarVuelo}
-            className="pointer-events-auto flex items-center gap-1.5 self-start rounded-full border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-1.5 text-xs font-medium text-zelanda-verde-800 shadow-suave backdrop-blur-md"
-          >
-            <Plane className="h-3.5 w-3.5" aria-hidden />
-            Vuelo de dron
-          </button>
-        ) : null}
-        {conWebGL === true ? (
+      </div>
+
+      {/* Acciones del mapa: botones chicos arriba a la derecha */}
+      {conWebGL === true ? (
+        <div className="pointer-events-none absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
+          {!vuelo && lotesMapa.length > 0 ? (
+            <button
+              type="button"
+              onClick={iniciarVuelo}
+              title="Vuelo de dron"
+              aria-label="Vuelo de dron"
+              className={BTN_MAPA}
+            >
+              <Plane className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={alternarNdvi}
-            className={
-              ndvi
-                ? 'pointer-events-auto flex items-center gap-1.5 self-start rounded-full bg-zelanda-verde-700 px-3.5 py-1.5 text-xs font-semibold text-zelanda-beige-50 shadow-card'
-                : 'pointer-events-auto flex items-center gap-1.5 self-start rounded-full border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-1.5 text-xs font-medium text-zelanda-verde-800 shadow-suave backdrop-blur-md'
-            }
+            title="Salud del cultivo"
+            aria-label="Salud del cultivo"
+            className={ndvi ? BTN_MAPA_ACTIVO : BTN_MAPA}
           >
-            <Satellite className="h-3.5 w-3.5" aria-hidden />
-            Salud del cultivo
+            <Satellite className="h-4 w-4" aria-hidden />
           </button>
-        ) : null}
-        {avisoNdvi ? (
-          <p className="pointer-events-auto m-0 self-start rounded-xl bg-zelanda-verde-900/85 px-3 py-1.5 text-[11.5px] text-zelanda-beige-50 backdrop-blur-md">
-            {avisoNdvi}
-          </p>
-        ) : null}
-      </div>
+          {avisoNdvi ? (
+            <p className="pointer-events-auto m-0 max-w-[230px] rounded-xl bg-zelanda-verde-900/85 px-3 py-1.5 text-right text-[11.5px] text-zelanda-beige-50 backdrop-blur-md">
+              {avisoNdvi}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Vuelo de dron, panel de lote o dock */}
       <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-2">
+        {conWebGL === true ? (
+          <button
+            type="button"
+            onClick={() => mapaRef.current?.encuadrarFinca()}
+            title="Ver toda la finca"
+            aria-label="Ver toda la finca"
+            className={`${BTN_MAPA} self-start`}
+          >
+            <Scan className="h-4 w-4" aria-hidden />
+          </button>
+        ) : null}
         {vuelo && loteEnVuelo ? (
           <VueloDron
             lote={loteEnVuelo}

@@ -115,6 +115,7 @@ export type ManijaMapa3D = {
     pitch?: number;
     duration?: number;
   }) => void;
+  encuadrarFinca: () => void;
 };
 
 export type InstalacionMapa3D = {
@@ -146,8 +147,14 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
   const rafRef = useRef<number>(0);
   // Refs para no re-montar el mapa cuando cambian datos/callbacks
   const lotesRef = useRef(lotes);
+  const apiariosRef = useRef(apiarios);
+  const instalacionesRef = useRef(instalaciones);
+  const bordeRef = useRef(bordeFinca);
   const onSeleccionRef = useRef(onSeleccionLote);
   lotesRef.current = lotes;
+  apiariosRef.current = apiarios;
+  instalacionesRef.current = instalaciones;
+  bordeRef.current = bordeFinca;
   onSeleccionRef.current = onSeleccionLote;
 
   // Montaje único del mapa
@@ -220,24 +227,14 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         });
       }
 
-      // Encuadre inicial solo si el usuario no tiene una posición guardada:
-      // sobre el borde si existe, o sobre todo lo que tenga coordenadas
-      // (lotes, apiarios, instalaciones) mientras la finca no esté delimitada.
+      // Encuadre inicial solo si el usuario no tiene una posición guardada
       if (!camaraGuardada) {
-        const bounds = new maplibregl.LngLatBounds();
-        if (bordeFinca) {
-          for (const v of bordeFinca.coordinates[0]) bounds.extend(v as [number, number]);
-        } else {
-          for (const l of lotesRef.current) {
-            for (const v of l.geojson.coordinates[0]) bounds.extend(v as [number, number]);
-          }
-          for (const a of apiarios) {
-            if (a.geojson) bounds.extend(a.geojson.coordinates);
-          }
-          for (const i of instalaciones) {
-            if (i.geojson) bounds.extend(i.geojson.coordinates);
-          }
-        }
+        const bounds = boundsDeFinca(
+          bordeFinca,
+          lotesRef.current,
+          apiariosRef.current,
+          instalacionesRef.current
+        );
         if (!bounds.isEmpty()) {
           map.fitBounds(bounds, {
             padding: 48,
@@ -374,12 +371,65 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         essential: true,
       });
     },
+    encuadrarFinca() {
+      const map = mapRef.current;
+      if (!map || !cargadoRef.current) return;
+      const bounds = boundsDeFinca(
+        bordeRef.current,
+        lotesRef.current,
+        apiariosRef.current,
+        instalacionesRef.current
+      );
+      if (bounds.isEmpty()) {
+        map.flyTo({
+          center: CENTRO_FINCA,
+          zoom: 15,
+          pitch: 52,
+          bearing: -15,
+          duration: 1400,
+          essential: true,
+        });
+        return;
+      }
+      map.fitBounds(bounds, {
+        padding: 48,
+        pitch: 52,
+        bearing: -15,
+        duration: 1400,
+        maxZoom: 16.5,
+      });
+    },
   }));
 
   return <div ref={contRef} className="h-full w-full" />;
 });
 
 export default Mapa3D;
+
+// Límites de la finca: el borde si existe, o todo lo que tenga coordenadas
+// (lotes, apiarios, instalaciones) mientras la finca no esté delimitada.
+function boundsDeFinca(
+  bordeFinca: GeoJsonPolygon | null,
+  lotes: LoteMapa3D[],
+  apiarios: { geojson: GeoJsonPoint | null }[],
+  instalaciones: InstalacionMapa3D[]
+): maplibregl.LngLatBounds {
+  const bounds = new maplibregl.LngLatBounds();
+  if (bordeFinca) {
+    for (const v of bordeFinca.coordinates[0]) bounds.extend(v as [number, number]);
+    return bounds;
+  }
+  for (const l of lotes) {
+    for (const v of l.geojson.coordinates[0]) bounds.extend(v as [number, number]);
+  }
+  for (const a of apiarios) {
+    if (a.geojson) bounds.extend(a.geojson.coordinates);
+  }
+  for (const i of instalaciones) {
+    if (i.geojson) bounds.extend(i.geojson.coordinates);
+  }
+  return bounds;
+}
 
 function featuresDeLotes(lotes: LoteMapa3D[]): GeoJSON.FeatureCollection {
   return {
