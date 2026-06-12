@@ -299,6 +299,7 @@ export function CentroControl({
           lotes={lotesMapa}
           bordeFinca={geo.bordeFinca}
           apiarios={geo.apiariosParaMapa}
+          instalaciones={geo.instParaMapa}
           modo={modo}
           ndvi={ndvi}
           onSeleccionLote={(id) => {
@@ -321,7 +322,7 @@ export function CentroControl({
         <div className="pointer-events-auto">
           <ChipsModos modo={modo} onCambio={setModo} />
         </div>
-        {conWebGL === true && !vuelo ? (
+        {conWebGL === true && !vuelo && lotesMapa.length > 0 ? (
           <button
             type="button"
             onClick={iniciarVuelo}

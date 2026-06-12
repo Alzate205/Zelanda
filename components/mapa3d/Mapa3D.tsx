@@ -23,8 +23,9 @@ export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia' | 'clima';
 const CENTRO_FINCA: [number, number] = [-75.5165, 4.9409];
 
 // Última posición de cámara del usuario, para no re-encuadrar la finca
-// cada vez que vuelve al centro de control.
-const CLAVE_CAMARA = 'zelanda_mapa3d_camara';
+// cada vez que vuelve al centro de control. v2: la v1 podía apuntar a la
+// ubicación del seed de prueba, lejos de la finca real.
+const CLAVE_CAMARA = 'zelanda_mapa3d_camara_v2';
 
 type CamaraGuardada = {
   center: [number, number];
@@ -116,10 +117,18 @@ export type ManijaMapa3D = {
   }) => void;
 };
 
+export type InstalacionMapa3D = {
+  id: string;
+  nombre: string;
+  tipo: 'CASA' | 'BODEGA' | 'ALMACEN' | 'OTRO';
+  geojson: GeoJsonPoint | null;
+};
+
 type PropsMapa3D = {
   lotes: LoteMapa3D[];
   bordeFinca: GeoJsonPolygon | null;
   apiarios: { id: string; nombre: string; geojson: GeoJsonPoint | null }[];
+  instalaciones?: InstalacionMapa3D[];
   modo: ModoMapa;
   ndvi?: { url: string; bbox: [number, number, number, number] } | null;
   onSeleccionLote: (id: string | null) => void;
@@ -127,7 +136,7 @@ type PropsMapa3D = {
 };
 
 const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
-  { lotes, bordeFinca, apiarios, modo, ndvi = null, onSeleccionLote, onError },
+  { lotes, bordeFinca, apiarios, instalaciones = [], modo, ndvi = null, onSeleccionLote, onError },
   ref
 ) {
   const contRef = useRef<HTMLDivElement>(null);
@@ -209,13 +218,34 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
             'line-dasharray': [3, 2],
           },
         });
-        // Encuadre inicial solo si el usuario no tiene una posición guardada
-        if (!camaraGuardada) {
-          const bounds = new maplibregl.LngLatBounds();
-          for (const v of bordeFinca.coordinates[0]) {
-            bounds.extend(v as [number, number]);
+      }
+
+      // Encuadre inicial solo si el usuario no tiene una posición guardada:
+      // sobre el borde si existe, o sobre todo lo que tenga coordenadas
+      // (lotes, apiarios, instalaciones) mientras la finca no esté delimitada.
+      if (!camaraGuardada) {
+        const bounds = new maplibregl.LngLatBounds();
+        if (bordeFinca) {
+          for (const v of bordeFinca.coordinates[0]) bounds.extend(v as [number, number]);
+        } else {
+          for (const l of lotesRef.current) {
+            for (const v of l.geojson.coordinates[0]) bounds.extend(v as [number, number]);
           }
-          map.fitBounds(bounds, { padding: 48, pitch: 52, bearing: -15, duration: 0 });
+          for (const a of apiarios) {
+            if (a.geojson) bounds.extend(a.geojson.coordinates);
+          }
+          for (const i of instalaciones) {
+            if (i.geojson) bounds.extend(i.geojson.coordinates);
+          }
+        }
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, {
+            padding: 48,
+            pitch: 52,
+            bearing: -15,
+            duration: 0,
+            maxZoom: 16.5,
+          });
         }
       }
 
@@ -269,7 +299,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       );
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
-      crearMarcadores(map, lotesRef.current, apiarios, marcadoresRef, modo, (id) =>
+      crearMarcadores(map, lotesRef.current, apiarios, instalaciones, marcadoresRef, modo, (id) =>
         onSeleccionRef.current(id)
       );
     });
@@ -294,8 +324,10 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
     if (map.getLayer('lotes-fill')) {
       map.setPaintProperty('lotes-fill', 'fill-color', pinturaFill(modo) as never);
     }
-    crearMarcadores(map, lotes, apiarios, marcadoresRef, modo, (id) => onSeleccionRef.current(id));
-  }, [modo, lotes, apiarios]);
+    crearMarcadores(map, lotes, apiarios, instalaciones, marcadoresRef, modo, (id) =>
+      onSeleccionRef.current(id)
+    );
+  }, [modo, lotes, apiarios, instalaciones]);
 
   // Capa NDVI (imagen georreferenciada sobre el satélite)
   useEffect(() => {
@@ -369,6 +401,7 @@ function crearMarcadores(
   map: maplibregl.Map,
   lotes: LoteMapa3D[],
   apiarios: { id: string; nombre: string; geojson: GeoJsonPoint | null }[],
+  instalaciones: InstalacionMapa3D[],
   ref: { current: maplibregl.Marker[] },
   modo: ModoMapa,
   onSeleccionLote: (id: string) => void
@@ -396,6 +429,30 @@ function crearMarcadores(
     el.addEventListener('click', () => onSeleccionLote(l.id));
     ref.current.push(
       new maplibregl.Marker({ element: el }).setLngLat(centroideDePoligono(l.geojson)).addTo(map)
+    );
+  }
+
+  const EMOJI_INSTALACION: Record<InstalacionMapa3D['tipo'], string> = {
+    CASA: '🏠',
+    BODEGA: '🏚️',
+    ALMACEN: '📦',
+    OTRO: '📍',
+  };
+  for (const i of instalaciones) {
+    if (!i.geojson) continue;
+    const el = document.createElement('div');
+    el.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;';
+    el.innerHTML =
+      `<span style="font-size:17px;filter:drop-shadow(0 1px 2px rgba(20,44,26,.6))">${
+        EMOJI_INSTALACION[i.tipo]
+      }</span>` +
+      `<span style="font-family:system-ui;font-size:10.5px;font-weight:600;color:#fff;` +
+      `text-shadow:0 0 4px rgba(0,0,0,.85);white-space:nowrap">${i.nombre}</span>`;
+    ref.current.push(
+      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat(i.geojson.coordinates)
+        .addTo(map)
     );
   }
 
