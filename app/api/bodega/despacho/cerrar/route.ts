@@ -17,6 +17,7 @@ type Body = {
   id_local: string;
   despacho_id: string;
   items: ItemBody[];
+  lote_id?: string | null;
 };
 
 function esUuid(s: unknown): s is string {
@@ -46,6 +47,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'despacho_id inválido' }, { status: 400 });
   }
   const despachoId = BigInt(body.despacho_id);
+  const loteId =
+    body.lote_id != null && /^\d+$/.test(String(body.lote_id)) ? BigInt(body.lote_id) : null;
 
   // Idempotencia: si el despacho ya está CERRADO, asumir que es la misma operación.
   const despacho = await prisma.despachos.findUnique({
@@ -155,6 +158,14 @@ export async function POST(req: Request) {
     .map((it) => it.insumo_id as bigint);
   const disponiblesAntes = await snapshotDisponiblesAntes(insumoIdsPush);
 
+  // Congelar el costo unitario del catálogo al momento del cierre: el costo
+  // histórico por lote no se distorsiona cuando cambie el precio del insumo.
+  const costosActuales = await prisma.insumos.findMany({
+    where: { id: { in: insumoIdsPush } },
+    select: { id: true, costo_unitario: true },
+  });
+  const mapaCostos = new Map(costosActuales.map((c) => [c.id.toString(), c.costo_unitario]));
+
   try {
     await prisma.$transaction(async (tx) => {
       for (const a of actualizaciones) {
@@ -170,7 +181,11 @@ export async function POST(req: Request) {
           if (a.insumoId === null) continue;
           await tx.despacho_items.update({
             where: { id: a.itemId },
-            data: { cantidad_consumida: a.consumido! },
+            data: {
+              cantidad_consumida: a.consumido!,
+              costo_unitario_snapshot:
+                a.insumoId !== null ? mapaCostos.get(a.insumoId.toString()) ?? null : null,
+            },
           });
           await tx.insumos.update({
             where: { id: a.insumoId },
@@ -207,7 +222,7 @@ export async function POST(req: Request) {
 
       await tx.despachos.update({
         where: { id: despachoId },
-        data: { estado: 'CERRADO', fecha_devolucion: new Date() },
+        data: { estado: 'CERRADO', fecha_devolucion: new Date(), lote_id: loteId },
       });
     });
   } catch (e) {
