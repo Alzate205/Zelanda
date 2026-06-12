@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { sanitizarError } from '@/lib/errores';
 import { revalidarSnapshotAlmacen, revalidarDashboards } from '@/lib/revalidar';
 import { pesoCanastas } from '@/lib/comercio';
+import { carenciasActivas } from '@/lib/jefe/carencias';
+import { fmtCarenciaHasta } from '@/lib/carencia';
+import { enviarPushAUsuarios } from '@/lib/push/enviar';
 
 type Body = {
   id_local: string;
@@ -108,6 +111,36 @@ export async function POST(req: Request) {
     });
     revalidarSnapshotAlmacen();
     revalidarDashboards();
+
+    // Si el lote está en carencia, avisar a los jefes. El push nunca tumba el registro.
+    try {
+      const carencia = (await carenciasActivas()).find((c) => c.lote_id === body.lote_id);
+      if (carencia) {
+        const [lote, jefes] = await Promise.all([
+          prisma.lotes.findUnique({
+            where: { id: BigInt(body.lote_id) },
+            select: { nombre: true },
+          }),
+          prisma.usuarios.findMany({ where: { rol: 'JEFE', activo: true }, select: { id: true } }),
+        ]);
+        if (jefes.length > 0) {
+          await enviarPushAUsuarios(
+            jefes.map((j) => j.id),
+            {
+              titulo: 'Cosecha en periodo de carencia',
+              cuerpo: `${lote?.nombre ?? 'Lote'}: ${
+                carencia.insumo
+              }, carencia hasta el ${fmtCarenciaHasta(carencia.hasta)}`,
+              url: '/jefe/aplicaciones',
+              tag: 'cosecha-carencia',
+            }
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('Push carencia falló:', e);
+    }
+
     return NextResponse.json({ ok: true, id: String(creada.id) });
   } catch (e) {
     return NextResponse.json({ error: sanitizarError(e, 'api/almacen/cosecha') }, { status: 500 });
