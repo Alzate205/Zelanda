@@ -198,7 +198,7 @@ La capa financiera (pagos, tarifas configurables, servicios contratados con pago
 
 ## 6. Esquema de base de datos
 
-El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculaciones` (que reemplaza `trabajadores`) está en **`supabase/migracion-nucleo-personas.sql`**. Las RLS están en **`supabase/policies.sql`**. Las migraciones de la capa financiera viven en `supabase/migracion-{tarifas-tarea,pagos,servicios-contratados,jornales,ausencias,recordatorios}.sql`. Estado actual: 24 tablas + 2 vistas (`v_insumos_stock`, `v_stock_almacen`), incluyendo `personas` y `vinculaciones` y las 6 tablas de Fase 6 (recordatorios, tarifas_tarea, pagos, servicios_contratados, jornales, ausencias).
+El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculaciones` (que reemplaza `trabajadores`) está en **`supabase/migracion-nucleo-personas.sql`**. Las RLS están en **`supabase/policies.sql`**. Las migraciones de la capa financiera viven en `supabase/migracion-{tarifas-tarea,pagos,servicios-contratados,jornales,ausencias,recordatorios}.sql`. La de trazabilidad (`despachos.lote_id` + `despacho_items.costo_unitario_snapshot`) en `supabase/migracion-aplicaciones.sql`. Estado actual: 24 tablas + 2 vistas (`v_insumos_stock`, `v_stock_almacen`), incluyendo `personas` y `vinculaciones` y las 6 tablas de Fase 6 (recordatorios, tarifas_tarea, pagos, servicios_contratados, jornales, ausencias).
 
 ### Decisiones de diseño clave
 
@@ -434,7 +434,9 @@ Spec en `docs/superpowers/specs/2026-06-10-zelanda-2-0-design.md`. Solo afecta a
 
 ### Fase 8 — Futuro (no hacer aún)
 
-Backlog priorizado (revisión 2026-06-12): trazabilidad de aplicaciones químicas insumo→lote (requiere brainstorming de producto), lluvia real de los últimos días en el panel de clima, push de stock bajo en el cron de las 7 am, NDVI persistido en Supabase Storage, e2e de flujos críticos.
+Backlog priorizado (revisión 2026-06-12): push de stock bajo en el cron de las 7 am, e2e de flujos críticos, y la v2 de trazabilidad: ficha técnica del químico en `insumos` (ingrediente activo, registro ICA, periodo de carencia/reingreso) y alerta de carencia al registrar cosecha.
+
+Ya implementados de esa revisión: registro de aplicaciones insumo→lote (`/jefe/aplicaciones`, spec `docs/superpowers/specs/2026-06-12-aplicaciones-insumos-lote-design.md`), lluvia real de 7 días en el panel de clima, NDVI persistido en Supabase Storage.
 
 ---
 
