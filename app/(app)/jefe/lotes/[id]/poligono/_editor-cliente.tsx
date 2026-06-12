@@ -28,24 +28,39 @@ const ESTADO_INICIAL: EstadoEdicion = { error: null };
 const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
 function AjustarVistaReferencias({
-  borde,
+  referencias,
   vacio,
 }: {
-  borde: ReferenciasMapa['borde'];
+  referencias: ReferenciasMapa;
   vacio: boolean;
 }) {
   const map = useMap();
   useEffect(() => {
     if (!vacio) return;
-    if (borde) {
-      try {
-        const layer = L.geoJSON(borde);
-        map.fitBounds(layer.getBounds(), { padding: [20, 20] });
-      } catch {
-        /* noop */
-      }
+    // El borde manda; sin borde, encuadrar sobre lo que tenga coordenadas.
+    const geometrias = referencias.borde
+      ? [referencias.borde]
+      : [
+          ...referencias.lotes.map((l) => l.geojson),
+          ...referencias.apiarios.map((p) => p.geojson),
+          ...referencias.instalaciones.map((p) => p.geojson),
+        ];
+    if (geometrias.length === 0) return;
+    try {
+      const featureCollection = {
+        type: 'FeatureCollection' as const,
+        features: geometrias.map((g) => ({
+          type: 'Feature' as const,
+          properties: {},
+          geometry: g,
+        })),
+      };
+      const layer = L.geoJSON(featureCollection as never);
+      map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 17 });
+    } catch {
+      /* noop */
     }
-  }, [borde, vacio, map]);
+  }, [referencias, vacio, map]);
   return null;
 }
 
@@ -117,7 +132,7 @@ export default function EditorPoligono({
           />
           {referencias && (
             <>
-              <AjustarVistaReferencias borde={referencias.borde} vacio={iniciales.length === 0} />
+              <AjustarVistaReferencias referencias={referencias} vacio={iniciales.length === 0} />
               <CapaReferencias
                 borde={referencias.borde}
                 lotes={referencias.lotes}

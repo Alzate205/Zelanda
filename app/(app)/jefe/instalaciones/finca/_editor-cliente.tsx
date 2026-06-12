@@ -28,31 +28,36 @@ const ESTADO_INICIAL: EstadoEdicion = { error: null };
 const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
 function AjustarVistaReferencias({
-  lotes,
+  referencias,
   vacio,
 }: {
-  lotes: ReferenciasMapa['lotes'];
+  referencias: ReferenciasMapa;
   vacio: boolean;
 }) {
   const map = useMap();
   useEffect(() => {
     if (!vacio) return;
-    if (lotes.length === 0) return;
+    const geometrias = [
+      ...referencias.lotes.map((l) => l.geojson),
+      ...referencias.apiarios.map((p) => p.geojson),
+      ...referencias.instalaciones.map((p) => p.geojson),
+    ];
+    if (geometrias.length === 0) return;
     try {
       const featureCollection = {
         type: 'FeatureCollection' as const,
-        features: lotes.map((l) => ({
+        features: geometrias.map((g) => ({
           type: 'Feature' as const,
           properties: {},
-          geometry: l.geojson,
+          geometry: g,
         })),
       };
-      const layer = L.geoJSON(featureCollection);
-      map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+      const layer = L.geoJSON(featureCollection as never);
+      map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
     } catch {
       /* noop */
     }
-  }, [lotes, vacio, map]);
+  }, [referencias, vacio, map]);
   return null;
 }
 
@@ -120,7 +125,7 @@ export default function EditorBorde({
           />
           {referencias && (
             <>
-              <AjustarVistaReferencias lotes={referencias.lotes} vacio={iniciales.length === 0} />
+              <AjustarVistaReferencias referencias={referencias} vacio={iniciales.length === 0} />
               <CapaReferencias
                 borde={referencias.borde}
                 lotes={referencias.lotes}
