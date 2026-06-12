@@ -193,6 +193,12 @@ export type PrediccionLoteResumen = {
   confianza: 'alta' | 'media' | 'baja';
 };
 
+export type CarenciaLoteResumen = {
+  lote_id: string;
+  insumo: string;
+  hasta: string; // YYYY-MM-DD, último día inclusive
+};
+
 export type SnapshotJefe = {
   vencidas: AlertaTareaJefe[];
   proximas: AlertaTareaJefe[];
@@ -218,6 +224,7 @@ export type SnapshotJefe = {
   cosecha_mes_por_lote?: CosechaLoteMes[];
   equipo_hoy?: AsignacionHoyResumen[];
   prediccion_por_lote?: PrediccionLoteResumen[];
+  carencias_por_lote?: CarenciaLoteResumen[];
   ts: string;
 };
 
