@@ -87,6 +87,7 @@ export default async function PaginaReportesAvanzados({
     cosechaAnterior,
     rankingLotes,
     cosechasAnio,
+    aplicacionesMes,
   ] = await Promise.all([
     // Ingresos del mes (ventas con precio_total)
     prisma.salidas_cosecha.aggregate({
@@ -159,9 +160,8 @@ export default async function PaginaReportesAvanzados({
       GROUP BY y
       ORDER BY y
     `,
+    obtenerAplicaciones(desdeTZ, hastaTZ),
   ]);
-
-  const aplicacionesMes = await obtenerAplicaciones(desdeTZ, hastaTZ);
   const costoInsumosPorLote = agruparCostoPorLote(
     aplicacionesMes.map((a) => ({ lote_id: a.lote_id, lote_nombre: a.lote, costo: a.costo }))
   );

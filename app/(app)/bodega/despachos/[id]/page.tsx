@@ -57,6 +57,13 @@ export default async function PaginaDetalleDespacho({
         })
       : [];
 
+  // Solo preseleccionar el lote si sigue existiendo en el catálogo (no fue borrado lógicamente)
+  const idPreseleccionado = despacho.asignacion?.lotes?.id?.toString() ?? null;
+  const lotePreseleccionado =
+    idPreseleccionado !== null && lotes.some((l) => l.id.toString() === idPreseleccionado)
+      ? idPreseleccionado
+      : null;
+
   const fmt = (d: Date) =>
     d.toLocaleString('es-CO', {
       day: '2-digit',
@@ -161,7 +168,7 @@ export default async function PaginaDetalleDespacho({
               cantidad: it.cantidad.toString(),
             }))}
             lotes={lotes.map((l) => ({ id: l.id.toString(), nombre: l.nombre }))}
-            lotePreseleccionado={despacho.asignacion?.lotes?.id?.toString() ?? null}
+            lotePreseleccionado={lotePreseleccionado}
           />
         </div>
       )}

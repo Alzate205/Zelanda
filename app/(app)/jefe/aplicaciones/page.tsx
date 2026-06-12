@@ -145,8 +145,9 @@ export default async function PaginaAplicaciones({
               'Tarea',
               'Costo',
             ]}
+            // en-CA = YYYY-MM-DD; día de Bogotá para coincidir con la UI y el filtro mensual
             rows={aplicaciones.map((a) => [
-              a.fecha.toISOString().slice(0, 10),
+              a.fecha.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }),
               a.insumo,
               a.cantidad.toFixed(3),
               a.unidad,
