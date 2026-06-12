@@ -6,7 +6,6 @@ const MODOS: Array<{ id: ModoMapa; etiqueta: string }> = [
   { id: 'tareas', etiqueta: 'Tareas' },
   { id: 'cosecha', etiqueta: 'Cosecha' },
   { id: 'equipo', etiqueta: 'Equipo' },
-  { id: 'historia', etiqueta: 'Historia' },
   { id: 'clima', etiqueta: 'Clima' },
 ];
 

@@ -19,7 +19,7 @@ export type LoteMapa3D = {
   geojson: GeoJsonPolygon;
 };
 
-export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'historia' | 'clima';
+export type ModoMapa = 'tareas' | 'cosecha' | 'equipo' | 'clima';
 
 // Vista predeterminada: cámara sobre la Pista (extremo noroeste) mirando
 // la finca completa a lo largo, de abajo hacia arriba (rumbo ~150°).
@@ -100,7 +100,7 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
 };
 
 function pinturaFill(modo: ModoMapa): maplibregl.ExpressionSpecification | string {
-  if (modo === 'cosecha' || modo === 'historia') return ['get', 'colorCosecha'] as never;
+  if (modo === 'cosecha') return ['get', 'colorCosecha'] as never;
   if (modo === 'equipo') return '#5a7d8a';
   if (modo === 'clima') return '#4a708a';
   return [
@@ -402,7 +402,7 @@ function crearMarcadores(
       'background:none;border:0;padding:0;cursor:pointer;font-family:Georgia,serif;' +
       'color:#fff;text-shadow:0 0 4px rgba(0,0,0,.85);font-size:12.5px;line-height:1.15;text-align:center;';
     const detalle =
-      modo === 'cosecha' || modo === 'historia'
+      modo === 'cosecha'
         ? `${Math.round(l.kgMes).toLocaleString('es-CO')} kg`
         : modo === 'equipo'
         ? l.trabajandoHoy > 0
