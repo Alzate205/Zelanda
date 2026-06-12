@@ -34,6 +34,15 @@ function soportaWebGL(): boolean {
   }
 }
 
+// Leyenda del NDVI: mismos colores que el evalscript de lib/jefe/ndvi.ts.
+const LEYENDA_NDVI = [
+  { color: '#15733a', etiqueta: 'Muy sano' },
+  { color: '#8cc759', etiqueta: 'Sano' },
+  { color: '#f2d94d', etiqueta: 'Medio' },
+  { color: '#e58c33', etiqueta: 'Bajo' },
+  { color: '#bf382b', etiqueta: 'Estrés / suelo' },
+];
+
 // Botones redondos de acción sobre el mapa
 const BTN_MAPA =
   'pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-zelanda-beige-50/85 text-zelanda-verde-800 shadow-suave backdrop-blur-md';
@@ -353,6 +362,25 @@ export function CentroControl({
           >
             <Satellite className="h-4 w-4" aria-hidden />
           </button>
+          {ndvi ? (
+            <div className="pointer-events-auto rounded-xl border border-white/60 bg-zelanda-beige-50/90 px-2.5 py-2 shadow-suave backdrop-blur-md">
+              <p className="m-0 mb-1 text-[9px] font-semibold uppercase tracking-wide text-zelanda-verde-800">
+                Vigor del cultivo
+              </p>
+              {LEYENDA_NDVI.map((n) => (
+                <p
+                  key={n.etiqueta}
+                  className="m-0 flex items-center gap-1.5 text-[10px] leading-4 text-zelanda-verde-800"
+                >
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-sm"
+                    style={{ backgroundColor: n.color }}
+                  />
+                  {n.etiqueta}
+                </p>
+              ))}
+            </div>
+          ) : null}
           {avisoNdvi ? (
             <p className="pointer-events-auto m-0 max-w-[230px] rounded-xl bg-zelanda-verde-900/85 px-3 py-1.5 text-right text-[11.5px] text-zelanda-beige-50 backdrop-blur-md">
               {avisoNdvi}

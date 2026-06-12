@@ -54,7 +54,9 @@ async function tokenCdse(): Promise<string | null> {
   return j.access_token ?? null;
 }
 
-// Evalscript: NDVI con rampa rojo→amarillo→verde; nubes y sombras transparentes.
+// Evalscript: NDVI en 5 niveles con contraste alto; nubes y sombras
+// transparentes. En una finca mayormente sana, separar "sano" de "muy sano"
+// es lo que hace visible la variación de vigor entre zonas.
 const EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
@@ -67,10 +69,11 @@ function evaluatePixel(s) {
     return [0, 0, 0, 0];
   }
   const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04);
-  if (ndvi < 0.2) return [0.75, 0.3, 0.25, 0.85];
-  if (ndvi < 0.4) return [0.85, 0.65, 0.3, 0.85];
-  if (ndvi < 0.6) return [0.65, 0.8, 0.35, 0.85];
-  return [0.25, 0.6, 0.3, 0.85];
+  if (ndvi < 0.3) return [0.75, 0.22, 0.17, 0.9];
+  if (ndvi < 0.5) return [0.9, 0.55, 0.2, 0.9];
+  if (ndvi < 0.65) return [0.95, 0.85, 0.3, 0.9];
+  if (ndvi < 0.75) return [0.55, 0.78, 0.35, 0.9];
+  return [0.08, 0.45, 0.22, 0.9];
 }`;
 
 function rangoUltimos30Dias(): { desde: string; hasta: string } {
@@ -119,8 +122,9 @@ const obtenerNdviUncached = async (): Promise<
   return { png_base64: buf.toString('base64'), bbox };
 };
 
-/** Imagen NDVI cacheada 24 h (Sentinel-2 revisita cada ~5 días). */
-export const obtenerNdvi = unstable_cache(obtenerNdviUncached, ['ndvi-finca'], {
+/** Imagen NDVI cacheada 24 h (Sentinel-2 revisita cada ~5 días).
+ *  La clave lleva versión: al cambiar el evalscript se descarta la vieja. */
+export const obtenerNdvi = unstable_cache(obtenerNdviUncached, ['ndvi-finca', 'v2'], {
   revalidate: 86400,
 });
 
