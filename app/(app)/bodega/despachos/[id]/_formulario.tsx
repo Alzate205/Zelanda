@@ -1,64 +1,70 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { CloudOff, Check } from "lucide-react";
-import { enviarDespachoCerrar } from "@/lib/offline/api-cliente";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { CloudOff, Check } from 'lucide-react';
+import { enviarDespachoCerrar } from '@/lib/offline/api-cliente';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 type ItemRow = {
   id: string;
-  tipo: "HERRAMIENTA" | "INSUMO";
+  tipo: 'HERRAMIENTA' | 'INSUMO';
   nombre: string;
   unidad: string;
   cantidad: string;
 };
 
-type Condicion = "buena" | "usada" | "danada";
+type Condicion = 'buena' | 'usada' | 'danada';
 
 const ETIQUETA_COND: Record<Condicion, string> = {
-  buena: "Buen estado",
-  usada: "Usada",
-  danada: "Dañada",
+  buena: 'Buen estado',
+  usada: 'Usada',
+  danada: 'Dañada',
 };
 
 function condicionAString(c: Condicion): string | null {
-  if (c === "buena") return null;
-  if (c === "usada") return "usada";
-  return "dañada";
+  if (c === 'buena') return null;
+  if (c === 'usada') return 'usada';
+  return 'dañada';
 }
 
 export function FormularioCierreDespacho({
   despachoId,
   items,
+  lotes,
+  lotePreseleccionado,
 }: {
   despachoId: string;
   items: ItemRow[];
+  lotes: { id: string; nombre: string }[];
+  lotePreseleccionado: string | null;
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [condiciones, setCondiciones] = useState<Record<string, Condicion>>(
-    () => {
-      const o: Record<string, Condicion> = {};
-      for (const it of items) {
-        if (it.tipo === "HERRAMIENTA") o[it.id] = "buena";
-      }
-      return o;
-    },
-  );
-
-  const [consumos, setConsumos] = useState<Record<string, number>>(() => {
-    const o: Record<string, number> = {};
+  const [condiciones, setCondiciones] = useState<Record<string, Condicion>>(() => {
+    const o: Record<string, Condicion> = {};
     for (const it of items) {
-      if (it.tipo === "INSUMO") o[it.id] = Number(it.cantidad);
+      if (it.tipo === 'HERRAMIENTA') o[it.id] = 'buena';
     }
     return o;
   });
 
-  const [observaciones, setObservaciones] = useState("");
+  const [consumos, setConsumos] = useState<Record<string, number>>(() => {
+    const o: Record<string, number> = {};
+    for (const it of items) {
+      if (it.tipo === 'INSUMO') o[it.id] = Number(it.cantidad);
+    }
+    return o;
+  });
+
+  const [observaciones, setObservaciones] = useState('');
+  const [loteId, setLoteId] = useState<string>(lotePreseleccionado ?? '');
+
+  const herramientas = items.filter((it) => it.tipo === 'HERRAMIENTA');
+  const insumos = items.filter((it) => it.tipo === 'INSUMO');
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,39 +72,39 @@ export function FormularioCierreDespacho({
 
     const payload: Array<{
       despacho_item_id: string;
-      tipo: "HERRAMIENTA" | "INSUMO";
+      tipo: 'HERRAMIENTA' | 'INSUMO';
       devuelto?: boolean;
       consumido?: number;
       condicion_devolucion?: string | null;
     }> = [];
 
     for (const it of items) {
-      if (it.tipo === "HERRAMIENTA") {
-        const c = condiciones[it.id] ?? "buena";
+      if (it.tipo === 'HERRAMIENTA') {
+        const c = condiciones[it.id] ?? 'buena';
         const partes: string[] = [];
         const cond = condicionAString(c);
         if (cond) partes.push(cond);
         if (observaciones.trim()) partes.push(observaciones.trim());
         payload.push({
           despacho_item_id: it.id,
-          tipo: "HERRAMIENTA",
+          tipo: 'HERRAMIENTA',
           devuelto: true,
-          condicion_devolucion: partes.length > 0 ? partes.join(" · ") : null,
+          condicion_devolucion: partes.length > 0 ? partes.join(' · ') : null,
         });
       } else {
         const consumido = consumos[it.id] ?? 0;
         const original = Number(it.cantidad);
         if (!Number.isFinite(consumido) || consumido < 0) {
-          setError("Cantidad consumida inválida en un item.");
+          setError('Cantidad consumida inválida en un item.');
           return;
         }
         if (consumido > original) {
-          setError("La cantidad consumida no puede ser mayor a la despachada.");
+          setError('La cantidad consumida no puede ser mayor a la despachada.');
           return;
         }
         payload.push({
           despacho_item_id: it.id,
-          tipo: "INSUMO",
+          tipo: 'INSUMO',
           consumido,
         });
       }
@@ -107,18 +113,16 @@ export function FormularioCierreDespacho({
     startTransition(async () => {
       const r = await enviarDespachoCerrar({
         despacho_id: despachoId,
+        lote_id: insumos.length > 0 && loteId !== '' ? loteId : null,
         items: payload,
       });
       if (!r.ok) {
         setError(r.error);
         return;
       }
-      router.push("/bodega/despachos");
+      router.push('/bodega/despachos');
     });
   }
-
-  const herramientas = items.filter((it) => it.tipo === "HERRAMIENTA");
-  const insumos = items.filter((it) => it.tipo === "INSUMO");
 
   return (
     <form onSubmit={onSubmit} className="space-y-5 pb-24" noValidate>
@@ -131,11 +135,9 @@ export function FormularioCierreDespacho({
             {herramientas.map((it) => (
               <FilaCondicion
                 key={it.id}
-                nombre={`${it.nombre}${Number(it.cantidad) > 1 ? ` × ${it.cantidad}` : ""}`}
-                valor={condiciones[it.id] ?? "buena"}
-                onChange={(v) =>
-                  setCondiciones((p) => ({ ...p, [it.id]: v }))
-                }
+                nombre={`${it.nombre}${Number(it.cantidad) > 1 ? ` × ${it.cantidad}` : ''}`}
+                valor={condiciones[it.id] ?? 'buena'}
+                onChange={(v) => setCondiciones((p) => ({ ...p, [it.id]: v }))}
               />
             ))}
           </div>
@@ -158,6 +160,26 @@ export function FormularioCierreDespacho({
                 onChange={(v) => setConsumos((p) => ({ ...p, [it.id]: v }))}
               />
             ))}
+          </div>
+          <div className="mt-3">
+            <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
+              ¿En qué lote se aplicó?
+            </label>
+            <select
+              value={loteId}
+              onChange={(e) => setLoteId(e.target.value)}
+              className="block w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2.5 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+            >
+              <option value="">Sin lote (bodega / apiario / general)</option>
+              {lotes.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.nombre}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[10.5px] text-zelanda-verde-700">
+              Queda en el registro de aplicaciones del lote (trazabilidad).
+            </p>
           </div>
         </section>
       ) : null}
@@ -193,7 +215,7 @@ export function FormularioCierreDespacho({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <button
@@ -209,7 +231,7 @@ export function FormularioCierreDespacho({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente ? "Cerrando…" : "Cerrar despacho"}
+            {pendiente ? 'Cerrando…' : 'Cerrar despacho'}
           </button>
         </div>
       </div>
@@ -226,16 +248,12 @@ function FilaCondicion({
   valor: Condicion;
   onChange: (v: Condicion) => void;
 }) {
-  const opciones: Condicion[] = ["buena", "usada", "danada"];
+  const opciones: Condicion[] = ['buena', 'usada', 'danada'];
   return (
     <div className="rounded-xl border border-zelanda-beige-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between">
-        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">
-          {nombre}
-        </p>
-        <span className="text-[10.5px] text-zelanda-verde-700">
-          salida: Buen estado
-        </span>
+        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">{nombre}</p>
+        <span className="text-[10.5px] text-zelanda-verde-700">salida: Buen estado</span>
       </div>
       <div className="grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
         {opciones.map((op) => (
@@ -245,12 +263,12 @@ function FilaCondicion({
             onClick={() => onChange(op)}
             className={`rounded-lg px-2 py-2 text-[12px] font-semibold transition ${
               valor === op
-                ? op === "danada"
-                  ? "bg-[#f4dad7] text-[#7b2a23] shadow-suave"
-                  : op === "usada"
-                    ? "bg-[#fbf3df] text-zelanda-ocre-700 shadow-suave"
-                    : "bg-white text-zelanda-verde-900 shadow-suave"
-                : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
+                ? op === 'danada'
+                  ? 'bg-[#f4dad7] text-[#7b2a23] shadow-suave'
+                  : op === 'usada'
+                  ? 'bg-[#fbf3df] text-zelanda-ocre-700 shadow-suave'
+                  : 'bg-white text-zelanda-verde-900 shadow-suave'
+                : 'text-zelanda-verde-700 hover:text-zelanda-verde-900'
             }`}
           >
             {ETIQUETA_COND[op]}
@@ -275,7 +293,7 @@ function FilaConsumo({
   onChange: (v: number) => void;
 }) {
   const pct = despachado > 0 ? Math.min(100, (valor / despachado) * 100) : 0;
-  const paso = unidad.toLowerCase().includes("kg") || unidad.toLowerCase() === "l" ? 0.1 : 1;
+  const paso = unidad.toLowerCase().includes('kg') || unidad.toLowerCase() === 'l' ? 0.1 : 1;
 
   function inc(delta: number) {
     const nuevo = Math.max(0, Math.min(despachado, valor + delta));
@@ -286,9 +304,7 @@ function FilaConsumo({
   return (
     <div className="rounded-xl border border-zelanda-beige-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">
-          {nombre}
-        </p>
+        <p className="m-0 font-serif text-[14px] text-zelanda-verde-900">{nombre}</p>
         <span className="text-[10.5px] text-zelanda-verde-700">
           despachado: {despachado} {unidad}
         </span>
