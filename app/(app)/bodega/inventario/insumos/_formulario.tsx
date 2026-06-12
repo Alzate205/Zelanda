@@ -162,6 +162,7 @@ export function FormularioInsumo({
               type="number"
               inputMode="numeric"
               min="0"
+              max="90"
               step="1"
               defaultValue={valores?.periodo_carencia_dias ?? ''}
               className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"

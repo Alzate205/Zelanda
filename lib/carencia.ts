@@ -15,7 +15,7 @@ export type CarenciaLote = {
   hasta: string;
 };
 
-function diaBogota(d: Date): string {
+export function diaBogota(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(d);
 }
 

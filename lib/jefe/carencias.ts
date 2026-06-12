@@ -1,10 +1,10 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { carenciasPorLote, type CarenciaLote } from '@/lib/carencia';
+import { carenciasPorLote, diaBogota, type CarenciaLote } from '@/lib/carencia';
 
 const obtenerCarenciasUncached = async (): Promise<CarenciaLote[]> => {
-  // 90 días cubre cualquier carencia razonable (las etiquetas van de 1 a ~30 días).
+  // 90 días cubre cualquier carencia razonable (las etiquetas van de 1 a ~30 días) y el formulario de insumos rechaza valores mayores a 90.
   const desde = new Date(Date.now() - 90 * 86400000);
   const items = await prisma.despacho_items.findMany({
     where: {
@@ -19,7 +19,7 @@ const obtenerCarenciasUncached = async (): Promise<CarenciaLote[]> => {
     },
   });
 
-  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+  const hoy = diaBogota(new Date());
   return carenciasPorLote(
     items.map((it) => ({
       lote_id: it.despachos.lote_id!.toString(),

@@ -166,6 +166,9 @@ export async function crearInsumo(
     String(formData.get('periodo_carencia_dias') ?? '').trim()
   );
   if (!carenciaParse.ok) return { error: 'Carencia debe ser un entero ≥ 0 (días).' };
+  if (carenciaParse.valor !== null && carenciaParse.valor > 90) {
+    return { error: 'Carencia máxima soportada: 90 días.' };
+  }
   const reingresoParse = parsearEnteroOpcional(
     String(formData.get('periodo_reingreso_horas') ?? '').trim()
   );
@@ -237,6 +240,9 @@ export async function actualizarInsumo(
     String(formData.get('periodo_carencia_dias') ?? '').trim()
   );
   if (!carenciaParse.ok) return { error: 'Carencia debe ser un entero ≥ 0 (días).' };
+  if (carenciaParse.valor !== null && carenciaParse.valor > 90) {
+    return { error: 'Carencia máxima soportada: 90 días.' };
+  }
   const reingresoParse = parsearEnteroOpcional(
     String(formData.get('periodo_reingreso_horas') ?? '').trim()
   );

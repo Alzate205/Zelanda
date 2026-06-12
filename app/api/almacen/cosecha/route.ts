@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sanitizarError } from '@/lib/errores';
@@ -143,6 +144,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, id: String(creada.id) });
   } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      // Carrera de reintentos: otro request con el mismo id_local ya la creó.
+      const dup = await prisma.cosechas.findUnique({
+        where: { id_local: body.id_local },
+        select: { id: true },
+      });
+      if (dup) return NextResponse.json({ ok: true, id: String(dup.id), duplicado: true });
+    }
     return NextResponse.json({ error: sanitizarError(e, 'api/almacen/cosecha') }, { status: 500 });
   }
 }
