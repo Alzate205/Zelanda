@@ -7,6 +7,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { colorDeLote } from '@/lib/paleta-lotes';
+import {
+  ATRIBUCION_SATELITE,
+  MAXZOOM_SATELITE,
+  SUBDOMINIOS_SATELITE,
+  URL_SATELITE_LEAFLET,
+} from '@/lib/mapa-tiles';
 
 const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
@@ -145,9 +151,10 @@ export default function MapaFinca({
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
-          attribution="Tiles &copy; Esri"
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          maxZoom={19}
+          attribution={ATRIBUCION_SATELITE}
+          url={URL_SATELITE_LEAFLET}
+          subdomains={SUBDOMINIOS_SATELITE}
+          maxZoom={MAXZOOM_SATELITE}
         />
         <ControlesMapa borde={bordeFinca} fallback={CENTRO_FINCA} />
 

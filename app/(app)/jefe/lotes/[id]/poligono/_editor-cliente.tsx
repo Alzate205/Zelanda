@@ -15,6 +15,12 @@ import { Undo2, Trash2 } from 'lucide-react';
 import { guardarPoligonoLote, quitarPoligonoLote, type EstadoEdicion } from './acciones';
 import { CapaReferencias } from '@/components/mapa/CapaReferencias';
 import type { ReferenciasMapa } from '@/lib/referencias-mapa';
+import {
+  ATRIBUCION_SATELITE,
+  MAXZOOM_SATELITE,
+  SUBDOMINIOS_SATELITE,
+  URL_SATELITE_LEAFLET,
+} from '@/lib/mapa-tiles';
 
 type LngLat = [number, number];
 
@@ -104,9 +110,10 @@ export default function EditorPoligono({
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            attribution="Tiles &copy; Esri"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maxZoom={19}
+            attribution={ATRIBUCION_SATELITE}
+            url={URL_SATELITE_LEAFLET}
+            subdomains={SUBDOMINIOS_SATELITE}
+            maxZoom={MAXZOOM_SATELITE}
           />
           {referencias && (
             <>

@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { centroideDePoligono, COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
+import { ATRIBUCION_SATELITE, MAXZOOM_SATELITE, URLS_SATELITE_MAPLIBRE } from '@/lib/mapa-tiles';
 
 type GeoJsonPolygon = { type: 'Polygon'; coordinates: number[][][] };
 type GeoJsonPoint = { type: 'Point'; coordinates: [number, number] };
@@ -74,12 +75,10 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
   sources: {
     satelite: {
       type: 'raster',
-      tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      ],
+      tiles: URLS_SATELITE_MAPLIBRE,
       tileSize: 256,
-      maxzoom: 19,
-      attribution: 'Tiles © Esri',
+      maxzoom: MAXZOOM_SATELITE,
+      attribution: ATRIBUCION_SATELITE,
     },
     terreno: {
       type: 'raster-dem',
@@ -482,25 +481,10 @@ function crearMarcadores(
     );
   }
 
-  const EMOJI_INSTALACION: Record<InstalacionMapa3D['tipo'], string> = {
-    CASA: '🏠',
-    BODEGA: '🏚️',
-    ALMACEN: '📦',
-    OTRO: '📍',
-  };
   for (const i of instalaciones) {
     if (!i.geojson) continue;
-    const el = document.createElement('div');
-    el.style.cssText =
-      'display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;';
-    el.innerHTML =
-      `<span style="font-size:17px;filter:drop-shadow(0 1px 2px rgba(20,44,26,.6))">${
-        EMOJI_INSTALACION[i.tipo]
-      }</span>` +
-      `<span style="font-family:system-ui;font-size:10.5px;font-weight:600;color:#fff;` +
-      `text-shadow:0 0 4px rgba(0,0,0,.85);white-space:nowrap">${i.nombre}</span>`;
     ref.current.push(
-      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      new maplibregl.Marker({ element: marcadorPunto(i.nombre, '#fbf7f0'), anchor: 'top' })
         .setLngLat(i.geojson.coordinates)
         .addTo(map)
     );
@@ -508,17 +492,26 @@ function crearMarcadores(
 
   for (const a of apiarios) {
     if (!a.geojson) continue;
-    const el = document.createElement('div');
-    el.style.cssText =
-      'width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);' +
-      'background:linear-gradient(135deg,#c19658,#86612a);border:2px solid #fbf7f0;' +
-      'box-shadow:0 2px 4px rgba(20,44,26,.35);display:flex;align-items:center;justify-content:center;';
-    el.innerHTML =
-      '<span style="transform:rotate(45deg);color:#fbf7f0;font-size:11px;font-weight:700">A</span>';
     ref.current.push(
-      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      new maplibregl.Marker({ element: marcadorPunto(a.nombre, '#c89045'), anchor: 'top' })
         .setLngLat(a.geojson.coordinates)
         .addTo(map)
     );
   }
+}
+
+// Marker cartográfico sobrio: punto con borde oscuro + etiqueta en
+// mayúsculas, al estilo de un plano topográfico.
+function marcadorPunto(nombre: string, colorPunto: string): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;' +
+    'transform:translateY(-5px);';
+  el.innerHTML =
+    `<span style="width:9px;height:9px;border-radius:50%;background:${colorPunto};` +
+    `border:2px solid #2e4633;box-shadow:0 1px 3px rgba(0,0,0,.55)"></span>` +
+    `<span style="font-family:system-ui;font-size:9.5px;font-weight:600;letter-spacing:.06em;` +
+    `text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap">` +
+    `${nombre}</span>`;
+  return el;
 }

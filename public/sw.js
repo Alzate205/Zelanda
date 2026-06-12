@@ -1,11 +1,17 @@
 // Service worker para Hacienda La Zelanda — sub-fase 5.2b
 // Push + cache de app shell para navegación offline.
 
-const VERSION = 'b1-1';
+const VERSION = 'b1-2';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
-const HOSTS_BALDOSAS = ['server.arcgisonline.com', 'elevation-tiles-prod.s3.amazonaws.com'];
+const HOSTS_BALDOSAS = [
+  'mt0.google.com',
+  'mt1.google.com',
+  'mt2.google.com',
+  'mt3.google.com',
+  'elevation-tiles-prod.s3.amazonaws.com',
+];
 const MAX_BALDOSAS = 300;
 
 const SHELL_URLS = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
