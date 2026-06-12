@@ -68,7 +68,7 @@ export function carenciasPorLote(
 ## 6. Almacén: aviso al registrar cosecha
 
 - **Página de cosecha nueva**: el server pasa `carencias` al formulario. Al elegir un lote en carencia aparece un banner ámbar persistente: _"Este lote está en carencia hasta el 26/06 por Glifosato — la fruta podría no ser apta."_ El registro **no se bloquea**.
-- **Offline**: las carencias viajan en el snapshot del almacén (campo opcional nuevo, como los demás opcionales del snapshot), así el banner también funciona sin señal con datos del último sync.
+- **Offline**: las carencias viajan como prop server-rendered del formulario (igual que la lista de lotes); el service worker cachea la página, así que sin señal el banner funciona con los datos de la última visita. No hace falta tocar el snapshot del almacén.
 - **API de cosecha** (`/api/almacen/cosecha`): al aceptar un registro (online o sincronizado) de un lote en carencia, manda push a los jefes: _"Se registró cosecha del lote Salento en carencia (Glifosato, hasta el 26/06)"_, tag `cosecha-carencia`. El registro se guarda normal; el push nunca falla el request (try/catch como el push de stock bajo).
 
 ## 7. Jefe: panel del lote + wizard de asignación
