@@ -16,18 +16,18 @@ El proyecto se desarrolla **en tiempos libres, sin presión de plazos**. No es c
 
 ## 2. Contexto operativo de la finca
 
-| Dato | Valor |
-|---|---|
-| Nombre | Hacienda La Zelanda |
-| Cultivo | **Solo aguacate Hass** (no hay otras variedades) |
-| Ubicación | Quindío, Colombia |
-| Lotes | 15, nombrados con municipios del Quindío |
-| Árboles | ~30.000 (entre 1.500 y 2.300 por lote) |
+| Dato               | Valor                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| Nombre             | Hacienda La Zelanda                                                                        |
+| Cultivo            | **Solo aguacate Hass** (no hay otras variedades)                                           |
+| Ubicación          | Quindío, Colombia                                                                          |
+| Lotes              | 15, nombrados con municipios del Quindío                                                   |
+| Árboles            | ~30.000 (entre 1.500 y 2.300 por lote)                                                     |
 | Numeración árboles | 1..N **dentro de cada lote**, con placa física. La misma numeración se repite entre lotes. |
-| Topografía | Montañosa, hileras siguen curvas de nivel |
-| Apiarios | 2 (Apiario El Cedro, 12 colmenas; Apiario La Quebrada, 8 colmenas) |
-| Personal | 15-20 trabajadores (~10 fijos en campo) |
-| Conectividad | Internet móvil **intermitente** — modo offline es **obligatorio** |
+| Topografía         | Montañosa, hileras siguen curvas de nivel                                                  |
+| Apiarios           | 2 (Apiario El Cedro, 12 colmenas; Apiario La Quebrada, 8 colmenas)                         |
+| Personal           | 15-20 trabajadores (~10 fijos en campo)                                                    |
+| Conectividad       | Internet móvil **intermitente** — modo offline es **obligatorio**                          |
 
 ### Lotes (los 15 nombres exactos)
 
@@ -41,23 +41,26 @@ Casa principal, Bodega, Almacén, Apiario El Cedro (sector norte), Apiario La Qu
 
 ## 3. Stack técnico
 
-| Componente | Tecnología |
-|---|---|
-| Frontend | **Next.js 15.5 (App Router)** + React 19 + TypeScript |
-| Estilos | **Tailwind CSS** |
-| Mapas | **Leaflet** (con react-leaflet) |
-| Iconografía | **Lucide React** |
-| Backend | Next.js API Routes / Server Actions |
-| Base de datos | **PostgreSQL 15+ con PostGIS** |
-| ORM | **Prisma** |
-| Auth | **Supabase Auth** |
-| Hosting BD | **Supabase** (free tier) |
-| Hosting App | **Vercel** (free tier) |
-| Storage de fotos | **Supabase Storage** |
-| Repositorio | GitHub privado |
-| Tipo de app | **PWA con modo offline (IndexedDB local + sync)** |
+| Componente           | Tecnología                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Frontend             | **Next.js 15.5 (App Router)** + React 19 + TypeScript                                                      |
+| Estilos              | **Tailwind CSS**                                                                                           |
+| Mapas                | **MapLibre GL** (centro de control 3D del jefe) + **Leaflet** (editores de polígonos y fallback sin WebGL) |
+| Iconografía          | **Lucide React**                                                                                           |
+| Clima                | **Open-Meteo** (gratis, sin API key, cacheado 30 min)                                                      |
+| Imágenes satelitales | **Copernicus Data Space** (Sentinel-2, NDVI vía Process API; requiere `CDSE_CLIENT_ID/SECRET`)             |
+| Backend              | Next.js API Routes / Server Actions                                                                        |
+| Base de datos        | **PostgreSQL 15+ con PostGIS**                                                                             |
+| ORM                  | **Prisma**                                                                                                 |
+| Auth                 | **Supabase Auth**                                                                                          |
+| Hosting BD           | **Supabase** (free tier)                                                                                   |
+| Hosting App          | **Vercel** (free tier)                                                                                     |
+| Storage de fotos     | **Supabase Storage**                                                                                       |
+| Repositorio          | GitHub privado                                                                                             |
+| Tipo de app          | **PWA con modo offline (IndexedDB local + sync)**                                                          |
 
 ### Filosofía técnica
+
 - **Server Components por defecto**, Client Components solo donde haga falta interactividad.
 - **Server Actions** para mutaciones simples; API Routes para lo que necesite endpoint REST claro.
 - **Mínimo de triggers en BD**: solo invariantes simples (actualizar `arboles.estado` ante novedades). El resto en transacciones a nivel API.
@@ -71,6 +74,7 @@ Casa principal, Bodega, Almacén, Apiario El Cedro (sector norte), Apiario La Qu
 Hay **4 roles** con interfaces diferenciadas (mismo proyecto, vistas distintas según rol):
 
 ### 4.1 JEFE
+
 - Visión general de la finca, alertas, métricas
 - Configura tipos de tarea y frecuencias (default y por lote)
 - Asigna tareas a trabajadores
@@ -79,18 +83,21 @@ Hay **4 roles** con interfaces diferenciadas (mismo proyecto, vistas distintas s
 - Vista de inventario y cosecha en modo lectura
 
 ### 4.2 BODEGA
+
 - Despacha herramientas e insumos a trabajadores al inicio del día
 - Recibe devoluciones al final
 - Mantiene actualizado el inventario
 - **Encargado en prototipo:** Diego Toro
 
 ### 4.3 ALMACEN
+
 - Recibe cosecha entrante (por canastas o báscula)
 - Registra lote de origen, recolector, cantidad
 - Registra salidas (venta, consumo, pérdida)
 - **Encargado en prototipo:** Rocío Marín
 
 ### 4.4 TRABAJADOR
+
 - Ve sus tareas asignadas
 - Ve qué tiene prestado de bodega
 - Registra avance (tramo continuo / árboles sueltos / novedad)
@@ -103,27 +110,30 @@ Hay **4 roles** con interfaces diferenciadas (mismo proyecto, vistas distintas s
 ## 5. Módulos del sistema
 
 ### 5.1 Lotes y Árboles
+
 - Mapa satelital con polígonos de los 15 lotes (coloreados por estado: verde al día, ámbar próxima, rojo vencida)
 - Detalle de lote: tareas con progreso, vista de cuadrícula de árboles, novedades
 - Ficha técnica individual por árbol ("Pokédex"): historial de tareas, novedades, fotos
 
 ### 5.2 Tareas y Asignaciones
+
 Tipos de tarea predefinidos (configurables por el jefe):
 
-| Tarea | Frecuencia default (días) | Área |
-|---|---|---|
-| Plateo químico | 90 | cultivo |
-| Poda | 180 | cultivo |
-| Fertilización | 60 | cultivo |
-| Control de plagas | 45 | cultivo |
-| Riego | 15 | cultivo |
-| Cosecha | 120 | cultivo |
-| Visita al apiario | 21 | apicultura |
-| Cosecha de miel | 90 | apicultura |
+| Tarea             | Frecuencia default (días) | Área       |
+| ----------------- | ------------------------- | ---------- |
+| Plateo químico    | 90                        | cultivo    |
+| Poda              | 180                       | cultivo    |
+| Fertilización     | 60                        | cultivo    |
+| Control de plagas | 45                        | cultivo    |
+| Riego             | 15                        | cultivo    |
+| Cosecha           | 120                       | cultivo    |
+| Visita al apiario | 21                        | apicultura |
+| Cosecha de miel   | 90                        | apicultura |
 
 **Cada lote puede tener frecuencias específicas que sobreescriben las default.**
 
 ### Flujo de asignación
+
 1. Jefe selecciona lote y crea asignación (tarea + trabajador)
 2. Trabajador ve asignación en su pantalla
 3. Trabajador registra avance de 3 formas posibles:
@@ -134,10 +144,11 @@ Tipos de tarea predefinidos (configurables por el jefe):
 5. Alertas cuando faltan menos de 7 días o ya está vencida
 
 ### 5.3 Bodega
+
 - **Herramientas** (durables): se prestan y devuelven. Categorías: cultivo, cosecha, apicultura
 - **Insumos** (consumibles): se descuentan del stock. Mismas categorías
 - Modelo de stock de insumos: **reserva + consumo real**
-  - Al despachar: se *reserva* (`stock_reservado` sube)
+  - Al despachar: se _reserva_ (`stock_reservado` sube)
   - Al cerrar despacho: se registra `cantidad_consumida` y se aplica:
     - `stock_actual -= cantidad_consumida`
     - `stock_reservado -= cantidad` (la original)
@@ -145,6 +156,7 @@ Tipos de tarea predefinidos (configurables por el jefe):
 - Alertas cuando `(stock_actual - stock_reservado) <= stock_minimo`
 
 ### 5.4 Almacén de cosecha
+
 - Ingreso: trabajador recolector + lote + método (canasta o báscula) + cantidad
 - Método CANASTA: `canastas × capacidad` = `peso_kg`
 - Método BASCULA: `peso_kg` directo
@@ -152,11 +164,13 @@ Tipos de tarea predefinidos (configurables por el jefe):
 - **Stock del almacén = vista calculada** (suma cosechas - suma salidas)
 
 ### 5.5 Apicultura
+
 - 2 apiarios visibles en mapa
 - Tareas específicas (visita al apiario, cosecha de miel) asignables a **cualquier trabajador disponible**. No requiere rol designado.
 - Equipo específico en bodega (trajes, ahumador, etc.)
 
 ### 5.6 Personas y Vínculos
+
 La operación de la finca involucra 4 perfiles, modelados como **`personas`** (identidad invariante) + **`vinculaciones`** (cada relación con la finca en el tiempo, con histórico):
 
 - **FIJO**: empleado con sueldo periódico (mensual/quincenal/semanal).
@@ -170,9 +184,10 @@ Datos por **persona**: nombre completo, cédula, teléfono, fecha de nacimiento,
 
 Datos por **vinculación**: tipo, rol_finca (texto libre), fecha_inicio, fecha_fin, salario_base + periodo_pago (solo FIJO), tarifa_jornal (solo JORNALERO), esquema_pago_destajo (solo FIJO/JORNALERO).
 
-La capa financiera (pagos, tarifas configurables, servicios contratados con pagos parciales, jornales, ausencias, vista de saldos por persona) está implementada en Fase 6 — ver §9 más abajo. La lógica de destajo (cantidad × tarifa por kg/árbol/ha) está pendiente y requiere mapear `registros_avance` a `tarifas_tarea` con esquema POR_KG / POR_ARBOL / POR_HECTAREA.
+La capa financiera (pagos, tarifas configurables, servicios contratados con pagos parciales, jornales, ausencias, vista de saldos por persona) está implementada en Fase 6, y la lógica de destajo (cantidad × tarifa por kg/árbol/ha, con esquemas NUNCA/ADICIONAL/REEMPLAZA_DIA/SOLO_DESTAJO) en Fase 7 paso 1 — ver §9 más abajo.
 
 ### 5.7 Alertas
+
 - Tarea vencida
 - Tarea próxima a vencer (< 7 días)
 - Stock de insumo bajo
@@ -187,21 +202,22 @@ El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculacio
 
 ### Decisiones de diseño clave
 
-| Decisión | Razón |
-|---|---|
-| `personas` + `vinculaciones` reemplazan `trabajadores` | La realidad operacional tiene 4 perfiles (fijos, jornaleros, contratistas, familia) y una persona puede transitar entre ellos. Histórico preservado. |
-| `novedades.arbol_id` con FK estricta a `arboles.id` | La numeración se repite entre lotes, por eso no sirve `(lote_id, numero_placa)` solo |
-| Stock cosecha como **vista** | Evita desincronización |
-| Stock insumos con `stock_actual` + `stock_reservado` | Soporta reserva + consumo real |
-| Soft-delete solo en `personas`, `lotes`, `arboles` | Mantiene historia donde importa; en eventos (cosecha, asignación, etc.) no se borra nunca |
-| `tipos_tarea`, `herramientas`, `insumos` usan flag `activo` en vez de soft-delete | Son catálogos |
-| Triggers mínimos | Solo para invariantes; lógica compleja en API |
+| Decisión                                                                          | Razón                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `personas` + `vinculaciones` reemplazan `trabajadores`                            | La realidad operacional tiene 4 perfiles (fijos, jornaleros, contratistas, familia) y una persona puede transitar entre ellos. Histórico preservado. |
+| `novedades.arbol_id` con FK estricta a `arboles.id`                               | La numeración se repite entre lotes, por eso no sirve `(lote_id, numero_placa)` solo                                                                 |
+| Stock cosecha como **vista**                                                      | Evita desincronización                                                                                                                               |
+| Stock insumos con `stock_actual` + `stock_reservado`                              | Soporta reserva + consumo real                                                                                                                       |
+| Soft-delete solo en `personas`, `lotes`, `arboles`                                | Mantiene historia donde importa; en eventos (cosecha, asignación, etc.) no se borra nunca                                                            |
+| `tipos_tarea`, `herramientas`, `insumos` usan flag `activo` en vez de soft-delete | Son catálogos                                                                                                                                        |
+| Triggers mínimos                                                                  | Solo para invariantes; lógica compleja en API                                                                                                        |
 
 ---
 
 ## 7. Convenciones de código
 
 ### Nombres
+
 - **Tablas y columnas en BD**: `snake_case` en español (`trabajadores`, `lote_id`)
 - **Modelos Prisma**: igual que tabla (`trabajadores`)
 - **Variables y funciones en TS**: `camelCase` en español (`obtenerLotes`, `loteActual`)
@@ -244,12 +260,15 @@ El SQL base está en **`esquema.sql`**. La migración a `personas` + `vinculacio
 ```
 
 ### Idioma
+
 **Todo en español** (UI, comentarios, nombres de variables). Esto es para la finca, no es código que vaya a leer alguien en inglés.
 
 ### Comentarios
+
 Solo donde aporten valor: explicar **por qué**, no qué. El código bien nombrado explica el qué.
 
 ### Manejo de errores
+
 - API: respuestas con `{ ok: false, error: string }` o `{ ok: true, data: T }`
 - UI: mensajes amigables, sin mostrar stack traces al usuario
 - Logs detallados solo en servidor
@@ -259,6 +278,7 @@ Solo donde aporten valor: explicar **por qué**, no qué. El código bien nombra
 ## 8. Decisiones de UX
 
 ### Visual
+
 - **Paleta sobria**: verdes oscuros + ocres + beige. Sin saturación juvenil.
 - **Tipografía**: Georgia para títulos (estilo institucional), Calibri/sistema para cuerpo.
 - **Iconografía**: Lucide React. **Sin emojis** en la UI principal (excepto cuando sean parte de input del usuario).
@@ -266,6 +286,7 @@ Solo donde aporten valor: explicar **por qué**, no qué. El código bien nombra
 - **Mobile first**: pantallas pensadas para uso en campo, con un pulgar, con guantes a veces.
 
 ### Componentes de UX importantes
+
 - **Bottom nav** según rol (no sidebar)
 - **Headers** con gradiente sutil verde oscuro
 - **Cards con sombra suave** (no bordes duros)
@@ -273,6 +294,7 @@ Solo donde aporten valor: explicar **por qué**, no qué. El código bien nombra
 - **Avatares con iniciales** sobre gradiente generado por id (no fotos personales)
 
 ### Prototipo de referencia
+
 El prototipo `zelanda_app.jsx` (entregado en la conversación previa) es **la guía visual y de UX**. Cuando construyas pantallas, replica su estética y estructura. Datos de ese prototipo son ficticios; lo real viene de Supabase.
 
 ---
@@ -282,12 +304,15 @@ El prototipo `zelanda_app.jsx` (entregado en la conversación previa) es **la gu
 > Construir en fases. **No empezar una fase sin terminar la anterior**. Cada fase debe quedar funcionando y probada en uso real antes de pasar a la siguiente.
 
 ### ✅ Fase 0 — Definición (COMPLETADA)
+
 Prototipo navegable, documento maestro, esquema de BD.
 
 ### ✅ Fase 1 — Infraestructura base (COMPLETADA — desplegada 2026-05-11)
+
 **Objetivo:** tener un Next.js desplegado en Vercel con login funcional y los 4 roles.
 
 Pasos:
+
 1. Inicializar proyecto Next.js 14+ con TypeScript y Tailwind
 2. Configurar Prisma con schema básico (espejo del `esquema.sql`)
 3. Conectar a Supabase (BD ya creada con el script SQL)
@@ -298,15 +323,19 @@ Pasos:
 8. Deploy a Vercel con variables de entorno
 
 ### ✅ Fase 2 — Mapa y lotes (COMPLETADA)
+
 - 15 lotes cargados, Leaflet con vista satelital, detalle de lote, polígonos reales capturables.
 
 ### ✅ Fase 3 — Tareas y asignaciones (COMPLETADA)
+
 - CRUD de tipos de tarea, frecuencias por lote, flujo de asignación, registro de avance (TRAMO/SUELTOS/VISITA), cálculo de próximas fechas y alertas.
 
 ### ✅ Fase 4 — Bodega y almacén (COMPLETADA)
+
 - Catálogos, despacho/devolución (reserva + consumo), recepción y salida de cosecha, reporte por lote.
 
 ### ✅ Fase 5 — Apicultura y refinamientos (COMPLETADA)
+
 - Módulo de apiarios ✅ (visita con estado general bien/problemas/crítico, push automático al jefe si crítico, cosecha de miel con kg, detalle apiario con historial)
 - Notificaciones push ✅ (sub-fase 5.1)
 - Modo offline trabajador ✅ (sub-fase 5.2a — ver tareas, registrar avance/novedad, sync con backoff, pantalla `/trabajador/pendientes`)
@@ -314,6 +343,7 @@ Pasos:
 - Fotos offline con re-escalado a 1280px ✅ (sub-fase 5.2c — `SubirFoto` comprime client-side a 1280 px de lado mayor y JPEG calidad 0.85 antes de enviar al servidor, vía DataTransfer API)
 
 ### 🎯 Mejoras agregadas después del roadmap original
+
 - Pokédex de árbol con heat-map, mapa de árboles por lote y bar chart de cosecha por año ✅
 - Login con username (además de email) ✅
 - Condición de devolución de herramienta ✅
@@ -330,6 +360,7 @@ Pasos:
 - Cerrar despacho con `FilaCondicion` (Buen estado / Usada / Dañada) por herramienta y `FilaConsumo` con `+/-` y barra de % por insumo ✅
 
 ### ✅ Fase 6 — Capa financiera (COMPLETADA)
+
 - **Recordatorios** ✅ (tabla `recordatorios`, lista en `/recordatorios`, push automático a las 7am Colombia vía Vercel cron, muestra en dashboard del jefe y del trabajador)
 - **Tarifas por tarea** ✅ (`/jefe/tarifas` — catálogo con vigencia temporal, esquema POR_JORNAL/POR_KG/POR_ARBOL/POR_HECTAREA/POR_HORA/OTRO, override opcional por lote)
 - **Pagos genéricos** ✅ (`/jefe/pagos` — tabla central de salidas de plata con tipos SALARIO/ADELANTO/JORNAL/SERVICIO/BONO/AJUSTE/OTRO, separador de miles en input)
@@ -340,12 +371,14 @@ Pasos:
 - **Separador de miles** ✅ (util `lib/formatos.ts` aplicado a todos los inputs de plata: pagos, tarifas, salario_base, tarifa_jornal, monto_pactado de servicios, tarifa de jornales)
 
 ### ✅ Fase 7 paso 1 — Destajo en saldos (COMPLETADA)
+
 - **Cálculo de destajo extra** ✅ (`lib/saldos.ts` ahora recorre `registros_avance` y `cosechas` en el período, busca la `tarifas_tarea` vigente al momento del evento — preferencia: tarifa específica por lote, luego global — y suma los extras al saldo)
 - **Aplicación del `esquema_pago_destajo`** ✅ (NUNCA / ADICIONAL / REEMPLAZA_DIA / SOLO_DESTAJO) tanto para FIJOS como para JORNALEROS. REEMPLAZA_DIA descuenta `salario_diario` (FIJO) o `tarifa_jornal` (JORNALERO) por cada día con destajo.
 - **UI de destajo** ✅ — en `/jefe/saldos` cada persona muestra el total de destajo si lo hay; en el detalle se ve cada evento con fecha, concepto, cantidad × tarifa = monto.
 - **Selector `esquema_pago_destajo`** ✅ en formularios de equipo (nuevo y editar), tanto en modo "editar vinculación activa" como en "cambiar vinculación".
 
 ### ✅ Fase 7 paso 2 — Ventas y clientes (COMPLETADA)
+
 - **Tabla `clientes`** ✅ (entidad reusable: nombre, contacto, teléfono, notas, flag `activo`). RLS jefe + almacén.
 - **FK `salidas_cosecha.cliente_id`** ✅ opcional (mantiene `cliente_detalle` texto libre como fallback para retrocompatibilidad).
 - **`/jefe/clientes`** ✅ — lista activos/inactivos con stats por cliente (n° ventas, kg, ingresos), CRUD con activar/desactivar para preservar histórico.
@@ -354,6 +387,7 @@ Pasos:
 - **Atajos "Ventas" y "Clientes"** ✅ en el dashboard del jefe.
 
 ### ✅ Fase 7 paso 3 — Compras y proveedores (COMPLETADA)
+
 - **Tabla `proveedores`** ✅ (nombre, contacto, NIT, teléfono, notas, flag `activo`). RLS jefe + bodega.
 - **Tablas `compras` (cabecera) + `compras_items` (detalle)** ✅ con `subtotal` calculado como columna generada `cantidad * costo_unitario`. Total de la cabecera se actualiza vía trigger al insertar/borrar/actualizar items.
 - **Trigger automático `ajustar_stock_por_compra_item`** ✅ al insertar item: sube `insumos.stock_actual += cantidad`, refresca `insumos.costo_unitario`, crea `movimientos_insumo` tipo INGRESO. Al borrar: revierte el stock.
@@ -364,6 +398,7 @@ Pasos:
 - **Atajos "Compras" y "Proveedores"** ✅ en el dashboard del jefe.
 
 ### ✅ Fase 7 paso 4 — Reportes avanzados (COMPLETADA)
+
 - **`/jefe/reportes/avanzados`** ✅ — nueva página accesible desde el principal con 4 secciones:
   - **Resumen financiero del mes** con selector navegable mes a mes: KPIs (ingresos · costos · margen) y desglose línea por línea (ventas, compras de insumos, pagos a personas) con margen calculado y porcentaje.
   - **Cosecha año actual vs año anterior**: bar chart de doble columna por mes (12 barras pareadas), variación porcentual anual con flecha (TrendingUp/Down) y leyenda.
@@ -372,25 +407,41 @@ Pasos:
 - **Link destacado** en `/jefe/reportes` (banner verde claro con icono `BarChart3`) que lleva a los reportes avanzados.
 
 ### ✅ Fase 7 paso 5 — APK distribuible (COMPLETADA)
+
 - **Manifest mejorado** ✅ (`public/manifest.webmanifest` ahora incluye `id`, `scope`, `lang`, `dir`, `categories`, `prefer_related_applications: false`, íconos separados por `purpose` (any + maskable), y 4 `shortcuts` para acciones comunes: mis tareas, asignar, registrar cosecha, saldos).
 - **Metadata del layout** ✅ refinada (descripción alineada con manifest, `applicationName: "La Zelanda"` consistente, `formatDetection.telephone: false` para que Android no convierta números en links de llamada).
 - **Documentación** ✅ — `docs/APK.md` con paso a paso para generar el APK con PWABuilder, distribuir por WhatsApp, gestionar la `signing.keystore` y entender cuándo regenerar.
 
 **Cómo generar el APK** (resumen):
+
 1. Deploy en Vercel.
 2. Abrir https://www.pwabuilder.com/, pegar la URL.
 3. **Package for Stores → Android → Other Android**.
 4. Descargar el ZIP, conservar `signing.keystore` en lugar seguro.
 5. Distribuir el `.apk` por WhatsApp.
 
+### ✅ Zelanda 2.0 — Velocidad + Centro de control 3D + Funciones novedosas (COMPLETADA — junio 2026)
+
+Spec en `docs/superpowers/specs/2026-06-10-zelanda-2-0-design.md`. Solo afecta al rol JEFE; los demás roles quedaron intactos.
+
+- **Fase A — Velocidad** ✅: auth de ~5 viajes a 1 (`cache()` de React + validación local del JWT), navegación del mapa sin recarga, logo a WebP, `loading.tsx` con esqueletos, `unstable_cache` con tag `geo-finca` para queries PostGIS, cache de baldosas satelitales en el SW (`zelanda-tiles`).
+- **Fase B — Centro de control 3D** ✅: `/jefe` ahora es un mapa MapLibre a pantalla completa con terreno real (AWS Terrain Tiles), satélite, polígonos semáforo, chips de modo (Tareas/Cosecha/Equipo/Clima), `PanelLote` bottom-sheet, `DockKPIs` y `PanelCentral` con el dashboard anterior. Fallback automático a Leaflet sin WebGL. Componentes en `components/mapa3d/`.
+- **C1 — Vuelo de dron** ✅: recorrido cinematográfico por los lotes (`flyTo` encadenados, orden por cercanía con `lib/ruta-dron.ts`).
+- **C2 — Máquina del tiempo** ❌ retirada (2026-06-12): se implementó y luego se quitó por decisión de producto — la info histórica vive mejor en reportes avanzados. Recuperable desde git si hiciera falta.
+- **C3 — Clima + alertas agro** ✅: pronóstico 7 días de Open-Meteo (`lib/jefe/clima.ts`, cache 30 min), reglas agro puras testeadas (`lib/clima-reglas.ts`: ventana de fumigación, riesgo de helada) y alerta push a las 7 am dentro del cron `recordatorios-hoy` (Vercel Hobby solo permite 2 crons; no crear más).
+- **C4 — Predicción de cosecha** ✅: `lib/prediccion-cosecha.ts` (promedio ponderado 3-2-1 + tendencia, testeado), visible en `PanelLote` y en reportes avanzados.
+- **C5 — NDVI satelital** ✅: botón "Salud del cultivo" en el mapa; `lib/jefe/ndvi.ts` pide a Copernicus (OAuth client-credentials + Process API) un PNG del NDVI con 5 niveles y nubes transparentes, georreferenciado sobre el satélite con leyenda. Solo se cachean éxitos (los errores de CDSE no se cachean — lección aprendida).
+
 ### Fase 8 — Futuro (no hacer aún)
-Sin definir. Cuando se necesite, anotar aquí.
+
+Backlog priorizado (revisión 2026-06-12): trazabilidad de aplicaciones químicas insumo→lote (requiere brainstorming de producto), lluvia real de los últimos días en el panel de clima, push de stock bajo en el cron de las 7 am, NDVI persistido en Supabase Storage, e2e de flujos críticos.
 
 ---
 
 ## 10. Cómo trabajar con este proyecto
 
 ### Para Claude Code:
+
 1. **Lee este archivo entero** antes de cualquier tarea.
 2. **Lee `esquema.sql`** para entender la BD.
 3. **Pregunta antes de improvisar** decisiones de producto o diseño no documentadas.
@@ -403,13 +454,16 @@ Sin definir. Cuando se necesite, anotar aquí.
 10. **Al terminar una tarea**, lista qué hiciste y qué falta para cerrar la fase actual.
 
 ### Para el dueño del proyecto:
-- Cuando arranques con Claude Code, lo primero es decirle: *"Lee CLAUDE.md y esquema.sql, luego seguimos"*.
-- Si Claude Code propone algo que se desvía de este doc, decirle: *"Eso no está en CLAUDE.md, ¿deberíamos actualizarlo o seguir el plan?"*.
+
+- Cuando arranques con Claude Code, lo primero es decirle: _"Lee CLAUDE.md y esquema.sql, luego seguimos"_.
+- Si Claude Code propone algo que se desvía de este doc, decirle: _"Eso no está en CLAUDE.md, ¿deberíamos actualizarlo o seguir el plan?"_.
 - Actualiza este archivo cuando tomen decisiones nuevas. Es la fuente de verdad.
 
 ---
 
 ## 11. Variables de entorno (referencia)
+
+La lista completa y comentada vive en **`.env.example`** (fuente de verdad). Resumen:
 
 ```env
 # Supabase
@@ -423,6 +477,15 @@ DIRECT_URL=                         # connection directa para migrations
 
 # App
 NEXT_PUBLIC_APP_NAME=La Zelanda
+
+# Sentry (observabilidad)
+NEXT_PUBLIC_SENTRY_DSN= / SENTRY_DSN= / SENTRY_AUTH_TOKEN= ...
+
+# Push (VAPID — generar con npx web-push generate-vapid-keys)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY= / VAPID_PRIVATE_KEY= / VAPID_SUBJECT=
+
+# NDVI (Copernicus Data Space — OAuth client del dashboard de Sentinel Hub)
+CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 ```
 
 ---
@@ -441,5 +504,5 @@ NEXT_PUBLIC_APP_NAME=La Zelanda
 
 ---
 
-**Versión del documento:** 1.1 · Mayo 2026 (Fase 5 cerrada, diseño visual aplicado, wizards y SubirFoto con re-escalado)
+**Versión del documento:** 1.2 · Junio 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI)
 **Autor:** Samuel Alzate
