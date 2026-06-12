@@ -1,44 +1,41 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Bell, BellOff } from "lucide-react";
-import {
-  suscribirPush,
-  desuscribirPush,
-} from "../../app/(app)/_acciones/push";
+import { useEffect, useState } from 'react';
+import { Bell, BellOff } from 'lucide-react';
+import { suscribirPush, desuscribirPush } from '../../app/(app)/_acciones/push';
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const base64Plana = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+  const base64Plana = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(base64Plana);
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
 
-type Estado = "no-soporta" | "denegado" | "activo" | "inactivo" | "cargando";
+type Estado = 'no-soporta' | 'denegado' | 'activo' | 'inactivo' | 'cargando';
 
 export function PushToggle() {
-  const [estado, setEstado] = useState<Estado>("cargando");
+  const [estado, setEstado] = useState<Estado>('cargando');
   const [trabajando, setTrabajando] = useState(false);
 
   async function refrescar() {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     if (
-      !("Notification" in window) ||
-      !("PushManager" in window) ||
-      !("serviceWorker" in navigator)
+      !('Notification' in window) ||
+      !('PushManager' in window) ||
+      !('serviceWorker' in navigator)
     ) {
-      setEstado("no-soporta");
+      setEstado('no-soporta');
       return;
     }
-    if (Notification.permission === "denied") {
-      setEstado("denegado");
+    if (Notification.permission === 'denied') {
+      setEstado('denegado');
       return;
     }
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    setEstado(sub ? "activo" : "inactivo");
+    setEstado(sub ? 'activo' : 'inactivo');
   }
 
   useEffect(() => {
@@ -49,27 +46,42 @@ export function PushToggle() {
     setTrabajando(true);
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
+      if (perm !== 'granted') {
         await refrescar();
         return;
       }
       const reg = await navigator.serviceWorker.ready;
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) return;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
-      });
+      // Igual que en PushPrompt: descartar suscripciones viejas y acotar
+      // con timeout para que el botón nunca quede colgado.
+      const vieja = await reg.pushManager.getSubscription();
+      if (vieja) {
+        try {
+          await vieja.unsubscribe();
+        } catch {
+          /* noop */
+        }
+      }
+      const sub = (await Promise.race([
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout de suscripción')), 15000)
+        ),
+      ])) as PushSubscription;
       const json = sub.toJSON();
       const fd = new FormData();
-      fd.set("endpoint", sub.endpoint);
-      fd.set("p256dh", json.keys?.p256dh ?? "");
-      fd.set("auth", json.keys?.auth ?? "");
-      fd.set("userAgent", navigator.userAgent);
+      fd.set('endpoint', sub.endpoint);
+      fd.set('p256dh', json.keys?.p256dh ?? '');
+      fd.set('auth', json.keys?.auth ?? '');
+      fd.set('userAgent', navigator.userAgent);
       await suscribirPush(fd);
-      setEstado("activo");
+      setEstado('activo');
     } catch (e) {
-      console.warn("Activación push falló", e);
+      console.warn('Activación push falló', e);
     } finally {
       setTrabajando(false);
     }
@@ -82,37 +94,37 @@ export function PushToggle() {
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         const fd = new FormData();
-        fd.set("endpoint", sub.endpoint);
+        fd.set('endpoint', sub.endpoint);
         await desuscribirPush(fd);
         await sub.unsubscribe();
       }
-      setEstado("inactivo");
+      setEstado('inactivo');
     } catch (e) {
-      console.warn("Desactivación push falló", e);
+      console.warn('Desactivación push falló', e);
     } finally {
       setTrabajando(false);
     }
   }
 
-  if (estado === "cargando") {
+  if (estado === 'cargando') {
     return <p className="text-sm text-zelanda-verde-700/70">Cargando...</p>;
   }
-  if (estado === "no-soporta") {
+  if (estado === 'no-soporta') {
     return (
       <p className="text-sm text-zelanda-verde-700/70">
         Este navegador no soporta notificaciones push.
       </p>
     );
   }
-  if (estado === "denegado") {
+  if (estado === 'denegado') {
     return (
       <p className="text-sm text-estado-vencida">
-        Permiso denegado en el navegador. Activá los permisos en Ajustes del
-        sitio para poder recibir notificaciones.
+        Permiso denegado en el navegador. Activá los permisos en Ajustes del sitio para poder
+        recibir notificaciones.
       </p>
     );
   }
-  if (estado === "activo") {
+  if (estado === 'activo') {
     return (
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-zelanda-verde-900">
@@ -125,7 +137,7 @@ export function PushToggle() {
           disabled={trabajando}
           className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm text-zelanda-verde-700 disabled:opacity-60"
         >
-          {trabajando ? "..." : "Desactivar"}
+          {trabajando ? '...' : 'Desactivar'}
         </button>
       </div>
     );
@@ -142,7 +154,7 @@ export function PushToggle() {
         disabled={trabajando}
         className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-1.5 text-sm text-white disabled:opacity-60"
       >
-        {trabajando ? "..." : "Activar"}
+        {trabajando ? '...' : 'Activar'}
       </button>
     </div>
   );

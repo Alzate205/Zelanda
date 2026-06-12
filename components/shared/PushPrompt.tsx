@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Bell, X } from "lucide-react";
-import { suscribirPush } from "../../app/(app)/_acciones/push";
+import { useEffect, useState } from 'react';
+import { Bell, X } from 'lucide-react';
+import { suscribirPush } from '../../app/(app)/_acciones/push';
 
-const POSPONER_KEY = "push-postponed-until";
+const POSPONER_KEY = 'push-postponed-until';
 const POSPONER_DIAS = 7;
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const base64Plana = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+  const base64Plana = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(base64Plana);
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
@@ -21,10 +21,10 @@ export function PushPrompt() {
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("Notification" in window) || !("PushManager" in window)) return;
-    if (!("serviceWorker" in navigator)) return;
-    if (Notification.permission !== "default") return;
+    if (typeof window === 'undefined') return;
+    if (!('Notification' in window) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator)) return;
+    if (Notification.permission !== 'default') return;
     const pospuesto = localStorage.getItem(POSPONER_KEY);
     if (pospuesto && Number(pospuesto) > Date.now()) return;
     setMostrar(true);
@@ -34,30 +34,46 @@ export function PushPrompt() {
     setEnviando(true);
     try {
       const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
+      if (perm !== 'granted') {
         setMostrar(false);
         return;
       }
       const reg = await navigator.serviceWorker.ready;
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) {
-        console.warn("VAPID public key faltante");
+        console.warn('VAPID public key faltante');
         return;
       }
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
-      });
+      // Una suscripción vieja (de una instalación anterior) puede dejar
+      // subscribe() colgado para siempre: se descarta primero, y se acota
+      // todo con un timeout para que el botón nunca quede en "Activando...".
+      const vieja = await reg.pushManager.getSubscription();
+      if (vieja) {
+        try {
+          await vieja.unsubscribe();
+        } catch {
+          /* noop */
+        }
+      }
+      const sub = (await Promise.race([
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout de suscripción')), 15000)
+        ),
+      ])) as PushSubscription;
       const json = sub.toJSON();
       const fd = new FormData();
-      fd.set("endpoint", sub.endpoint);
-      fd.set("p256dh", json.keys?.p256dh ?? "");
-      fd.set("auth", json.keys?.auth ?? "");
-      fd.set("userAgent", navigator.userAgent);
+      fd.set('endpoint', sub.endpoint);
+      fd.set('p256dh', json.keys?.p256dh ?? '');
+      fd.set('auth', json.keys?.auth ?? '');
+      fd.set('userAgent', navigator.userAgent);
       await suscribirPush(fd);
       setMostrar(false);
     } catch (e) {
-      console.warn("Suscripción push falló", e);
+      console.warn('Suscripción push falló', e);
       setMostrar(false);
     } finally {
       setEnviando(false);
@@ -65,10 +81,7 @@ export function PushPrompt() {
   };
 
   const posponer = () => {
-    localStorage.setItem(
-      POSPONER_KEY,
-      String(Date.now() + POSPONER_DIAS * 24 * 60 * 60 * 1000),
-    );
+    localStorage.setItem(POSPONER_KEY, String(Date.now() + POSPONER_DIAS * 24 * 60 * 60 * 1000));
     setMostrar(false);
   };
 
@@ -82,12 +95,9 @@ export function PushPrompt() {
             <Bell className="h-5 w-5" />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-zelanda-verde-900">
-              Activar notificaciones
-            </p>
+            <p className="font-medium text-zelanda-verde-900">Activar notificaciones</p>
             <p className="mt-1 text-xs text-zelanda-verde-700/80">
-              Enterate de asignaciones, novedades y vencidas aunque no tengas
-              la app abierta.
+              Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -96,7 +106,7 @@ export function PushPrompt() {
                 disabled={enviando}
                 className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-2 text-sm text-white disabled:opacity-60"
               >
-                {enviando ? "Activando..." : "Activar"}
+                {enviando ? 'Activando...' : 'Activar'}
               </button>
               <button
                 type="button"

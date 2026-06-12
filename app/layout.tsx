@@ -51,10 +51,17 @@ export default function RootLayout({
               });
               // Cuando un SW nuevo toma control (deploy nuevo), recargar una
               // vez: evita quedar con HTML viejo pidiendo chunks que ya no
-              // existen, que dejaba la app a medio renderizar.
+              // existen, que dejaba la app a medio renderizar. En la primera
+              // instalación (no había controlador) NO se recarga, para no
+              // cortar flujos como la suscripción a notificaciones.
+              var zelandaTeniaControlador = !!navigator.serviceWorker.controller;
               var zelandaRecargado = false;
               navigator.serviceWorker.addEventListener('controllerchange', function () {
-                if (zelandaRecargado || !navigator.serviceWorker.controller) return;
+                if (!zelandaTeniaControlador) {
+                  zelandaTeniaControlador = true;
+                  return;
+                }
+                if (zelandaRecargado) return;
                 zelandaRecargado = true;
                 window.location.reload();
               });
