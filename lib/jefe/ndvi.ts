@@ -1,6 +1,6 @@
 import 'server-only';
-import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { crearClienteSupabaseAdmin } from '@/lib/supabase/admin';
 
 export type InfoNdvi =
   | { disponible: false; razon: string }
@@ -89,11 +89,9 @@ function rangoUltimos30Dias(): { desde: string; hasta: string } {
   return { desde: desde.toISOString(), hasta: hasta.toISOString() };
 }
 
-const obtenerNdviUncached = async (): Promise<
-  { png_base64: string; bbox: [number, number, number, number] } | { error: string }
-> => {
-  const bbox = await bboxFinca();
-  if (!bbox) return { error: 'La finca no tiene borde delimitado' };
+const generarNdvi = async (
+  bbox: [number, number, number, number]
+): Promise<{ png_base64: string; bbox: [number, number, number, number] } | { error: string }> => {
   const token = await tokenCdse();
   if (!token) return { error: 'Credenciales CDSE no configuradas o inválidas' };
 
@@ -129,31 +127,91 @@ const obtenerNdviUncached = async (): Promise<
   return { png_base64: buf.toString('base64'), bbox };
 };
 
-// Solo se cachean ÉXITOS: si la función cacheada lanza, unstable_cache no
-// guarda nada. Antes un fallo transitorio de CDSE quedaba cacheado 24 h y
-// el botón devolvía 503 para siempre. Clave versionada para descartar
-// entradas viejas al cambiar evalscript o este comportamiento.
-const obtenerNdviCacheado = unstable_cache(
-  async () => {
-    const r = await obtenerNdviUncached();
-    if ('error' in r) throw new Error(r.error);
-    return r;
-  },
-  ['ndvi-finca', 'v3'],
-  { revalidate: 86400 }
-);
+// --- Persistencia en Supabase Storage ------------------------------------
+// El PNG se guarda en el bucket privado `ndvi`, un archivo por día. Antes
+// vivía en unstable_cache, pero el base64 ronda el límite de 2 MB por
+// entrada del data cache de Vercel: si lo pasaba, el cache fallaba en
+// silencio y cada toque del botón volvía a gastar processing units de
+// Copernicus. De paso queda histórico de imágenes. Los errores nunca se
+// persisten. Versión en el nombre para invalidar al cambiar el evalscript;
+// hash del bbox para regenerar si se edita el borde de la finca.
 
-/** Imagen NDVI cacheada 24 h (Sentinel-2 revisita cada ~5 días). */
+const BUCKET_NDVI = 'ndvi';
+const VERSION_NDVI = 'v3';
+const DIAS_HISTORICO = 60;
+
+function fechaBogota(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+}
+
+function hashBbox(bbox: [number, number, number, number]): string {
+  const texto = bbox.map((n) => n.toFixed(4)).join(',');
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) h = (h * 33) ^ texto.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
+async function leerNdviGuardado(nombre: string): Promise<string | null> {
+  try {
+    const supabase = crearClienteSupabaseAdmin();
+    const { data, error } = await supabase.storage.from(BUCKET_NDVI).download(nombre);
+    if (error || !data) return null;
+    return Buffer.from(await data.arrayBuffer()).toString('base64');
+  } catch {
+    return null;
+  }
+}
+
+async function guardarNdvi(nombre: string, png_base64: string): Promise<void> {
+  const supabase = crearClienteSupabaseAdmin();
+  const cuerpo = Buffer.from(png_base64, 'base64');
+  const subir = () =>
+    supabase.storage
+      .from(BUCKET_NDVI)
+      .upload(nombre, cuerpo, { contentType: 'image/png', upsert: true });
+
+  let { error } = await subir();
+  if (error && /bucket/i.test(error.message)) {
+    await supabase.storage.createBucket(BUCKET_NDVI, { public: false });
+    ({ error } = await subir());
+  }
+  if (error) {
+    // Sin persistencia igual servimos la imagen recién generada.
+    console.error('NDVI storage:', error.message);
+    return;
+  }
+
+  // Limpieza: borrar imágenes con más de DIAS_HISTORICO días.
+  const corte = new Date(Date.now() - DIAS_HISTORICO * 86400000).toISOString().slice(0, 10);
+  const { data: archivos } = await supabase.storage.from(BUCKET_NDVI).list();
+  const viejos = (archivos ?? [])
+    .map((a) => a.name)
+    .filter((n) => {
+      const fecha = n.match(/(\d{4}-\d{2}-\d{2})/)?.[1];
+      return fecha !== undefined && fecha < corte;
+    });
+  if (viejos.length > 0) await supabase.storage.from(BUCKET_NDVI).remove(viejos);
+}
+
+/** Imagen NDVI del día (Sentinel-2 revisita cada ~5 días): la sirve desde
+ *  Storage si ya se generó hoy, o la pide a Copernicus y la guarda. */
 export async function obtenerNdvi(): Promise<
   { png_base64: string; bbox: [number, number, number, number] } | { error: string }
 > {
-  try {
-    return await obtenerNdviCacheado();
-  } catch (e) {
-    const mensaje = e instanceof Error ? e.message : 'Error generando el NDVI';
-    console.error('NDVI:', mensaje);
-    return { error: mensaje };
+  const bbox = await bboxFinca();
+  if (!bbox) return { error: 'La finca no tiene borde delimitado' };
+
+  const nombre = `ndvi-${VERSION_NDVI}-${fechaBogota()}-${hashBbox(bbox)}.png`;
+  const guardado = await leerNdviGuardado(nombre);
+  if (guardado) return { png_base64: guardado, bbox };
+
+  const r = await generarNdvi(bbox);
+  if ('error' in r) {
+    console.error('NDVI:', r.error);
+    return r;
   }
+  await guardarNdvi(nombre, r.png_base64);
+  return r;
 }
 
 export async function infoNdvi(): Promise<InfoNdvi> {
