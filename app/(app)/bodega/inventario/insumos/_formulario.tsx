@@ -143,6 +143,7 @@ export function FormularioInsumo({
           <input
             id="registro_ica"
             name="registro_ica"
+            placeholder="Ej: ICA 2024-1234"
             defaultValue={valores?.registro_ica ?? ''}
             className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
           />

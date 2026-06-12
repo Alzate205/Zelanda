@@ -114,7 +114,7 @@ export default async function PaginaHistorialInsumo({
       insumo.periodo_carencia_dias != null ||
       insumo.periodo_reingreso_horas != null ? (
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-          <h2 className="font-serif text-base text-zelanda-verde-900">Ficha técnica</h2>
+          <h2 className="font-serif text-lg text-zelanda-verde-900">Ficha técnica</h2>
           <dl className="mt-2 space-y-1.5 text-sm">
             {insumo.ingrediente_activo ? (
               <div className="flex justify-between gap-2">
