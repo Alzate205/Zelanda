@@ -162,13 +162,17 @@ export function FormularioCierreDespacho({
             ))}
           </div>
           <div className="mt-3">
-            <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
+            <label
+              htmlFor="lote_aplicado"
+              className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700"
+            >
               ¿En qué lote se aplicó?
             </label>
             <select
+              id="lote_aplicado"
               value={loteId}
               onChange={(e) => setLoteId(e.target.value)}
-              className="block w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2.5 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+              className="block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 py-2.5 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
             >
               <option value="">Sin lote (bodega / apiario / general)</option>
               {lotes.map((l) => (
