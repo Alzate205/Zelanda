@@ -1,23 +1,23 @@
-import type { Metadata, Viewport } from "next";
-import Script from "next/script";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: "La Zelanda",
-    template: "%s · La Zelanda",
+    default: 'La Zelanda',
+    template: '%s · La Zelanda',
   },
   description:
-    "Gestión integral de la Hacienda La Zelanda: lotes, árboles, tareas del campo, equipo, cosecha, ventas y finanzas. Funciona sin conexión.",
-  applicationName: "La Zelanda",
-  manifest: "/manifest.webmanifest",
+    'Gestión integral de la Hacienda La Zelanda: lotes, árboles, tareas del campo, equipo, cosecha, ventas y finanzas. Funciona sin conexión.',
+  applicationName: 'La Zelanda',
+  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "La Zelanda",
+    statusBarStyle: 'black-translucent',
+    title: 'La Zelanda',
   },
   icons: {
-    apple: "/icons/icon-192.png",
+    apple: '/icons/icon-192.png',
   },
   formatDetection: {
     telephone: false,
@@ -25,11 +25,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover",
-  themeColor: "#3D5C42",
+  viewportFit: 'cover',
+  themeColor: '#3D5C42',
 };
 
 export default function RootLayout({
@@ -48,6 +48,15 @@ export default function RootLayout({
                 navigator.serviceWorker.register('/sw.js').catch(function (err) {
                   console.warn('SW registration failed', err);
                 });
+              });
+              // Cuando un SW nuevo toma control (deploy nuevo), recargar una
+              // vez: evita quedar con HTML viejo pidiendo chunks que ya no
+              // existen, que dejaba la app a medio renderizar.
+              var zelandaRecargado = false;
+              navigator.serviceWorker.addEventListener('controllerchange', function () {
+                if (zelandaRecargado || !navigator.serviceWorker.controller) return;
+                zelandaRecargado = true;
+                window.location.reload();
               });
             }
           `}
