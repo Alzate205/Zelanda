@@ -172,6 +172,7 @@ export function CentroControl({
 
   async function alternarNdvi() {
     if (ndvi) {
+      if (ndvi.url.startsWith('blob:')) URL.revokeObjectURL(ndvi.url);
       setNdvi(null);
       return;
     }
@@ -180,13 +181,25 @@ export function CentroControl({
       const json = await res.json();
       if (!json.ok || !json.data.disponible) {
         setAvisoNdvi(json.data?.razon ?? 'NDVI no disponible');
-        setTimeout(() => setAvisoNdvi(null), 5000);
+        setTimeout(() => setAvisoNdvi(null), 6000);
         return;
       }
-      setNdvi({ url: '/api/jefe/ndvi', bbox: json.data.bbox });
+      // La imagen se descarga acá (no dentro del mapa) para poder mostrar
+      // progreso y errores: la primera generación tarda varios segundos.
+      setAvisoNdvi('Generando imagen satelital…');
+      const imagen = await fetch('/api/jefe/ndvi');
+      if (!imagen.ok) {
+        const j = await imagen.json().catch(() => null);
+        setAvisoNdvi(j?.error ?? 'No se pudo generar la imagen satelital');
+        setTimeout(() => setAvisoNdvi(null), 8000);
+        return;
+      }
+      const blob = await imagen.blob();
+      setAvisoNdvi(null);
+      setNdvi({ url: URL.createObjectURL(blob), bbox: json.data.bbox });
     } catch {
       setAvisoNdvi('Sin señal para cargar el NDVI');
-      setTimeout(() => setAvisoNdvi(null), 5000);
+      setTimeout(() => setAvisoNdvi(null), 6000);
     }
   }
 

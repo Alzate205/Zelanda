@@ -122,11 +122,32 @@ const obtenerNdviUncached = async (): Promise<
   return { png_base64: buf.toString('base64'), bbox };
 };
 
-/** Imagen NDVI cacheada 24 h (Sentinel-2 revisita cada ~5 días).
- *  La clave lleva versión: al cambiar el evalscript se descarta la vieja. */
-export const obtenerNdvi = unstable_cache(obtenerNdviUncached, ['ndvi-finca', 'v2'], {
-  revalidate: 86400,
-});
+// Solo se cachean ÉXITOS: si la función cacheada lanza, unstable_cache no
+// guarda nada. Antes un fallo transitorio de CDSE quedaba cacheado 24 h y
+// el botón devolvía 503 para siempre. Clave versionada para descartar
+// entradas viejas al cambiar evalscript o este comportamiento.
+const obtenerNdviCacheado = unstable_cache(
+  async () => {
+    const r = await obtenerNdviUncached();
+    if ('error' in r) throw new Error(r.error);
+    return r;
+  },
+  ['ndvi-finca', 'v3'],
+  { revalidate: 86400 }
+);
+
+/** Imagen NDVI cacheada 24 h (Sentinel-2 revisita cada ~5 días). */
+export async function obtenerNdvi(): Promise<
+  { png_base64: string; bbox: [number, number, number, number] } | { error: string }
+> {
+  try {
+    return await obtenerNdviCacheado();
+  } catch (e) {
+    const mensaje = e instanceof Error ? e.message : 'Error generando el NDVI';
+    console.error('NDVI:', mensaje);
+    return { error: mensaje };
+  }
+}
 
 export async function infoNdvi(): Promise<InfoNdvi> {
   if (!credenciales()) {
