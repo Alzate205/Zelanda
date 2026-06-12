@@ -434,7 +434,7 @@ Spec en `docs/superpowers/specs/2026-06-10-zelanda-2-0-design.md`. Solo afecta a
 
 ### Fase 8 — Futuro (no hacer aún)
 
-Backlog priorizado (revisión 2026-06-12): push de stock bajo en el cron de las 7 am, e2e de flujos críticos, y la v2 de trazabilidad: ficha técnica del químico en `insumos` (ingrediente activo, registro ICA, periodo de carencia/reingreso) y alerta de carencia al registrar cosecha.
+Backlog priorizado (revisión 2026-06-12): e2e de flujos críticos, y la v2 de trazabilidad: ficha técnica del químico en `insumos` (ingrediente activo, registro ICA, periodo de carencia/reingreso) y alerta de carencia al registrar cosecha. (El push de stock bajo ya existía: `lib/push/stock-bajo.ts` avisa a bodega al cruzar el mínimo en el cierre de despacho — mejor que un cron.)
 
 Ya implementados de esa revisión: registro de aplicaciones insumo→lote (`/jefe/aplicaciones`, spec `docs/superpowers/specs/2026-06-12-aplicaciones-insumos-lote-design.md`), lluvia real de 7 días en el panel de clima, NDVI persistido en Supabase Storage.
 
