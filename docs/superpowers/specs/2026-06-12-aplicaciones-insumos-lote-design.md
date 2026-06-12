@@ -58,7 +58,8 @@ Sección nueva en `/jefe/reportes/avanzados`: ranking de lotes por costo de insu
 
 - `costoAplicacion(cantidad, snapshot, costoActual)` — regla de fallback.
 - `agruparCostoPorLote(filas)` — agregación para la sección de reportes.
-- `filasCsvAplicaciones(filas)` — armado del CSV (escape de comas/comillas).
+
+(El CSV no necesita función propia: se reusa el componente existente `DescargarCSVButton`, que ya arma y escapa el archivo.)
 
 Las queries server-side viven en `lib/jefe/aplicaciones.ts` (patrón `lib/jefe/*` existente).
 
