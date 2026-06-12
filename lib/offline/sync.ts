@@ -5,7 +5,7 @@ import {
   marcarFallidoTemp,
   marcarErrorPermanente,
   type TipoCola,
-} from "./cola";
+} from './cola';
 import type {
   ItemColaAvance,
   ItemColaNovedad,
@@ -13,8 +13,8 @@ import type {
   ItemColaDespachoCerrar,
   ItemColaCosecha,
   ItemColaSalida,
-} from "./tipos";
-import { captureException } from "@/lib/sentry";
+} from './tipos';
+import { captureException } from '@/lib/sentry';
 
 const BACKOFFS_MS = [1000, 5000, 30000, 300000];
 const MAX_INTENTOS = 5;
@@ -31,7 +31,7 @@ function esperar(ms: number): Promise<void> {
 async function procesarEnParalelo<T>(
   items: T[],
   concurrencia: number,
-  fn: (item: T) => Promise<void>,
+  fn: (item: T) => Promise<void>
 ): Promise<void> {
   const enVuelo = new Set<Promise<void>>();
   for (const item of items) {
@@ -80,7 +80,12 @@ function payloadDespachoCrear(i: ItemColaDespachoCrear) {
 }
 
 function payloadDespachoCerrar(i: ItemColaDespachoCerrar) {
-  return { id_local: i.id_local, despacho_id: i.despacho_id, items: i.items };
+  return {
+    id_local: i.id_local,
+    despacho_id: i.despacho_id,
+    lote_id: i.lote_id ?? null,
+    items: i.items,
+  };
 }
 
 function payloadCosecha(i: ItemColaCosecha) {
@@ -109,34 +114,34 @@ function payloadSalida(i: ItemColaSalida) {
 
 function endpointPara(tipo: TipoCola): string {
   switch (tipo) {
-    case "avance":
-      return "/api/trabajador/avance";
-    case "novedad":
-      return "/api/trabajador/novedad";
-    case "despacho_crear":
-      return "/api/bodega/despacho/crear";
-    case "despacho_cerrar":
-      return "/api/bodega/despacho/cerrar";
-    case "cosecha":
-      return "/api/almacen/cosecha";
-    case "salida":
-      return "/api/almacen/salida";
+    case 'avance':
+      return '/api/trabajador/avance';
+    case 'novedad':
+      return '/api/trabajador/novedad';
+    case 'despacho_crear':
+      return '/api/bodega/despacho/crear';
+    case 'despacho_cerrar':
+      return '/api/bodega/despacho/cerrar';
+    case 'cosecha':
+      return '/api/almacen/cosecha';
+    case 'salida':
+      return '/api/almacen/salida';
   }
 }
 
 function payloadDeItem(tipo: TipoCola, item: unknown): unknown {
   switch (tipo) {
-    case "avance":
+    case 'avance':
       return payloadAvance(item as ItemColaAvance);
-    case "novedad":
+    case 'novedad':
       return payloadNovedad(item as ItemColaNovedad);
-    case "despacho_crear":
+    case 'despacho_crear':
       return payloadDespachoCrear(item as ItemColaDespachoCrear);
-    case "despacho_cerrar":
+    case 'despacho_cerrar':
       return payloadDespachoCerrar(item as ItemColaDespachoCerrar);
-    case "cosecha":
+    case 'cosecha':
       return payloadCosecha(item as ItemColaCosecha);
-    case "salida":
+    case 'salida':
       return payloadSalida(item as ItemColaSalida);
   }
 }
@@ -146,9 +151,9 @@ class SyncEngineImpl {
   private inicializado = false;
 
   init(): void {
-    if (typeof window === "undefined" || this.inicializado) return;
+    if (typeof window === 'undefined' || this.inicializado) return;
     this.inicializado = true;
-    window.addEventListener("online", () => {
+    window.addEventListener('online', () => {
       this.procesarCola().catch((e) => {
         try {
           captureException(e);
@@ -166,15 +171,15 @@ class SyncEngineImpl {
 
   async procesarCola(): Promise<void> {
     if (this.corriendo) return;
-    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     this.corriendo = true;
     try {
-      await this.procesarTipo("avance");
-      await this.procesarTipo("novedad");
-      await this.procesarTipo("despacho_crear");
-      await this.procesarTipo("despacho_cerrar");
-      await this.procesarTipo("cosecha");
-      await this.procesarTipo("salida");
+      await this.procesarTipo('avance');
+      await this.procesarTipo('novedad');
+      await this.procesarTipo('despacho_crear');
+      await this.procesarTipo('despacho_cerrar');
+      await this.procesarTipo('cosecha');
+      await this.procesarTipo('salida');
     } finally {
       this.corriendo = false;
     }
@@ -182,35 +187,29 @@ class SyncEngineImpl {
 
   private async procesarTipo(tipo: TipoCola): Promise<void> {
     const items = await listarPendientesPorTipo(tipo);
-    await procesarEnParalelo(items, CONCURRENCIA_POR_TIPO, (item) =>
-      this.procesarItem(tipo, item),
-    );
+    await procesarEnParalelo(items, CONCURRENCIA_POR_TIPO, (item) => this.procesarItem(tipo, item));
   }
 
   private async procesarItem(
     tipo: TipoCola,
-    item: { id_local: string; intentos: number; ultimo_error: string | null } & object,
+    item: { id_local: string; intentos: number; ultimo_error: string | null } & object
   ): Promise<void> {
     if (item.intentos >= MAX_INTENTOS) {
-      await marcarErrorPermanente(
-        tipo,
-        item.id_local,
-        item.ultimo_error ?? "Máximo de reintentos",
-      );
+      await marcarErrorPermanente(tipo, item.id_local, item.ultimo_error ?? 'Máximo de reintentos');
       return;
     }
     await marcarSubiendo(tipo, item.id_local);
     try {
       const body = payloadDeItem(tipo, item);
       const res = await fetch(endpointPara(tipo), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (res.ok) {
         await marcarSubido(tipo, item.id_local);
       } else if (res.status >= 400 && res.status < 500) {
-        const j = await res.json().catch(() => ({}) as { error?: string });
+        const j = await res.json().catch(() => ({} as { error?: string }));
         await marcarErrorPermanente(tipo, item.id_local, j.error ?? `HTTP ${res.status}`);
       } else {
         await marcarFallidoTemp(tipo, item.id_local, `HTTP ${res.status}`);

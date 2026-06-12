@@ -7,6 +7,8 @@ import { KPI } from '@/components/ui/KPI';
 import { mesBogota, periodoMesBogota } from '@/lib/fecha';
 import { margenMes } from '@/lib/comercio';
 import { obtenerPredicciones } from '@/lib/jefe/prediccion';
+import { obtenerAplicaciones } from '@/lib/jefe/aplicaciones';
+import { agruparCostoPorLote } from '@/lib/aplicaciones';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -85,6 +87,7 @@ export default async function PaginaReportesAvanzados({
     cosechaAnterior,
     rankingLotes,
     cosechasAnio,
+    aplicacionesMes,
   ] = await Promise.all([
     // Ingresos del mes (ventas con precio_total)
     prisma.salidas_cosecha.aggregate({
@@ -157,7 +160,12 @@ export default async function PaginaReportesAvanzados({
       GROUP BY y
       ORDER BY y
     `,
+    obtenerAplicaciones(desdeTZ, hastaTZ),
   ]);
+  const costoInsumosPorLote = agruparCostoPorLote(
+    aplicacionesMes.map((a) => ({ lote_id: a.lote_id, lote_nombre: a.lote, costo: a.costo }))
+  );
+  const costoInsumosTotal = costoInsumosPorLote.reduce((acc, l) => acc + l.costo, 0);
 
   // Financiero del mes
   const ingresos = Number(ventasMes._sum.precio_total ?? 0);
@@ -311,6 +319,36 @@ export default async function PaginaReportesAvanzados({
           suma de todos los pagos a personas (salarios, jornales, servicios, bonos, adelantos,
           ajustes).
         </p>
+      </section>
+
+      {/* Costo de insumos por lote (mes seleccionado) */}
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="font-serif text-base text-zelanda-verde-900">Costo de insumos por lote</h2>
+        <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+          {MESES[mes]} {anio} · según despachos cerrados ·{' '}
+          <Link href="/jefe/aplicaciones" className="underline">
+            ver registro completo
+          </Link>
+        </p>
+        {costoInsumosPorLote.length === 0 ? (
+          <p className="mt-3 text-sm text-zelanda-verde-700/70">
+            Sin aplicaciones con lote este mes.
+          </p>
+        ) : (
+          <>
+            <ul className="mt-3 list-none space-y-2 p-0">
+              {costoInsumosPorLote.map((l) => (
+                <li key={l.lote_id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-zelanda-verde-900">{l.nombre}</span>
+                  <span className="text-zelanda-verde-700">{fmtMonto(l.costo)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 border-t border-zelanda-beige-200 pt-2 text-right text-sm font-medium text-zelanda-verde-900">
+              Total: {fmtMonto(costoInsumosTotal)}
+            </p>
+          </>
+        )}
       </section>
 
       {/* Sección 2: Comparativo cosecha año vs anterior */}

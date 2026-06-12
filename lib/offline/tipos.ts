@@ -238,6 +238,7 @@ export type ItemColaDespachoCrear = {
 export type ItemColaDespachoCerrar = {
   id_local: string;
   despacho_id: string;
+  lote_id?: string | null;
   items: Array<{
     despacho_item_id: string;
     tipo: 'HERRAMIENTA' | 'INSUMO';
