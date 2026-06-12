@@ -19,6 +19,7 @@ import {
   TrendingUp,
   ShoppingCart,
   Truck,
+  FlaskConical,
   Settings,
   History,
   Download,
@@ -246,6 +247,12 @@ export function PanelCentral({
               icono={ShoppingCart}
               titulo="Compras"
               sub="Costos de insumos"
+            />
+            <Atajo
+              href="/jefe/aplicaciones"
+              icono={FlaskConical}
+              titulo="Aplicaciones"
+              sub="Insumos por lote"
             />
             <Atajo
               href="/jefe/proveedores"
