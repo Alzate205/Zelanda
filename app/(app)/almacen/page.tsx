@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowDownRight, ArrowUpRight, Plus } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { carenciasActivas } from '@/lib/jefe/carencias';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { Card } from '@/components/ui/Card';
@@ -42,46 +43,55 @@ export default async function PaginaInicioAlmacen() {
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
-  const [stockRows, cosechasHoy, salidasHoy, lotes, personas, ultimasCosechas, ultimasSalidas] =
-    await Promise.all([
-      prisma.$queryRaw<{ stock_kg: string }[]>`
+  const [
+    stockRows,
+    cosechasHoy,
+    salidasHoy,
+    lotes,
+    personas,
+    ultimasCosechas,
+    ultimasSalidas,
+    carencias,
+  ] = await Promise.all([
+    prisma.$queryRaw<{ stock_kg: string }[]>`
       SELECT stock_kg::text FROM v_stock_almacen
     `,
-      prisma.cosechas.aggregate({
-        where: { fecha: { gte: inicioDia } },
-        _count: { _all: true },
-        _sum: { peso_kg: true },
-      }),
-      prisma.salidas_cosecha.aggregate({
-        where: { fecha: { gte: inicioDia } },
-        _count: { _all: true },
-        _sum: { cantidad_kg: true },
-      }),
-      prisma.lotes.findMany({
-        where: { deleted_at: null },
-        orderBy: { nombre: 'asc' },
-        select: { id: true, nombre: true },
-      }),
-      prisma.personas.findMany({
-        where: { activo: true },
-        orderBy: { nombre_completo: 'asc' },
-        select: { id: true, nombre_completo: true },
-      }),
-      prisma.cosechas.findMany({
-        where: { fecha: { gte: inicioDia } },
-        orderBy: { fecha: 'desc' },
-        take: 6,
-        include: {
-          persona: { select: { nombre_completo: true } },
-          lotes: { select: { nombre: true } },
-        },
-      }),
-      prisma.salidas_cosecha.findMany({
-        where: { fecha: { gte: inicioDia } },
-        orderBy: { fecha: 'desc' },
-        take: 4,
-      }),
-    ]);
+    prisma.cosechas.aggregate({
+      where: { fecha: { gte: inicioDia } },
+      _count: { _all: true },
+      _sum: { peso_kg: true },
+    }),
+    prisma.salidas_cosecha.aggregate({
+      where: { fecha: { gte: inicioDia } },
+      _count: { _all: true },
+      _sum: { cantidad_kg: true },
+    }),
+    prisma.lotes.findMany({
+      where: { deleted_at: null },
+      orderBy: { nombre: 'asc' },
+      select: { id: true, nombre: true },
+    }),
+    prisma.personas.findMany({
+      where: { activo: true },
+      orderBy: { nombre_completo: 'asc' },
+      select: { id: true, nombre_completo: true },
+    }),
+    prisma.cosechas.findMany({
+      where: { fecha: { gte: inicioDia } },
+      orderBy: { fecha: 'desc' },
+      take: 6,
+      include: {
+        persona: { select: { nombre_completo: true } },
+        lotes: { select: { nombre: true } },
+      },
+    }),
+    prisma.salidas_cosecha.findMany({
+      where: { fecha: { gte: inicioDia } },
+      orderBy: { fecha: 'desc' },
+      take: 4,
+    }),
+    carenciasActivas(),
+  ]);
 
   const stock = Number(stockRows[0]?.stock_kg ?? 0);
   const ingresosKg = Number(cosechasHoy._sum.peso_kg ?? 0);
@@ -156,7 +166,12 @@ export default async function PaginaInicioAlmacen() {
       <Card lift className="border-zelanda-verde-300 p-4">
         <Eyebrow>Registrar ingreso</Eyebrow>
         <div className="mt-2">
-          <FormularioCosechaWrapper personas={personasForm} lotes={lotesForm} compacto />
+          <FormularioCosechaWrapper
+            personas={personasForm}
+            lotes={lotesForm}
+            compacto
+            carencias={carencias}
+          />
         </div>
       </Card>
 

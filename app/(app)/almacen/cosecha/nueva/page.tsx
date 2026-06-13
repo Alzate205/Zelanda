@@ -1,6 +1,7 @@
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { obtenerConfiguracion } from '@/lib/configuracion';
+import { carenciasActivas } from '@/lib/jefe/carencias';
 import { FormularioCosecha } from './_formulario';
 
 export const metadata = { title: 'Nueva cosecha' };
@@ -8,7 +9,7 @@ export const metadata = { title: 'Nueva cosecha' };
 export default async function PaginaNuevaCosecha() {
   await requerirUsuario('ALMACEN');
 
-  const [personas, lotes, config] = await Promise.all([
+  const [personas, lotes, config, carencias] = await Promise.all([
     prisma.personas.findMany({
       where: { activo: true },
       orderBy: { nombre_completo: 'asc' },
@@ -20,6 +21,7 @@ export default async function PaginaNuevaCosecha() {
       select: { id: true, nombre: true },
     }),
     obtenerConfiguracion(),
+    carenciasActivas(),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function PaginaNuevaCosecha() {
         }))}
         lotes={lotes.map((l) => ({ id: l.id.toString(), nombre: l.nombre }))}
         canastaPorDefecto={Number(config.canasta_kg_default)}
+        carencias={carencias}
       />
     </div>
   );

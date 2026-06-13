@@ -35,7 +35,7 @@ ALTER TABLE insumos
 ## 4. Ficha técnica en bodega
 
 - **Formulario de insumos** (`app/(app)/bodega/inventario/insumos/_formulario.tsx`, compartido por nuevo/editar): sección nueva "Ficha técnica (químicos)" con los 4 campos, todos opcionales, debajo de los campos de stock. Carencia y reingreso como números enteros (días / horas).
-- **Detalle del insumo** (`/bodega/inventario/insumos/[id]`): bloque "Ficha técnica" visible solo cuando algún campo tiene valor.
+- **Historial del insumo** (`/bodega/inventario/insumos/[id]/historial` — la vista de detalle de facto, linkeada desde el grid y el buscador): bloque "Ficha técnica" visible solo cuando algún campo tiene valor. (No existe `/insumos/[id]` y no se crea: sería una ruta huérfana.)
 - Server actions de crear/editar insumo aceptan y persisten los campos nuevos.
 
 ## 5. Cálculo — `lib/carencia.ts` (pura, testeada) + `lib/jefe/carencias.ts` (server)

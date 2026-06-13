@@ -5,6 +5,7 @@ import { X, Trees, AlertTriangle, Scale } from 'lucide-react';
 import type { SnapshotJefe, PrediccionLoteResumen } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
 import { COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
+import { fmtCarenciaHasta } from '@/lib/carencia';
 
 const ETIQUETA_ESTADO: Record<EstadoLote, string> = {
   aldia: 'Al día',
@@ -19,6 +20,7 @@ export function PanelLote({
   alertas,
   trabajando,
   prediccion,
+  carencia,
   onCerrar,
 }: {
   lote: GeoFinca['lotesParaMapa'][number];
@@ -27,6 +29,7 @@ export function PanelLote({
   alertas: SnapshotJefe['vencidas'];
   trabajando: string[];
   prediccion?: PrediccionLoteResumen | null;
+  carencia?: { insumo: string; hasta: string } | null;
   onCerrar: () => void;
 }) {
   return (
@@ -74,6 +77,13 @@ export function PanelLote({
           Próximo ciclo estimado: {prediccion.kg_min.toLocaleString('es-CO')}–
           {prediccion.kg_max.toLocaleString('es-CO')} kg
           <span className="text-zelanda-verde-700/70"> · confianza {prediccion.confianza}</span>
+        </p>
+      ) : null}
+
+      {carencia ? (
+        <p className="m-0 mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-zelanda-ocre-700">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          En carencia hasta el {fmtCarenciaHasta(carencia.hasta)} · {carencia.insumo}
         </p>
       ) : null}
 

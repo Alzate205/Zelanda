@@ -10,6 +10,10 @@ type Valores = {
   unidad: string;
   stock_minimo: string;
   costo_unitario: string | null;
+  ingrediente_activo: string | null;
+  registro_ica: string | null;
+  periodo_carencia_dias: string | null;
+  periodo_reingreso_horas: string | null;
 };
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
@@ -109,6 +113,85 @@ export function FormularioInsumo({
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
+
+      <fieldset className="space-y-4 rounded-xl border border-zelanda-beige-200 bg-zelanda-beige-50/60 p-3">
+        <legend className="px-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
+          Ficha técnica (químicos) — opcional
+        </legend>
+        <div>
+          <label
+            htmlFor="ingrediente_activo"
+            className="block text-sm font-medium text-zelanda-verde-900"
+          >
+            Ingrediente activo
+          </label>
+          <input
+            id="ingrediente_activo"
+            name="ingrediente_activo"
+            placeholder="Ej: Glifosato 480 g/L"
+            defaultValue={valores?.ingrediente_activo ?? ''}
+            className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="registro_ica"
+            className="block text-sm font-medium text-zelanda-verde-900"
+          >
+            Registro ICA
+          </label>
+          <input
+            id="registro_ica"
+            name="registro_ica"
+            placeholder="Ej: ICA 2024-1234"
+            defaultValue={valores?.registro_ica ?? ''}
+            className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label
+              htmlFor="periodo_carencia_dias"
+              className="block text-sm font-medium text-zelanda-verde-900"
+            >
+              Carencia (días)
+            </label>
+            <input
+              id="periodo_carencia_dias"
+              name="periodo_carencia_dias"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="90"
+              step="1"
+              defaultValue={valores?.periodo_carencia_dias ?? ''}
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="periodo_reingreso_horas"
+              className="block text-sm font-medium text-zelanda-verde-900"
+            >
+              Reingreso (horas)
+            </label>
+            <input
+              id="periodo_reingreso_horas"
+              name="periodo_reingreso_horas"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              step="1"
+              defaultValue={valores?.periodo_reingreso_horas ?? ''}
+              className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
+            />
+          </div>
+        </div>
+        <p className="m-0 text-[10.5px] text-zelanda-verde-700">
+          Días sin cosechar / horas sin entrar al lote después de aplicar, según la etiqueta del
+          producto.
+        </p>
+      </fieldset>
 
       {estado.error && (
         <p className="rounded-lg bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">

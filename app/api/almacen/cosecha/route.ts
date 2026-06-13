@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sanitizarError } from '@/lib/errores';
 import { revalidarSnapshotAlmacen, revalidarDashboards } from '@/lib/revalidar';
 import { pesoCanastas } from '@/lib/comercio';
+import { carenciasActivas } from '@/lib/jefe/carencias';
+import { fmtCarenciaHasta } from '@/lib/carencia';
+import { enviarPushAUsuarios } from '@/lib/push/enviar';
 
 type Body = {
   id_local: string;
@@ -108,8 +112,46 @@ export async function POST(req: Request) {
     });
     revalidarSnapshotAlmacen();
     revalidarDashboards();
+
+    // Si el lote está en carencia, avisar a los jefes. El push nunca tumba el registro.
+    try {
+      const carencia = (await carenciasActivas()).find((c) => c.lote_id === body.lote_id);
+      if (carencia) {
+        const [lote, jefes] = await Promise.all([
+          prisma.lotes.findUnique({
+            where: { id: BigInt(body.lote_id) },
+            select: { nombre: true },
+          }),
+          prisma.usuarios.findMany({ where: { rol: 'JEFE', activo: true }, select: { id: true } }),
+        ]);
+        if (jefes.length > 0) {
+          await enviarPushAUsuarios(
+            jefes.map((j) => j.id),
+            {
+              titulo: 'Cosecha en periodo de carencia',
+              cuerpo: `${lote?.nombre ?? 'Lote'}: ${
+                carencia.insumo
+              }, carencia hasta el ${fmtCarenciaHasta(carencia.hasta)}`,
+              url: '/jefe/aplicaciones',
+              tag: 'cosecha-carencia',
+            }
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('Push carencia falló:', e);
+    }
+
     return NextResponse.json({ ok: true, id: String(creada.id) });
   } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      // Carrera de reintentos: otro request con el mismo id_local ya la creó.
+      const dup = await prisma.cosechas.findUnique({
+        where: { id_local: body.id_local },
+        select: { id: true },
+      });
+      if (dup) return NextResponse.json({ ok: true, id: String(dup.id), duplicado: true });
+    }
     return NextResponse.json({ error: sanitizarError(e, 'api/almacen/cosecha') }, { status: 500 });
   }
 }

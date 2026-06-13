@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,15 +16,18 @@ import {
   Scissors,
   Droplets,
   Sprout,
+  AlertTriangle,
   type LucideIcon,
-} from "lucide-react";
-import { Stepper } from "@/components/ui/Stepper";
-import { Badge } from "@/components/ui/Badge";
-import { Segmented } from "@/components/ui/Segmented";
-import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
-import { crearAsignacion, type EstadoAsignacion } from "../acciones";
+} from 'lucide-react';
+import { fmtCarenciaHasta } from '@/lib/carencia';
+import type { CarenciaLoteResumen } from '@/lib/offline/tipos';
+import { Stepper } from '@/components/ui/Stepper';
+import { Badge } from '@/components/ui/Badge';
+import { Segmented } from '@/components/ui/Segmented';
+import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
+import { crearAsignacion, type EstadoAsignacion } from '../acciones';
 
-type EstadoLote = "vencida" | "proxima" | "aldia";
+type EstadoLote = 'vencida' | 'proxima' | 'aldia';
 
 type LoteOpcion = {
   id: string;
@@ -45,7 +48,7 @@ type ApiarioOpcion = {
 type TipoOpcion = {
   id: string;
   nombre: string;
-  area: "CULTIVO" | "APICULTURA";
+  area: 'CULTIVO' | 'APICULTURA';
   freq: number;
 };
 
@@ -60,15 +63,15 @@ type PersonaOpcion = {
 
 function iconoTarea(nombre: string, area: string): LucideIcon {
   const n = nombre.toLowerCase();
-  if (area === "APICULTURA") {
-    if (n.includes("miel")) return Sprout;
+  if (area === 'APICULTURA') {
+    if (n.includes('miel')) return Sprout;
     return Hexagon;
   }
-  if (n.includes("rieg")) return Droplets;
-  if (n.includes("poda")) return Scissors;
-  if (n.includes("fert")) return Sprout;
-  if (n.includes("plag")) return Bug;
-  if (n.includes("cosech")) return Apple;
+  if (n.includes('rieg')) return Droplets;
+  if (n.includes('poda')) return Scissors;
+  if (n.includes('fert')) return Sprout;
+  if (n.includes('plag')) return Bug;
+  if (n.includes('cosech')) return Apple;
   return Leaf;
 }
 
@@ -79,12 +82,14 @@ export function WizardNuevaAsignacion({
   apiarios,
   tipos,
   personas,
+  carencias,
   preselect,
 }: {
   lotes: LoteOpcion[];
   apiarios: ApiarioOpcion[];
   tipos: TipoOpcion[];
   personas: PersonaOpcion[];
+  carencias: CarenciaLoteResumen[];
   preselect: {
     lote_id: string | null;
     apiario_id: string | null;
@@ -95,45 +100,45 @@ export function WizardNuevaAsignacion({
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [destino, setDestino] = useState<"lote" | "apiario">(
-    preselect.apiario_id ? "apiario" : "lote",
+  const [destino, setDestino] = useState<'lote' | 'apiario'>(
+    preselect.apiario_id ? 'apiario' : 'lote'
   );
   const [paso, setPaso] = useState(1);
   const [loteId, setLoteId] = useState<string | null>(preselect.lote_id);
-  const [apiarioId, setApiarioId] = useState<string | null>(
-    preselect.apiario_id,
-  );
+  const [apiarioId, setApiarioId] = useState<string | null>(preselect.apiario_id);
   const [tipoId, setTipoId] = useState<string | null>(preselect.tipo_tarea_id);
   const [personaId, setPersonaId] = useState<string | null>(null);
   const hoy = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [fecha, setFecha] = useState<string>(hoy);
 
   const loteSel = loteId ? lotes.find((l) => l.id === loteId) ?? null : null;
-  const apiarioSel = apiarioId
-    ? apiarios.find((a) => a.id === apiarioId) ?? null
-    : null;
+  const apiarioSel = apiarioId ? apiarios.find((a) => a.id === apiarioId) ?? null : null;
   const tipoSel = tipoId ? tipos.find((t) => t.id === tipoId) ?? null : null;
-  const personaSel = personaId
-    ? personas.find((p) => p.id === personaId) ?? null
-    : null;
+  const personaSel = personaId ? personas.find((p) => p.id === personaId) ?? null : null;
 
-  const destinoSeleccionado = destino === "lote" ? loteSel : apiarioSel;
+  const destinoSeleccionado = destino === 'lote' ? loteSel : apiarioSel;
+
+  // Advertencia de carencia: solo tareas de cosecha en lotes (heurística por
+  // nombre: los tipos de tarea son configurables). Apiarios no tienen lote.
+  const advertenciaCarencia =
+    destino === 'lote' && loteId && tipoSel && /cosech/i.test(tipoSel.nombre)
+      ? carencias.find((c) => c.lote_id === loteId) ?? null
+      : null;
 
   function avanzar() {
     setError(null);
     if (paso === 1) {
-      if (destino === "lote" && !loteId) {
-        setError("Selecciona un lote.");
+      if (destino === 'lote' && !loteId) {
+        setError('Selecciona un lote.');
         return;
       }
-      if (destino === "apiario" && !apiarioId) {
-        setError("Selecciona un apiario.");
+      if (destino === 'apiario' && !apiarioId) {
+        setError('Selecciona un apiario.');
         return;
       }
       // si destino cambia de área, limpiar tipo
       if (tipoSel) {
-        const areaEsperada =
-          destino === "lote" ? "CULTIVO" : "APICULTURA";
+        const areaEsperada = destino === 'lote' ? 'CULTIVO' : 'APICULTURA';
         if (tipoSel.area !== areaEsperada) setTipoId(null);
       }
       setPaso(2);
@@ -141,7 +146,7 @@ export function WizardNuevaAsignacion({
     }
     if (paso === 2) {
       if (!tipoId) {
-        setError("Selecciona un tipo de tarea.");
+        setError('Selecciona un tipo de tarea.');
         return;
       }
       setPaso(3);
@@ -149,7 +154,7 @@ export function WizardNuevaAsignacion({
     }
     if (paso === 3) {
       if (!personaId) {
-        setError("Selecciona quién la hace.");
+        setError('Selecciona quién la hace.');
         return;
       }
       setPaso(4);
@@ -160,7 +165,7 @@ export function WizardNuevaAsignacion({
   function retroceder() {
     setError(null);
     if (paso === 1) {
-      router.push("/jefe/asignaciones");
+      router.push('/jefe/asignaciones');
       return;
     }
     setPaso(paso - 1);
@@ -169,16 +174,16 @@ export function WizardNuevaAsignacion({
   function enviar() {
     setError(null);
     if (!tipoId || !personaId) return;
-    if (destino === "lote" && !loteId) return;
-    if (destino === "apiario" && !apiarioId) return;
+    if (destino === 'lote' && !loteId) return;
+    if (destino === 'apiario' && !apiarioId) return;
 
     const fd = new FormData();
-    fd.set("destino", destino);
-    if (destino === "lote" && loteId) fd.set("lote_id", loteId);
-    if (destino === "apiario" && apiarioId) fd.set("apiario_id", apiarioId);
-    fd.set("tipo_tarea_id", tipoId);
-    fd.set("persona_id", personaId);
-    fd.set("fecha_inicio", fecha);
+    fd.set('destino', destino);
+    if (destino === 'lote' && loteId) fd.set('lote_id', loteId);
+    if (destino === 'apiario' && apiarioId) fd.set('apiario_id', apiarioId);
+    fd.set('tipo_tarea_id', tipoId);
+    fd.set('persona_id', personaId);
+    fd.set('fecha_inicio', fecha);
 
     startTransition(async () => {
       const r = await crearAsignacion(ESTADO_INICIAL, fd);
@@ -186,7 +191,13 @@ export function WizardNuevaAsignacion({
     });
   }
 
-  const tituloPorPaso = ["", "¿En qué lote?", "¿Qué tarea?", "¿Quién la hace?", "Confirmar asignación"];
+  const tituloPorPaso = [
+    '',
+    '¿En qué lote?',
+    '¿Qué tarea?',
+    '¿Quién la hace?',
+    'Confirmar asignación',
+  ];
 
   return (
     <div className="-mx-4 -mt-4 flex min-h-svh flex-col">
@@ -195,7 +206,7 @@ export function WizardNuevaAsignacion({
           <button
             type="button"
             onClick={retroceder}
-            aria-label={paso === 1 ? "Cancelar" : "Atrás"}
+            aria-label={paso === 1 ? 'Cancelar' : 'Atrás'}
             className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-zelanda-beige-50 hover:bg-white/15"
           >
             <ChevronLeft className="h-[18px] w-[18px]" />
@@ -240,9 +251,7 @@ export function WizardNuevaAsignacion({
             apiario={apiarioSel}
             destino={destino}
             tipos={tipos.filter((t) =>
-              destino === "lote"
-                ? t.area === "CULTIVO"
-                : t.area === "APICULTURA",
+              destino === 'lote' ? t.area === 'CULTIVO' : t.area === 'APICULTURA'
             )}
             tipoId={tipoId}
             setTipoId={setTipoId}
@@ -268,6 +277,16 @@ export function WizardNuevaAsignacion({
           />
         ) : null}
 
+        {paso === 4 && advertenciaCarencia ? (
+          <p className="mt-4 flex items-start gap-2 rounded-[10px] border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-sm text-zelanda-ocre-700">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              Este lote está en carencia hasta el {fmtCarenciaHasta(advertenciaCarencia.hasta)} por{' '}
+              {advertenciaCarencia.insumo} — la fruta podría no ser apta si se cosecha antes.
+            </span>
+          </p>
+        ) : null}
+
         {error ? (
           <p
             role="alert"
@@ -280,7 +299,7 @@ export function WizardNuevaAsignacion({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <button
@@ -289,7 +308,7 @@ export function WizardNuevaAsignacion({
             disabled={pendiente}
             className="flex min-h-touch min-w-[80px] items-center justify-center rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200 disabled:opacity-60"
           >
-            {paso === 1 ? "Cancelar" : "Atrás"}
+            {paso === 1 ? 'Cancelar' : 'Atrás'}
           </button>
           {paso < 4 ? (
             <button
@@ -307,7 +326,7 @@ export function WizardNuevaAsignacion({
               className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
             >
               <Check className="h-[18px] w-[18px]" />
-              {pendiente ? "Creando…" : "Crear asignación"}
+              {pendiente ? 'Creando…' : 'Crear asignación'}
             </button>
           )}
         </div>
@@ -326,8 +345,8 @@ function Paso1({
   apiarioId,
   setApiarioId,
 }: {
-  destino: "lote" | "apiario";
-  setDestino: (d: "lote" | "apiario") => void;
+  destino: 'lote' | 'apiario';
+  setDestino: (d: 'lote' | 'apiario') => void;
   lotes: LoteOpcion[];
   apiarios: ApiarioOpcion[];
   loteId: string | null;
@@ -335,7 +354,7 @@ function Paso1({
   apiarioId: string | null;
   setApiarioId: (id: string) => void;
 }) {
-  const [busqueda, setBusqueda] = useState("");
+  const [busqueda, setBusqueda] = useState('');
 
   const lotesFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -353,18 +372,16 @@ function Paso1({
     return apiarios.filter((a) => !q || a.nombre.toLowerCase().includes(q));
   }, [busqueda, apiarios]);
 
-  const sugeridos = lotesFiltrados.filter((l) => l.estado !== "aldia");
+  const sugeridos = lotesFiltrados.filter((l) => l.estado !== 'aldia');
 
   return (
     <div>
-      <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">
-        Elegí dónde se hará la tarea.
-      </p>
+      <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">Elegí dónde se hará la tarea.</p>
 
       <Segmented
         opciones={[
-          { id: "lote", etiqueta: "Lote" },
-          { id: "apiario", etiqueta: "Apiario" },
+          { id: 'lote', etiqueta: 'Lote' },
+          { id: 'apiario', etiqueta: 'Apiario' },
         ]}
         valor={destino}
         onCambio={setDestino}
@@ -373,16 +390,14 @@ function Paso1({
       <div className="relative mt-3">
         <input
           className="h-11 w-full rounded-[10px] border border-zelanda-beige-300 bg-white pl-9 pr-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
-          placeholder={
-            destino === "lote" ? "Buscar lote…" : "Buscar apiario…"
-          }
+          placeholder={destino === 'lote' ? 'Buscar lote…' : 'Buscar apiario…'}
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
         <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-zelanda-verde-400" />
       </div>
 
-      {destino === "lote" ? (
+      {destino === 'lote' ? (
         <>
           {sugeridos.length > 0 && !busqueda ? (
             <>
@@ -404,7 +419,7 @@ function Paso1({
           ) : null}
 
           <p className="mb-1.5 mt-4 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-            Todos los lotes{" "}
+            Todos los lotes{' '}
             <span className="text-[11px] normal-case tracking-normal text-zelanda-verde-700/80">
               ({lotesFiltrados.length})
             </span>
@@ -454,19 +469,21 @@ function LoteRow({
 }) {
   const inicial = lote.nombre.charAt(0).toUpperCase();
   const colorWrap =
-    lote.estado === "vencida"
-      ? "bg-[#fcefec] text-[#7b2a23]"
-      : lote.estado === "proxima"
-        ? "bg-[#fbf3df] text-zelanda-ocre-700"
-        : "bg-zelanda-verde-50 text-zelanda-verde-700";
+    lote.estado === 'vencida'
+      ? 'bg-[#fcefec] text-[#7b2a23]'
+      : lote.estado === 'proxima'
+      ? 'bg-[#fbf3df] text-zelanda-ocre-700'
+      : 'bg-zelanda-verde-50 text-zelanda-verde-700';
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex min-h-[56px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left shadow-suave transition ${
         seleccionado
-          ? "border-2 border-zelanda-verde-700 bg-zelanda-verde-50"
-          : `border ${destacado ? "border-zelanda-ocre-200" : "border-zelanda-beige-200"} bg-white hover:border-zelanda-verde-300`
+          ? 'border-2 border-zelanda-verde-700 bg-zelanda-verde-50'
+          : `border ${
+              destacado ? 'border-zelanda-ocre-200' : 'border-zelanda-beige-200'
+            } bg-white hover:border-zelanda-verde-300`
       }`}
     >
       <span
@@ -475,12 +492,9 @@ function LoteRow({
         {inicial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
-          {lote.nombre}
-        </p>
+        <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">{lote.nombre}</p>
         <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-          {lote.total_arboles.toLocaleString("es-CO")} árboles ·{" "}
-          {lote.proxima_tarea}
+          {lote.total_arboles.toLocaleString('es-CO')} árboles · {lote.proxima_tarea}
         </p>
       </div>
       <Badge estado={lote.estado} />
@@ -503,17 +517,15 @@ function ApiarioRow({
       onClick={onClick}
       className={`flex min-h-[56px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left shadow-suave transition ${
         seleccionado
-          ? "border-2 border-zelanda-verde-700 bg-zelanda-verde-50"
-          : "border border-zelanda-beige-200 bg-white hover:border-zelanda-verde-300"
+          ? 'border-2 border-zelanda-verde-700 bg-zelanda-verde-50'
+          : 'border border-zelanda-beige-200 bg-white hover:border-zelanda-verde-300'
       }`}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-zelanda-ocre-50 text-zelanda-ocre-700">
         <Hexagon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
-          {apiario.nombre}
-        </p>
+        <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">{apiario.nombre}</p>
         <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
           {apiario.total_colmenas} colmenas
         </p>
@@ -534,30 +546,30 @@ function Paso2({
 }: {
   lote: LoteOpcion | null;
   apiario: ApiarioOpcion | null;
-  destino: "lote" | "apiario";
+  destino: 'lote' | 'apiario';
   tipos: TipoOpcion[];
   tipoId: string | null;
   setTipoId: (id: string) => void;
   fecha: string;
   setFecha: (f: string) => void;
 }) {
-  const sugerido = lote?.estado === "aldia" ? null : lote?.tipo_sugerido_id ?? null;
+  const sugerido = lote?.estado === 'aldia' ? null : lote?.tipo_sugerido_id ?? null;
 
   return (
     <div>
       <div className="mb-4 flex items-center gap-2 rounded-[10px] border border-zelanda-verde-200 bg-zelanda-verde-50 px-3 py-2">
         <MapPin className="h-4 w-4 text-zelanda-verde-700" />
         <span className="text-[12.5px] text-zelanda-verde-800">
-          {destino === "lote" ? "Lote · " : "Apiario · "}
+          {destino === 'lote' ? 'Lote · ' : 'Apiario · '}
           <strong className="font-serif">
-            {destino === "lote" ? lote?.nombre : apiario?.nombre}
+            {destino === 'lote' ? lote?.nombre : apiario?.nombre}
           </strong>
-          {destino === "lote" && lote ? ` · ${lote.proxima_tarea}` : ""}
+          {destino === 'lote' && lote ? ` · ${lote.proxima_tarea}` : ''}
         </span>
       </div>
 
       <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-        {destino === "lote" ? "Cultivo" : "Apicultura"}
+        {destino === 'lote' ? 'Cultivo' : 'Apicultura'}
       </p>
       <div className="mb-4 grid grid-cols-2 gap-2">
         {tipos.map((t) => (
@@ -584,8 +596,7 @@ function Paso2({
         <Calendar className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-zelanda-verde-400" />
       </div>
       <p className="m-0 mt-1.5 text-[11.5px] text-zelanda-verde-700">
-        Esta fecha actualiza la “próxima” del{" "}
-        {destino === "lote" ? "lote" : "apiario"}.
+        Esta fecha actualiza la “próxima” del {destino === 'lote' ? 'lote' : 'apiario'}.
       </p>
     </div>
   );
@@ -609,8 +620,10 @@ function TareaCard({
       onClick={onClick}
       className={`relative flex min-h-[88px] flex-col gap-1.5 rounded-xl px-3 py-3 text-left ${
         seleccionada
-          ? "border-2 border-zelanda-verde-700 bg-zelanda-verde-50"
-          : `border ${destacada ? "border-zelanda-ocre-300" : "border-zelanda-beige-200"} bg-white hover:border-zelanda-verde-300`
+          ? 'border-2 border-zelanda-verde-700 bg-zelanda-verde-50'
+          : `border ${
+              destacada ? 'border-zelanda-ocre-300' : 'border-zelanda-beige-200'
+            } bg-white hover:border-zelanda-verde-300`
       }`}
     >
       {destacada ? (
@@ -621,8 +634,8 @@ function TareaCard({
       <span
         className={`flex h-8 w-8 items-center justify-center rounded-[10px] ${
           seleccionada
-            ? "bg-zelanda-verde-700 text-zelanda-beige-50"
-            : "bg-zelanda-beige-100 text-zelanda-verde-700"
+            ? 'bg-zelanda-verde-700 text-zelanda-beige-50'
+            : 'bg-zelanda-beige-100 text-zelanda-verde-700'
         }`}
       >
         <Icono className="h-4 w-4" />
@@ -630,9 +643,7 @@ function TareaCard({
       <span className="font-serif text-[14px] leading-tight text-zelanda-verde-900">
         {tarea.nombre}
       </span>
-      <span className="text-[11px] text-zelanda-verde-700">
-        cada {tarea.freq} d
-      </span>
+      <span className="text-[11px] text-zelanda-verde-700">cada {tarea.freq} d</span>
     </button>
   );
 }
@@ -648,11 +659,11 @@ function Paso3({
   personaId: string | null;
   setPersonaId: (id: string) => void;
 }) {
-  const [filtro, setFiltro] = useState<"disponibles" | "todos">("disponibles");
+  const [filtro, setFiltro] = useState<'disponibles' | 'todos'>('disponibles');
 
   const lista = useMemo(() => {
     let arr = [...personas];
-    if (filtro === "disponibles") arr = arr.filter((p) => p.carga < 2);
+    if (filtro === 'disponibles') arr = arr.filter((p) => p.carga < 2);
     return arr.sort((a, b) => a.carga - b.carga);
   }, [filtro, personas]);
 
@@ -661,16 +672,14 @@ function Paso3({
   return (
     <div>
       <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">
-        Asigná a una persona.{" "}
-        {tipo?.area === "APICULTURA"
-          ? "Cualquier persona disponible puede ir al apiario."
-          : ""}
+        Asigná a una persona.{' '}
+        {tipo?.area === 'APICULTURA' ? 'Cualquier persona disponible puede ir al apiario.' : ''}
       </p>
 
       <Segmented
         opciones={[
-          { id: "disponibles", etiqueta: `Disponibles (${disponibles})` },
-          { id: "todos", etiqueta: `Todos (${personas.length})` },
+          { id: 'disponibles', etiqueta: `Disponibles (${disponibles})` },
+          { id: 'todos', etiqueta: `Todos (${personas.length})` },
         ]}
         valor={filtro}
         onCambio={setFiltro}
@@ -679,8 +688,7 @@ function Paso3({
       <div className="mt-3 flex flex-col gap-1.5">
         {lista.length === 0 ? (
           <p className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-8 text-center text-sm text-zelanda-verde-700">
-            No hay personas{" "}
-            {filtro === "disponibles" ? "disponibles" : "registradas"}.
+            No hay personas {filtro === 'disponibles' ? 'disponibles' : 'registradas'}.
           </p>
         ) : (
           lista.map((p) => (
@@ -707,34 +715,30 @@ function PersonaRow({
   onClick: () => void;
 }) {
   const cargaLabel =
-    persona.carga === 0
-      ? "Libre"
-      : persona.carga === 1
-        ? "1 tarea"
-        : `${persona.carga} tareas`;
+    persona.carga === 0 ? 'Libre' : persona.carga === 1 ? '1 tarea' : `${persona.carga} tareas`;
   const cargaColor =
     persona.carga === 0
-      ? "text-estado-aldia"
+      ? 'text-estado-aldia'
       : persona.carga <= 1
-        ? "text-zelanda-verde-700"
-        : persona.carga === 2
-          ? "text-zelanda-ocre-700"
-          : "text-estado-vencida";
+      ? 'text-zelanda-verde-700'
+      : persona.carga === 2
+      ? 'text-zelanda-ocre-700'
+      : 'text-estado-vencida';
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex min-h-[60px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ${
         seleccionada
-          ? "border-2 border-zelanda-verde-700 bg-zelanda-verde-50"
-          : "border border-zelanda-beige-200 bg-white hover:border-zelanda-verde-300"
+          ? 'border-2 border-zelanda-verde-700 bg-zelanda-verde-50'
+          : 'border border-zelanda-beige-200 bg-white hover:border-zelanda-verde-300'
       }`}
     >
       <span
         className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] ${
           seleccionada
-            ? "bg-zelanda-verde-700 text-white"
-            : "border-2 border-zelanda-beige-300 bg-white"
+            ? 'bg-zelanda-verde-700 text-white'
+            : 'border-2 border-zelanda-beige-300 bg-white'
         }`}
       >
         {seleccionada ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
@@ -746,8 +750,8 @@ function PersonaRow({
         </p>
         <p className="m-0 mt-0.5 truncate text-[11.5px] text-zelanda-verde-700">
           {persona.vinculo}
-          {persona.rol_finca ? ` · ${persona.rol_finca}` : ""}
-          {persona.ultimos[0] ? ` · último: ${persona.ultimos[0]}` : ""}
+          {persona.rol_finca ? ` · ${persona.rol_finca}` : ''}
+          {persona.ultimos[0] ? ` · último: ${persona.ultimos[0]}` : ''}
         </p>
       </div>
       <span className={`whitespace-nowrap text-[11px] font-semibold ${cargaColor}`}>
@@ -764,7 +768,7 @@ function Paso4({
   persona,
   fecha,
 }: {
-  destino: "lote" | "apiario";
+  destino: 'lote' | 'apiario';
   destinoSeleccionado: LoteOpcion | ApiarioOpcion | null;
   tipo: TipoOpcion | null;
   persona: PersonaOpcion | null;
@@ -773,10 +777,10 @@ function Paso4({
   const fechaLegible = (() => {
     try {
       const d = new Date(`${fecha}T00:00:00`);
-      return d.toLocaleDateString("es-CO", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
+      return d.toLocaleDateString('es-CO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
       });
     } catch {
       return fecha;
@@ -791,13 +795,11 @@ function Paso4({
     );
   }
 
-  const esLote = destino === "lote";
+  const esLote = destino === 'lote';
   const cantidadInfo = esLote
-    ? `${(destinoSeleccionado as LoteOpcion).total_arboles.toLocaleString("es-CO")} árboles`
+    ? `${(destinoSeleccionado as LoteOpcion).total_arboles.toLocaleString('es-CO')} árboles`
     : `${(destinoSeleccionado as ApiarioOpcion).total_colmenas} colmenas`;
-  const hectareasInfo = esLote
-    ? (destinoSeleccionado as LoteOpcion).hectareas
-    : null;
+  const hectareasInfo = esLote ? (destinoSeleccionado as LoteOpcion).hectareas : null;
 
   return (
     <div>
@@ -815,60 +817,41 @@ function Paso4({
         </div>
 
         <div className="px-3.5 py-3">
-          <RevisarFila label={esLote ? "Lote" : "Apiario"}>
+          <RevisarFila label={esLote ? 'Lote' : 'Apiario'}>
             <span className="font-serif text-[14px] text-zelanda-verde-900">
               {destinoSeleccionado.nombre}
             </span>
             <span className="ml-2 text-[11.5px] text-zelanda-verde-700">
               {cantidadInfo}
-              {hectareasInfo !== null
-                ? ` · ${hectareasInfo.toFixed(1)} ha`
-                : ""}
+              {hectareasInfo !== null ? ` · ${hectareasInfo.toFixed(1)} ha` : ''}
             </span>
           </RevisarFila>
           <RevisarFila label="Tarea">
-            <span className="font-serif text-[14px] text-zelanda-verde-900">
-              {tipo.nombre}
-            </span>
+            <span className="font-serif text-[14px] text-zelanda-verde-900">{tipo.nombre}</span>
             <span className="ml-2 text-[11.5px] text-zelanda-verde-700">
               cada {tipo.freq} d · {tipo.area.toLowerCase()}
             </span>
           </RevisarFila>
           <RevisarFila label="Trabajador">
             <span className="inline-flex items-center gap-2">
-              <AvatarIniciales
-                id={persona.id}
-                nombre={persona.nombre_completo}
-                tamano="sm"
-              />
-              <span className="text-[13px] text-zelanda-verde-900">
-                {persona.nombre_completo}
-              </span>
+              <AvatarIniciales id={persona.id} nombre={persona.nombre_completo} tamano="sm" />
+              <span className="text-[13px] text-zelanda-verde-900">{persona.nombre_completo}</span>
             </span>
           </RevisarFila>
           <RevisarFila label="Fecha objetivo">
-            <span className="text-[13px] capitalize text-zelanda-verde-900">
-              {fechaLegible}
-            </span>
+            <span className="text-[13px] capitalize text-zelanda-verde-900">{fechaLegible}</span>
           </RevisarFila>
         </div>
       </div>
 
       <p className="mt-4 text-[11.5px] text-zelanda-verde-700">
-        Al crear, la persona recibirá una notificación push si tiene
-        notificaciones habilitadas.
+        Al crear, la persona recibirá una notificación push si tiene notificaciones habilitadas.
       </p>
     </div>
   );
 }
 
-function RevisarFila({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function RevisarFila({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-3 border-b border-zelanda-beige-200 py-2 last:border-b-0">
       <p className="m-0 w-[110px] shrink-0 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">

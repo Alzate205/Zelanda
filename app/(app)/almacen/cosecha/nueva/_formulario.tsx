@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { CloudOff, Check } from 'lucide-react';
+import { CloudOff, Check, AlertTriangle } from 'lucide-react';
+import { fmtCarenciaHasta } from '@/lib/carencia';
 import { enviarCosecha } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Segmented } from '@/components/ui/Segmented';
@@ -13,11 +14,13 @@ export function FormularioCosecha({
   lotes,
   compacto = false,
   canastaPorDefecto = 0,
+  carencias = [],
 }: {
   personas: { id: string; nombre: string }[];
   lotes: { id: string; nombre: string }[];
   compacto?: boolean;
   canastaPorDefecto?: number;
+  carencias?: { lote_id: string; insumo: string; hasta: string }[];
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
@@ -37,6 +40,8 @@ export function FormularioCosecha({
     metodo === 'CANASTA' && canastas && capacidad
       ? pesoCanastas(Number(canastas), Number(capacidad))
       : null;
+
+  const carenciaSel = loteId ? carencias.find((c) => c.lote_id === loteId) ?? null : null;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -165,6 +170,16 @@ export function FormularioCosecha({
           </select>
         </div>
       </div>
+
+      {carenciaSel ? (
+        <p className="flex items-start gap-2 rounded-[10px] border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-[13px] text-zelanda-ocre-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            Este lote está en carencia hasta el {fmtCarenciaHasta(carenciaSel.hasta)} por{' '}
+            {carenciaSel.insumo} — la fruta podría no ser apta.
+          </span>
+        </p>
+      ) : null}
 
       {metodo === 'CANASTA' ? (
         <div className="grid grid-cols-2 gap-2.5">

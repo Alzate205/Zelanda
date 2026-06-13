@@ -1,16 +1,12 @@
-import { notFound } from "next/navigation";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { FormularioInsumo } from "../../_formulario";
+import { notFound } from 'next/navigation';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { FormularioInsumo } from '../../_formulario';
 
-export const metadata = { title: "Editar insumo" };
+export const metadata = { title: 'Editar insumo' };
 
-export default async function PaginaEditarInsumo({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("BODEGA");
+export default async function PaginaEditarInsumo({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('BODEGA');
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
 
@@ -23,9 +19,7 @@ export default async function PaginaEditarInsumo({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Inventario
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Editar insumo
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Editar insumo</h1>
       </header>
       <FormularioInsumo
         modo="editar"
@@ -36,6 +30,12 @@ export default async function PaginaEditarInsumo({
           unidad: i.unidad,
           stock_minimo: i.stock_minimo.toString(),
           costo_unitario: i.costo_unitario?.toString() ?? null,
+          ingrediente_activo: i.ingrediente_activo,
+          registro_ica: i.registro_ica,
+          periodo_carencia_dias:
+            i.periodo_carencia_dias != null ? String(i.periodo_carencia_dias) : null,
+          periodo_reingreso_horas:
+            i.periodo_reingreso_horas != null ? String(i.periodo_reingreso_horas) : null,
         }}
       />
     </div>
