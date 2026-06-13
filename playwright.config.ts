@@ -2,8 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
   timeout: 30 * 1000,
-  expect: { timeout: 5000 },
+  // Margen amplio: los flujos críticos esperan redirecciones de server actions
+  // que en frío compilan y hacen round-trips reales a Supabase.
+  expect: { timeout: 20000 },
   fullyParallel: true,
   use: {
     headless: true,
