@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calcularResumen } from '@/lib/fechas-tarea';
+import { carenciasActivas } from '@/lib/jefe/carencias';
 import { WizardNuevaAsignacion } from './WizardNuevaAsignacion';
 
 export const metadata: Metadata = { title: 'Nueva asignación' };
@@ -20,7 +21,7 @@ export default async function PaginaNuevaAsignacion({
   await requerirUsuario('JEFE');
   const sp = await searchParams;
 
-  const [lotes, apiarios, tipos, personas, completadasLote, frecuenciasOverride] =
+  const [lotes, apiarios, tipos, personas, completadasLote, frecuenciasOverride, carencias] =
     await Promise.all([
       prisma.lotes.findMany({
         where: { deleted_at: null },
@@ -67,6 +68,7 @@ export default async function PaginaNuevaAsignacion({
       prisma.frecuencias_lote.findMany({
         select: { lote_id: true, tipo_tarea_id: true, frecuencia_dias: true },
       }),
+      carenciasActivas(),
     ]);
 
   // Carga actual: asignaciones abiertas por persona
@@ -219,6 +221,7 @@ export default async function PaginaNuevaAsignacion({
       apiarios={apiariosEnriquecidos}
       tipos={tiposEnriquecidos}
       personas={personasEnriquecidas}
+      carencias={carencias}
       preselect={{
         lote_id: sp.lote_id ?? null,
         apiario_id: sp.apiario_id ?? null,
