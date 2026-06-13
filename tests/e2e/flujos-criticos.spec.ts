@@ -10,6 +10,10 @@ async function login(page: Page, email: string, password: string) {
 
 test.describe.serial('Flujos críticos', () => {
   test('login → asignar tarea → registrar avance', async ({ browser }) => {
+    // El flujo encadena varios server actions/redirects en frío (login,
+    // crear asignación, registrar avance), así que damos margen al test entero.
+    test.setTimeout(120_000);
+
     // ── Paso 1: login jefe ───────────────────────────────────────────────
     const ctxJefe = await browser.newContext();
     const pageJefe = await ctxJefe.newPage();
