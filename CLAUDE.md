@@ -432,9 +432,9 @@ Spec en `docs/superpowers/specs/2026-06-10-zelanda-2-0-design.md`. Solo afecta a
 - **C4 — Predicción de cosecha** ✅: `lib/prediccion-cosecha.ts` (promedio ponderado 3-2-1 + tendencia, testeado), visible en `PanelLote` y en reportes avanzados.
 - **C5 — NDVI satelital** ✅: botón "Salud del cultivo" en el mapa; `lib/jefe/ndvi.ts` pide a Copernicus (OAuth client-credentials + Process API) un PNG del NDVI con 5 niveles y nubes transparentes, georreferenciado sobre el satélite con leyenda. Solo se cachean éxitos (los errores de CDSE no se cachean — lección aprendida).
 
-### Fase 8 — Futuro (no hacer aún)
+### ✅ Fase 8 — Tests e2e de flujos críticos (COMPLETADA — 2026-06-13)
 
-Backlog priorizado (revisión 2026-06-12): e2e de flujos críticos. (El push de stock bajo ya existía: `lib/push/stock-bajo.ts` avisa a bodega al cruzar el mínimo en el cierre de despacho — mejor que un cron.)
+Smoke de Playwright que encadena **login → asignar tarea → registrar avance**, con seed/teardown de usuarios test contra Supabase real (lote real en solo lectura, lo único que toca son `asignaciones` + `registros_avance` de la persona test, que se borran al final). Spec y plan en `docs/superpowers/{specs,plans}/2026-06-13-e2e-flujos-criticos*`. Se corre con `npm run test:e2e` (siembra → testea → limpia); `npm run test:e2e:seed` / `:teardown` para el ciclo de vida suelto. Con esto, el backlog priorizado (revisión 2026-06-12) queda vacío. (El push de stock bajo ya existía: `lib/push/stock-bajo.ts` avisa a bodega al cruzar el mínimo en el cierre de despacho — mejor que un cron.)
 
 Ya implementados de esa revisión: registro de aplicaciones insumo→lote (`/jefe/aplicaciones`, spec `docs/superpowers/specs/2026-06-12-aplicaciones-insumos-lote-design.md`), ficha técnica del químico + alerta de carencia (spec `docs/superpowers/specs/2026-06-12-ficha-tecnica-carencia-design.md`: ficha en bodega, banner ámbar al registrar cosecha con push al jefe, línea de carencia en el panel del lote del mapa y advertencia en el wizard de asignación de cosecha), lluvia real de 7 días en el panel de clima, NDVI persistido en Supabase Storage.
 
@@ -506,5 +506,5 @@ CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 
 ---
 
-**Versión del documento:** 1.2 · Junio 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI)
+**Versión del documento:** 1.3 · Junio 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI; Fase 8: smoke e2e de flujos críticos)
 **Autor:** Samuel Alzate
