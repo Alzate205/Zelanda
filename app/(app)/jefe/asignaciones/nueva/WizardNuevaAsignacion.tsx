@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { fmtCarenciaHasta } from '@/lib/carencia';
+import type { CarenciaLoteResumen } from '@/lib/offline/tipos';
 import { Stepper } from '@/components/ui/Stepper';
 import { Badge } from '@/components/ui/Badge';
 import { Segmented } from '@/components/ui/Segmented';
@@ -88,7 +89,7 @@ export function WizardNuevaAsignacion({
   apiarios: ApiarioOpcion[];
   tipos: TipoOpcion[];
   personas: PersonaOpcion[];
-  carencias: { lote_id: string; insumo: string; hasta: string }[];
+  carencias: CarenciaLoteResumen[];
   preselect: {
     lote_id: string | null;
     apiario_id: string | null;
