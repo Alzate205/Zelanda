@@ -46,7 +46,7 @@
     "lucide-react": "^1.14.0",
     "maplibre-gl": "^5.24.0",
     "next": "15.5.18",
-    "react": "19.1.0",
+    "react": "19.2.6",
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
     "web-push": "^3.6.7"
