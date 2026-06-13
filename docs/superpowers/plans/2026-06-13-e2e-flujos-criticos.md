@@ -132,7 +132,9 @@ async function asegurarAuthUser(email, password, nombre) {
     user_metadata: { nombre_completo: nombre },
   });
   if (!error) return data.user.id;
-  if (!/already registered|already exists/i.test(error.message)) {
+  // El mensaje de Supabase varía ("has already been registered", "already exists"…),
+  // así que matcheamos de forma laxa antes de resolver el id existente.
+  if (!/already.*(registered|exists)/i.test(error.message)) {
     throw new Error(`createUser ${email}: ${error.message}`);
   }
   const id = await resolverAuthIdPorEmail(email);
@@ -152,13 +154,22 @@ async function asegurarPersona(nombre) {
   return persona;
 }
 
-async function asegurarVinculacionActiva(personaId, tipo, rolFinca) {
+async function asegurarVinculacionActiva(personaId, tipo, rolFinca, extra = {}) {
   const activa = await prisma.vinculaciones.findFirst({
     where: { persona_id: personaId, fecha_fin: null },
   });
   if (!activa) {
+    // El check chk_vinc_campos_por_tipo exige campos según el tipo:
+    // JORNALERO requiere tarifa_jornal; FIJO requiere salario_base+periodo_pago;
+    // CONTRATISTA/FAMILIAR no llevan ninguno. `extra` aporta lo que pida el tipo.
     await prisma.vinculaciones.create({
-      data: { persona_id: personaId, tipo, rol_finca: rolFinca, notas: 'Usuario de test e2e.' },
+      data: {
+        persona_id: personaId,
+        tipo,
+        rol_finca: rolFinca,
+        notas: 'Usuario de test e2e.',
+        ...extra,
+      },
     });
   }
 }
@@ -187,7 +198,9 @@ try {
     E2E_TRABAJADOR.nombre
   );
   const trabPersona = await asegurarPersona(E2E_TRABAJADOR.nombre);
-  await asegurarVinculacionActiva(trabPersona.id, 'JORNALERO', 'Trabajador de campo');
+  await asegurarVinculacionActiva(trabPersona.id, 'JORNALERO', 'Trabajador de campo', {
+    tarifa_jornal: 50000,
+  });
   await asegurarUsuario(
     trabAuthId,
     E2E_TRABAJADOR.email,
