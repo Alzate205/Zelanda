@@ -11,6 +11,11 @@
 # Testing
 /coverage
 
+# Playwright (artefactos de corrida, no deben ir al repo)
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # Next.js
 /.next/
 /out/
