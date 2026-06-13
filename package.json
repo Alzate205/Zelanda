@@ -14,6 +14,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:seed": "node --env-file=.env.local --env-file=.env scripts/e2e-seed.mjs",
+    "test:e2e:teardown": "node --env-file=.env.local --env-file=.env scripts/e2e-teardown.mjs",
     "prepare": "husky install",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
