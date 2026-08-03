@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Brain } from "lucide-react";
 import { cerrarSesion } from "@/app/(auth)/login/acciones";
 import { AvatarIniciales } from "./AvatarIniciales";
 import { BrandMark } from "./BrandMark";
-import { BuscadorGlobal } from "./BuscadorGlobal";
 import { ETIQUETA_ROL } from "@/lib/constantes";
 import type { UsuarioActual } from "@/lib/auth";
 
@@ -34,7 +33,16 @@ export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
             </p>
           </div>
         </Link>
-        {usuario.rol === "JEFE" ? <BuscadorGlobal /> : null}
+        {usuario.rol === "JEFE" ? (
+          <Link
+            href="/dashboard"
+            aria-label="Ver diagnóstico y widgets"
+            className="flex min-h-touch min-w-touch items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold transition hover:bg-indigo-700"
+          >
+            <Brain className="h-4 w-4" />
+            Diagnóstico
+          </Link>
+        ) : null}
         <form action={cerrarSesion}>
           <button
             type="submit"

@@ -12,6 +12,11 @@ import { rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
+import { WidgetClima } from '@/components/jefe/WidgetClima';
+import { CalendarioFenologico } from '@/components/jefe/CalendarioFenologico';
+import { ResumenEjecutivo } from '@/components/jefe/ResumenEjecutivo';
+import { TrendingUp, Brain } from 'lucide-react';
+import DiagnosticoIA from '@/components/DiagnosticoIA';
 
 // Fallback Leaflet: solo se descarga si el dispositivo no tiene WebGL.
 const MapaFincaFallback = dynamic(() => import('@/components/mapa/MapaFinca'), {
@@ -50,6 +55,7 @@ export function CentroControl({
   const [conWebGL, setConWebGL] = useState<boolean | null>(null);
   const contRef = useRef<HTMLDivElement>(null);
   const [altura, setAltura] = useState<number | null>(null);
+  const [mostrarWidgets, setMostrarWidgets] = useState(false);
 
   useEffect(() => {
     setConWebGL(soportaWebGL());
@@ -122,32 +128,35 @@ export function CentroControl({
   return (
     <div
       ref={contRef}
-      className="relative -mx-4 -my-6 overflow-hidden"
+      className="relative mx-0 my-0 overflow-hidden"
       style={{ height: altura ?? '70svh' }}
     >
-      {conWebGL === false ? (
-        <div className="h-full w-full p-3">
-          <MapaFincaFallback
-            lotesPoligonos={geo.lotesParaMapa}
-            apiariosPuntos={geo.apiariosParaMapa}
-            instalacionesPuntos={geo.instParaMapa}
+      {/* Contenedor principal del mapa con z-index base */}
+      <div className="absolute inset-0 z-0">
+        {conWebGL === false ? (
+          <div className="h-full w-full p-3">
+            <MapaFincaFallback
+              lotesPoligonos={geo.lotesParaMapa}
+              apiariosPuntos={geo.apiariosParaMapa}
+              instalacionesPuntos={geo.instParaMapa}
+              bordeFinca={geo.bordeFinca}
+              altura="100%"
+            />
+          </div>
+        ) : conWebGL === true ? (
+          <Mapa3D
+            lotes={lotesMapa}
             bordeFinca={geo.bordeFinca}
-            altura="100%"
+            apiarios={geo.apiariosParaMapa}
+            modo={modo}
+            onSeleccionLote={setLoteId}
+            onError={() => setConWebGL(false)}
           />
-        </div>
-      ) : conWebGL === true ? (
-        <Mapa3D
-          lotes={lotesMapa}
-          bordeFinca={geo.bordeFinca}
-          apiarios={geo.apiariosParaMapa}
-          modo={modo}
-          onSeleccionLote={setLoteId}
-          onError={() => setConWebGL(false)}
-        />
-      ) : null}
+        ) : null}
+      </div>
 
-      {/* Saludo + chips */}
-      <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-col gap-2">
+      {/* Saludo + chips - por encima del mapa */}
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex flex-col gap-2 p-3">
         <div className="pointer-events-auto self-start rounded-2xl border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-2 shadow-card backdrop-blur-md">
           <Eyebrow>Centro de control</Eyebrow>
           <p className="m-0 font-serif text-[17px] leading-tight text-zelanda-verde-900">
@@ -160,8 +169,8 @@ export function CentroControl({
         </div>
       </div>
 
-      {/* Dock o panel de lote */}
-      <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-2">
+      {/* Dock o panel de lote - por encima del mapa */}
+      <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-3">
         {loteSel ? (
           <PanelLote
             lote={loteSel}
@@ -176,6 +185,7 @@ export function CentroControl({
         )}
       </div>
 
+      {/* Panel central - máximo z-index */}
       {panelAbierto ? (
         <PanelCentral
           snapshot={snapshot}
@@ -183,6 +193,40 @@ export function CentroControl({
           onCerrar={() => setPanelAbierto(false)}
         />
       ) : null}
+
+      {/* Widgets flotantes (clima, fenológico, resumen, diagnóstico IA) */}
+      {mostrarWidgets && (
+        <div className="absolute inset-0 z-10 overflow-y-auto p-3 pt-24 pb-36">
+          <div className="mx-auto max-w-3xl space-y-3">
+            <DiagnosticoIA />
+            <ResumenEjecutivo snapshot={snapshot} />
+            <WidgetClima />
+            <CalendarioFenologico />
+            <button
+              type="button"
+              onClick={() => setMostrarWidgets(false)}
+              className="w-full rounded-xl bg-zelanda-verde-600 py-2 text-sm font-semibold text-white hover:bg-zelanda-verde-700"
+            >
+              Cerrar widgets
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Botón flotante para mostrar widgets */}
+      {!mostrarWidgets && !loteSel && !panelAbierto && (
+        <div className="pointer-events-none absolute bottom-28 right-3 z-10">
+          <button
+            type="button"
+            onClick={() => setMostrarWidgets(true)}
+            className="pointer-events-auto flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-lg transition hover:bg-indigo-700"
+            aria-label="Ver widgets informativos"
+          >
+            <Brain className="h-4 w-4" />
+            Diagnóstico IA
+          </button>
+        </div>
+      )}
     </div>
   );
 }

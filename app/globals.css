@@ -22,9 +22,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Controles de MapLibre en el centro de control: por encima del dock */
+/* Controles de MapLibre en el centro de control: por encima del dock pero debajo del header */
 .maplibregl-ctrl-bottom-right {
-  bottom: 96px;
+  bottom: 140px;
+}
+.maplibregl-ctrl-top-right {
+  top: 80px;
+}
+.maplibregl-ctrl {
+  z-index: 15 !important;
 }
 
 h1,
