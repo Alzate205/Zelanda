@@ -35,6 +35,32 @@ export function ahoraEnBogota(): number {
 }
 
 /**
+ * Hora del día (0-23) en Bogotá. `hourCycle: 'h23'` evita que la medianoche
+ * salga como 24, que es lo que devuelve `hour12: false` en algunos runtimes.
+ */
+export function horaEnBogota(fecha: Date = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      hourCycle: 'h23',
+      timeZone: 'America/Bogota',
+    }).format(fecha)
+  );
+}
+
+/**
+ * Saludo según el momento del día en la finca. Se calcula en el servidor y
+ * viaja como prop, para que no haya desajuste de hidratación con el reloj
+ * del celular.
+ */
+export function saludoPorHora(fecha: Date = new Date()): string {
+  const hora = horaEnBogota(fecha);
+  if (hora < 12) return 'Buenos días';
+  if (hora < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+/**
  * Formatea una fecha para mostrar en Bogotá (ej: "26 de mayo de 2026")
  */
 export function formatearFechaCorta(fecha: Date): string {

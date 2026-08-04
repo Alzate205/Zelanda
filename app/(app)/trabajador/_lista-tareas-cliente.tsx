@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   ChevronRight,
@@ -13,31 +13,24 @@ import {
   Bug,
   Apple,
   Bell,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Bar } from "@/components/ui/Bar";
-import { Badge } from "@/components/ui/Badge";
-import { EmptyState } from "@/components/shared/EmptyState";
-import {
-  leerAsignaciones,
-  guardarSnapshotTrabajador,
-  cacheFresca,
-} from "@/lib/offline/cache";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import type {
-  AsignacionCacheada,
-  SnapshotTrabajador,
-} from "@/lib/offline/tipos";
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Bar } from '@/components/ui/Bar';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { leerAsignaciones, guardarSnapshotTrabajador, cacheFresca } from '@/lib/offline/cache';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import type { AsignacionCacheada, SnapshotTrabajador } from '@/lib/offline/tipos';
 
 function iconoTarea(nombre: string, area: string): LucideIcon {
   const n = nombre.toLowerCase();
-  if (area === "apicultura") return Hexagon;
-  if (n.includes("rieg")) return Droplets;
-  if (n.includes("poda")) return Scissors;
-  if (n.includes("fert")) return Sprout;
-  if (n.includes("plag")) return Bug;
-  if (n.includes("cosech")) return Apple;
+  if (area === 'apicultura') return Hexagon;
+  if (n.includes('rieg')) return Droplets;
+  if (n.includes('poda')) return Scissors;
+  if (n.includes('fert')) return Sprout;
+  if (n.includes('plag')) return Bug;
+  if (n.includes('cosech')) return Apple;
   return Leaf;
 }
 
@@ -45,16 +38,18 @@ type RecordatorioTrabajador = {
   id: string;
   titulo: string;
   fecha: string;
-  estado: "vencido" | "hoy" | "proximo";
+  estado: 'vencido' | 'hoy' | 'proximo';
   dias: number;
 };
 
 export function ListaTareasCliente({
   nombrePila,
+  saludo,
   snapshotInicial,
   recordatorios = [],
 }: {
   nombrePila: string;
+  saludo: string;
   snapshotInicial: SnapshotTrabajador | null;
   recordatorios?: RecordatorioTrabajador[];
 }) {
@@ -75,7 +70,7 @@ export function ListaTareasCliente({
       }
       if (online && !(await cacheFresca())) {
         try {
-          const res = await fetch("/api/trabajador/snapshot");
+          const res = await fetch('/api/trabajador/snapshot');
           if (res.ok) {
             const snap = (await res.json()) as SnapshotTrabajador;
             await guardarSnapshotTrabajador(snap);
@@ -98,7 +93,7 @@ export function ListaTareasCliente({
         <header>
           <Eyebrow>Mi día</Eyebrow>
           <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Buen día, {nombrePila}
+            {saludo}, {nombrePila}
           </h1>
         </header>
         <p className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
@@ -114,7 +109,7 @@ export function ListaTareasCliente({
         <header>
           <Eyebrow>Mi día</Eyebrow>
           <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Buen día, {nombrePila}
+            {saludo}, {nombrePila}
           </h1>
         </header>
         <EmptyState
@@ -134,7 +129,7 @@ export function ListaTareasCliente({
     );
   }
 
-  const enCurso = asignaciones.find((a) => a.estado === "EN_CURSO");
+  const enCurso = asignaciones.find((a) => a.estado === 'EN_CURSO');
   const otras = asignaciones.filter((a) => a.id !== enCurso?.id);
   const tareaActual = enCurso ?? asignaciones[0];
   const siguientes = enCurso ? otras : asignaciones.slice(1);
@@ -144,11 +139,10 @@ export function ListaTareasCliente({
       <header>
         <Eyebrow>Mi día</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Buen día, {nombrePila}
+          {saludo}, {nombrePila}
         </h1>
         <p className="mt-0.5 text-sm text-zelanda-verde-700">
-          {asignaciones.length}{" "}
-          {asignaciones.length === 1 ? "tarea asignada" : "tareas asignadas"}
+          {asignaciones.length} {asignaciones.length === 1 ? 'tarea asignada' : 'tareas asignadas'}
         </p>
       </header>
 
@@ -156,19 +150,17 @@ export function ListaTareasCliente({
         <article className="overflow-hidden rounded-2xl border border-zelanda-verde-300 bg-white shadow-card">
           <div className="bg-gradient-to-br from-zelanda-verde-700 to-zelanda-verde-800 px-3.5 py-3 text-zelanda-beige-50">
             <p className="text-[10.5px] uppercase tracking-[0.16em] text-zelanda-beige-100/72">
-              {tareaActual.estado === "EN_CURSO"
-                ? "Tarea en curso"
-                : "Siguiente tarea"}
+              {tareaActual.estado === 'EN_CURSO' ? 'Tarea en curso' : 'Siguiente tarea'}
             </p>
             <h2 className="m-0 mt-1 font-serif text-[22px] font-medium">
-              {tareaActual.tipo_tarea_nombre} ·{" "}
+              {tareaActual.tipo_tarea_nombre} ·{' '}
               {tareaActual.lote_id
                 ? tareaActual.lote_nombre
-                : (tareaActual.apiario_nombre ?? "Apiario")}
+                : tareaActual.apiario_nombre ?? 'Apiario'}
             </h2>
             <p className="m-0 mt-1 text-[12.5px] text-zelanda-beige-100/85">
               {tareaActual.lote_id
-                ? `${(tareaActual.total_arboles ?? 0).toLocaleString("es-CO")} árboles`
+                ? `${(tareaActual.total_arboles ?? 0).toLocaleString('es-CO')} árboles`
                 : `${tareaActual.total_colmenas ?? 0} colmenas`}
             </p>
           </div>
@@ -179,17 +171,15 @@ export function ListaTareasCliente({
                   <span>Tu avance</span>
                   <span>
                     <strong className="font-serif text-zelanda-verde-900">
-                      {tareaActual.arboles_completados.toLocaleString("es-CO")}
-                    </strong>{" "}
-                    / {(tareaActual.total_arboles ?? 0).toLocaleString("es-CO")}{" "}
-                    árboles
+                      {tareaActual.arboles_completados.toLocaleString('es-CO')}
+                    </strong>{' '}
+                    / {(tareaActual.total_arboles ?? 0).toLocaleString('es-CO')} árboles
                   </span>
                 </div>
                 <Bar
                   valor={
                     (tareaActual.total_arboles ?? 0) > 0
-                      ? tareaActual.arboles_completados /
-                        (tareaActual.total_arboles ?? 1)
+                      ? tareaActual.arboles_completados / (tareaActual.total_arboles ?? 1)
                       : 0
                   }
                   estado="aldia"
@@ -202,9 +192,7 @@ export function ListaTareasCliente({
               className="mt-3 flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
             >
               <Plus className="h-[18px] w-[18px] " />
-              {tareaActual.estado === "EN_CURSO"
-                ? "Registrar avance"
-                : "Empezar tarea"}
+              {tareaActual.estado === 'EN_CURSO' ? 'Registrar avance' : 'Empezar tarea'}
             </Link>
           </div>
         </article>
@@ -212,20 +200,13 @@ export function ListaTareasCliente({
 
       {siguientes.length > 0 ? (
         <section>
-          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">
-            Siguientes
-          </h2>
+          <h2 className="mb-2 font-serif text-base text-zelanda-verde-900">Siguientes</h2>
           <div className="flex flex-col gap-2.5">
             {siguientes.map((a) => {
-              const Icono = iconoTarea(
-                a.tipo_tarea_nombre,
-                a.tipo_tarea_area ?? "cultivo",
-              );
-              const destino = a.lote_id
-                ? a.lote_nombre
-                : (a.apiario_nombre ?? "Apiario");
+              const Icono = iconoTarea(a.tipo_tarea_nombre, a.tipo_tarea_area ?? 'cultivo');
+              const destino = a.lote_id ? a.lote_nombre : a.apiario_nombre ?? 'Apiario';
               const detalle = a.lote_id
-                ? `${(a.total_arboles ?? 0).toLocaleString("es-CO")} árboles`
+                ? `${(a.total_arboles ?? 0).toLocaleString('es-CO')} árboles`
                 : `${a.total_colmenas ?? 0} colmenas`;
               return (
                 <Link
@@ -240,9 +221,7 @@ export function ListaTareasCliente({
                     <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
                       {a.tipo_tarea_nombre} · {destino}
                     </p>
-                    <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
-                      {detalle}
-                    </p>
+                    <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">{detalle}</p>
                   </div>
                   <Badge estado="neutro">Programada</Badge>
                   <ChevronRight className="h-4 w-4 shrink-0 text-zelanda-verde-700/40" />
@@ -273,36 +252,36 @@ export function ListaTareasCliente({
                 key={r.id}
                 href="/recordatorios"
                 className={`flex items-center gap-3 rounded-xl border border-l-[3px] border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave transition hover:border-zelanda-verde-300 ${
-                  r.estado === "vencido"
-                    ? "border-l-estado-vencida"
-                    : r.estado === "hoy"
-                      ? "border-l-zelanda-ocre-400"
-                      : "border-l-zelanda-verde-300"
+                  r.estado === 'vencido'
+                    ? 'border-l-estado-vencida'
+                    : r.estado === 'hoy'
+                    ? 'border-l-zelanda-ocre-400'
+                    : 'border-l-zelanda-verde-300'
                 }`}
               >
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${
-                    r.estado === "vencido"
-                      ? "bg-[#fcefec] text-[#7b2a23]"
-                      : r.estado === "hoy"
-                        ? "bg-[#fbf3df] text-zelanda-ocre-700"
-                        : "bg-zelanda-verde-50 text-zelanda-verde-700"
+                    r.estado === 'vencido'
+                      ? 'bg-[#fcefec] text-[#7b2a23]'
+                      : r.estado === 'hoy'
+                      ? 'bg-[#fbf3df] text-zelanda-ocre-700'
+                      : 'bg-zelanda-verde-50 text-zelanda-verde-700'
                   }`}
                 >
                   <Bell className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">
-                    {r.titulo}
-                  </p>
+                  <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">{r.titulo}</p>
                   <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                    {r.estado === "hoy"
-                      ? "Hoy"
-                      : r.estado === "vencido"
-                        ? `Vencido hace ${Math.abs(r.dias)} ${Math.abs(r.dias) === 1 ? "día" : "días"}`
-                        : r.dias === 1
-                          ? "Mañana"
-                          : `En ${r.dias} días`}
+                    {r.estado === 'hoy'
+                      ? 'Hoy'
+                      : r.estado === 'vencido'
+                      ? `Vencido hace ${Math.abs(r.dias)} ${
+                          Math.abs(r.dias) === 1 ? 'día' : 'días'
+                        }`
+                      : r.dias === 1
+                      ? 'Mañana'
+                      : `En ${r.dias} días`}
                   </p>
                 </div>
               </Link>
