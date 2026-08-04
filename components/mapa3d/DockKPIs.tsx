@@ -1,15 +1,9 @@
 'use client';
 
-import { LayoutGrid } from 'lucide-react';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 
-export function DockKPIs({
-  contadores,
-  onAbrirPanel,
-}: {
-  contadores: SnapshotJefe['contadores'];
-  onAbrirPanel: () => void;
-}) {
+/** El acceso al panel vive en el header; acá quedan sólo los números. */
+export function DockKPIs({ contadores }: { contadores: SnapshotJefe['contadores'] }) {
   const celdas = [
     { valor: String(contadores.lotes_aldia), etiqueta: 'Al día', color: 'text-zelanda-verde-700' },
     {
@@ -38,15 +32,6 @@ export function DockKPIs({
           </p>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={onAbrirPanel}
-        aria-label="Abrir panel del jefe"
-        className="flex w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-zelanda-verde-700 text-zelanda-beige-50"
-      >
-        <LayoutGrid className="h-4 w-4" />
-        <span className="text-[9px] font-semibold uppercase tracking-wide">Panel</span>
-      </button>
     </div>
   );
 }

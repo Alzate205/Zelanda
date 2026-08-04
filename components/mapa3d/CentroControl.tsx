@@ -15,6 +15,7 @@ import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
 import { ordenarPorCercania } from '@/lib/ruta-dron';
 import { centroideDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { EVENTO_ABRIR_PANEL } from '@/components/shared/BotonPanel';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
 
@@ -67,6 +68,16 @@ export function CentroControl({
   const [modo, setModo] = useState<ModoMapa>('tareas');
   const [loteId, setLoteId] = useState<string | null>(null);
   const [panelAbierto, setPanelAbierto] = useState(false);
+
+  // El botón del header abre el panel: por evento si ya estamos acá, o con
+  // `?panel=1` cuando venimos navegando desde otra pantalla.
+  useEffect(() => {
+    const abrir = () => setPanelAbierto(true);
+    window.addEventListener(EVENTO_ABRIR_PANEL, abrir);
+    if (new URLSearchParams(window.location.search).get('panel') === '1') abrir();
+    return () => window.removeEventListener(EVENTO_ABRIR_PANEL, abrir);
+  }, []);
+
   const [conWebGL, setConWebGL] = useState<boolean | null>(null);
   const contRef = useRef<HTMLDivElement>(null);
   const [altura, setAltura] = useState<number | null>(null);
@@ -384,7 +395,7 @@ export function CentroControl({
             onCerrar={() => setLoteId(null)}
           />
         ) : (
-          <DockKPIs contadores={snapshot.contadores} onAbrirPanel={() => setPanelAbierto(true)} />
+          <DockKPIs contadores={snapshot.contadores} />
         )}
       </div>
 

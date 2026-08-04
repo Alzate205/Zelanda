@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react';
 import { cerrarSesion } from '@/app/(auth)/login/acciones';
 import { AvatarIniciales } from './AvatarIniciales';
 import { BrandMark } from './BrandMark';
+import { BotonPanel } from './BotonPanel';
 import { ETIQUETA_ROL } from '@/lib/constantes';
 import type { UsuarioActual } from '@/lib/auth';
 
@@ -29,6 +30,7 @@ export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
             </p>
           </div>
         </Link>
+        {usuario.rol === 'JEFE' ? <BotonPanel /> : null}
         <form action={cerrarSesion}>
           <button
             type="submit"
