@@ -1,7 +1,12 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { evaluarReglasAgro, type ReglasAgro } from '@/lib/clima-reglas';
+import {
+  evaluarReglasAgro,
+  evaluarRiesgoHongos,
+  type ReglasAgro,
+  type RiesgoHongos,
+} from '@/lib/clima-reglas';
 
 export type DiaPronostico = {
   fecha: string; // YYYY-MM-DD
@@ -15,8 +20,14 @@ export type DiaPronostico = {
 export type ClimaFinca = {
   dias: DiaPronostico[];
   reglas: ReglasAgro;
+  /** Riesgo de enfermedad fúngica derivado de la lluvia y humedad ya ocurridas. */
+  hongos: RiesgoHongos;
   /** Lluvia real caída en los últimos 7 días (mm), según Open-Meteo. */
   lluvia_7dias_mm: number;
+  /** Lluvia real de las últimas 72 h (mm). Alimenta el riesgo de encharcamiento. */
+  lluvia_72h_mm: number;
+  /** Humedad relativa media de las últimas 48 h (%). */
+  humedad_media_48h: number;
   actualizado: string;
 };
 
@@ -40,13 +51,18 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   const { lat, lng } = await centroideFinca();
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-    `&hourly=precipitation,precipitation_probability` +
+    `&hourly=precipitation,precipitation_probability,relative_humidity_2m` +
     `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max` +
     `&timezone=America%2FBogota&forecast_days=7&past_days=7`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Open-Meteo respondió ${res.status}`);
   const j = (await res.json()) as {
-    hourly: { time: string[]; precipitation: number[]; precipitation_probability: number[] };
+    hourly: {
+      time: string[];
+      precipitation: number[];
+      precipitation_probability: number[];
+      relative_humidity_2m: number[];
+    };
     daily: {
       time: string[];
       temperature_2m_min: number[];
@@ -87,6 +103,21 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   const lluvia6h = j.hourly.precipitation.slice(desde, desde + 6).reduce((a, b) => a + b, 0);
   const prob6h = Math.max(0, ...j.hourly.precipitation_probability.slice(desde, desde + 6));
 
+  // Ventanas hacia atrás: el riesgo de hongos depende del agua que ya cayó,
+  // no del pronóstico. Si no ubicamos "ahora" quedan vacías y no se alerta.
+  const sumar = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  const inicioVentana = (horas: number) => Math.max(0, desde - horas);
+  const lluvia72h = sumar(j.hourly.precipitation.slice(inicioVentana(72), desde));
+  const lluvia48h = sumar(j.hourly.precipitation.slice(inicioVentana(48), desde));
+  const humedad48h = j.hourly.relative_humidity_2m.slice(inicioVentana(48), desde);
+  const humedadMedia48h = humedad48h.length ? sumar(humedad48h) / humedad48h.length : 0;
+
+  const hongos = evaluarRiesgoHongos({
+    lluvia72hMm: lluvia72h,
+    lluvia48hMm: lluvia48h,
+    humedadMedia48hPct: humedadMedia48h,
+  });
+
   const reglas = evaluarReglasAgro({
     lluviaProximas6hMm: lluvia6h,
     probMaxProximas6h: prob6h,
@@ -97,12 +128,15 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   return {
     dias,
     reglas,
+    hongos,
     lluvia_7dias_mm: Math.round(lluvia7dias),
+    lluvia_72h_mm: Math.round(lluvia72h),
+    humedad_media_48h: Math.round(humedadMedia48h),
     actualizado: new Date().toISOString(),
   };
 };
 
-/** Pronóstico cacheado 30 min. Clave versionada: v2 agrega lluvia_7dias_mm. */
-export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v2'], {
+/** Pronóstico cacheado 30 min. Clave versionada: v3 agrega humedad y riesgo de hongos. */
+export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v3'], {
   revalidate: 1800,
 });

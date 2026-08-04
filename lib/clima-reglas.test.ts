@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluarReglasAgro } from './clima-reglas';
+import { evaluarReglasAgro, evaluarRiesgoHongos } from './clima-reglas';
 
 describe('evaluarReglasAgro', () => {
   it('con cielo seco y calmo hay ventana de fumigación', () => {
@@ -40,5 +40,47 @@ describe('evaluarReglasAgro', () => {
       tminProximaNocheC: 1.5,
     });
     expect(r.riesgo_helada).toBe(true);
+  });
+});
+
+describe('evaluarRiesgoHongos', () => {
+  const seco = { lluvia72hMm: 2, lluvia48hMm: 1, humedadMedia48hPct: 60 };
+
+  it('con tiempo seco no hay ningún riesgo', () => {
+    const r = evaluarRiesgoHongos(seco);
+    expect(r.pudricion_raiz).toBe(false);
+    expect(r.antracnosis).toBe(false);
+  });
+
+  it('lluvia acumulada alta encharca y arriesga la raíz', () => {
+    const r = evaluarRiesgoHongos({ ...seco, lluvia72hMm: 55 });
+    expect(r.pudricion_raiz).toBe(true);
+  });
+
+  it('el umbral de encharcamiento es inclusivo', () => {
+    expect(evaluarRiesgoHongos({ ...seco, lluvia72hMm: 40 }).pudricion_raiz).toBe(true);
+    expect(evaluarRiesgoHongos({ ...seco, lluvia72hMm: 39.9 }).pudricion_raiz).toBe(false);
+  });
+
+  it('la antracnosis necesita humedad alta Y lluvia, no una sola', () => {
+    expect(
+      evaluarRiesgoHongos({ ...seco, humedadMedia48hPct: 90, lluvia48hMm: 0 }).antracnosis
+    ).toBe(false);
+    expect(
+      evaluarRiesgoHongos({ ...seco, humedadMedia48hPct: 50, lluvia48hMm: 30 }).antracnosis
+    ).toBe(false);
+    expect(
+      evaluarRiesgoHongos({ ...seco, humedadMedia48hPct: 90, lluvia48hMm: 12 }).antracnosis
+    ).toBe(true);
+  });
+
+  it('un aguacero puntual dispara raíz pero no antracnosis si el aire está seco', () => {
+    const r = evaluarRiesgoHongos({
+      lluvia72hMm: 60,
+      lluvia48hMm: 55,
+      humedadMedia48hPct: 55,
+    });
+    expect(r.pudricion_raiz).toBe(true);
+    expect(r.antracnosis).toBe(false);
   });
 });
