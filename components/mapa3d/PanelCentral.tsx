@@ -23,12 +23,14 @@ import {
   Settings,
   History,
   Download,
+  Stethoscope,
   X,
 } from 'lucide-react';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
 import { ETIQUETA_NOVEDAD } from '@/lib/constantes';
 import { AlertaItem } from '@/components/shared/AlertaItem';
 import { Atajo } from '@/components/shared/Atajo';
+import { BuscadorGlobal } from '@/components/shared/BuscadorGlobal';
 
 function describirActualizacion(ts: number | null): string {
   if (ts === null) return 'Sin sincronizar';
@@ -173,6 +175,13 @@ export function PanelCentral({
         <section>
           <h3 className="mb-2 font-serif text-base text-zelanda-verde-900">Atajos</h3>
           <div className="grid grid-cols-2 gap-2.5">
+            <BuscadorGlobal variante="atajo" />
+            <Atajo
+              href="/jefe/resumen"
+              icono={Stethoscope}
+              titulo="Resumen"
+              sub="Diagnóstico y estado"
+            />
             <Atajo
               href="/jefe/asignaciones/nueva"
               icono={Plus}

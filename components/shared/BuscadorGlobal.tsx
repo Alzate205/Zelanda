@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   Search,
   X,
@@ -10,7 +10,7 @@ import {
   User as UserIcon,
   Wrench,
   FlaskConical,
-} from "lucide-react";
+} from 'lucide-react';
 
 type ResultadoArbol = {
   lote_id: string;
@@ -36,20 +36,22 @@ const VACIO: Respuesta = {
   insumos: [],
 };
 
-export function BuscadorGlobal() {
+/**
+ * `variante` define sólo cómo se ve el disparador: "icono" es la lupa suelta,
+ * "atajo" imita a `Atajo` para convivir con los demás del panel del mapa.
+ */
+export function BuscadorGlobal({ variante = 'icono' }: { variante?: 'icono' | 'atajo' }) {
   const [abierto, setAbierto] = useState(false);
-  const [q, setQ] = useState("");
-  const [estado, setEstado] = useState<"inicial" | "cargando" | "ok" | "error">(
-    "inicial",
-  );
+  const [q, setQ] = useState('');
+  const [estado, setEstado] = useState<'inicial' | 'cargando' | 'ok' | 'error'>('inicial');
   const [data, setData] = useState<Respuesta>(VACIO);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function abrir() {
     setAbierto(true);
-    setQ("");
+    setQ('');
     setData(VACIO);
-    setEstado("inicial");
+    setEstado('inicial');
   }
 
   function cerrar() {
@@ -59,11 +61,11 @@ export function BuscadorGlobal() {
   useEffect(() => {
     if (!abierto) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") cerrar();
+      if (e.key === 'Escape') cerrar();
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener('keydown', onKey);
     setTimeout(() => inputRef.current?.focus(), 50);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [abierto]);
 
   useEffect(() => {
@@ -71,27 +73,26 @@ export function BuscadorGlobal() {
     const query = q.trim();
     if (query.length < 2) {
       setData(VACIO);
-      setEstado("inicial");
+      setEstado('inicial');
       return;
     }
     const controller = new AbortController();
-    setEstado("cargando");
+    setEstado('cargando');
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/jefe/buscar?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal },
-        );
+        const res = await fetch(`/api/jefe/buscar?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
-          setEstado("error");
+          setEstado('error');
           return;
         }
         const json = (await res.json()) as Respuesta;
         setData(json);
-        setEstado("ok");
+        setEstado('ok');
       } catch (e) {
-        if ((e as Error).name === "AbortError") return;
-        setEstado("error");
+        if ((e as Error).name === 'AbortError') return;
+        setEstado('error');
       }
     }, 200);
     return () => {
@@ -110,14 +111,28 @@ export function BuscadorGlobal() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={abrir}
-        aria-label="Buscar"
-        className="flex min-h-touch min-w-touch items-center justify-center rounded-lg p-2 text-zelanda-beige-100 transition hover:bg-white/10"
-      >
-        <Search className="h-5 w-5" />
-      </button>
+      {variante === 'atajo' ? (
+        <button
+          type="button"
+          onClick={abrir}
+          className="flex flex-col gap-2 rounded-xl border border-zelanda-beige-200 bg-white p-3 pb-2.5 text-left text-zelanda-verde-900 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-zelanda-verde-50 text-zelanda-verde-700">
+            <Search className="h-[18px] w-[18px]" />
+          </span>
+          <span className="font-serif text-sm leading-tight">Buscar</span>
+          <span className="text-[11.5px] text-zelanda-verde-700">Árbol, persona, insumo</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={abrir}
+          aria-label="Buscar"
+          className="flex min-h-touch min-w-touch items-center justify-center rounded-lg p-2 text-zelanda-beige-100 transition hover:bg-white/10"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      )}
 
       {abierto ? (
         <div
@@ -148,31 +163,27 @@ export function BuscadorGlobal() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3">
-              {estado === "inicial" ? (
+              {estado === 'inicial' ? (
                 <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">
                   Escribí un nombre, cédula o número (2+ caracteres).
                 </p>
               ) : null}
 
-              {estado === "cargando" ? (
-                <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">
-                  Buscando…
-                </p>
+              {estado === 'cargando' ? (
+                <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">Buscando…</p>
               ) : null}
 
-              {estado === "error" ? (
+              {estado === 'error' ? (
                 <p className="px-2 py-4 text-sm text-estado-vencida">
                   No se pudo buscar, intenta de nuevo.
                 </p>
               ) : null}
 
-              {estado === "ok" && !hayResultados ? (
-                <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">
-                  Sin coincidencias.
-                </p>
+              {estado === 'ok' && !hayResultados ? (
+                <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">Sin coincidencias.</p>
               ) : null}
 
-              {estado === "ok" && hayResultados ? (
+              {estado === 'ok' && hayResultados ? (
                 <div className="space-y-4">
                   {data.arbol ? (
                     <Link
@@ -218,9 +229,7 @@ export function BuscadorGlobal() {
                         >
                           <p className="text-zelanda-verde-900">{p.nombre_completo}</p>
                           {p.cedula ? (
-                            <p className="text-xs text-zelanda-verde-700/70">
-                              CC {p.cedula}
-                            </p>
+                            <p className="text-xs text-zelanda-verde-700/70">CC {p.cedula}</p>
                           ) : null}
                         </Link>
                       ))}
@@ -237,9 +246,7 @@ export function BuscadorGlobal() {
                           className="block rounded-lg px-3 py-2 text-sm transition hover:bg-zelanda-beige-100"
                         >
                           <p className="text-zelanda-verde-900">{h.nombre}</p>
-                          <p className="text-xs text-zelanda-verde-700/70">
-                            {h.categoria}
-                          </p>
+                          <p className="text-xs text-zelanda-verde-700/70">{h.categoria}</p>
                         </Link>
                       ))}
                     </Seccion>
