@@ -24,6 +24,7 @@ import {
   History,
   Download,
   Stethoscope,
+  Sparkles,
   X,
 } from 'lucide-react';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
@@ -175,6 +176,12 @@ export function PanelCentral({
         <section>
           <h3 className="mb-2 font-serif text-base text-zelanda-verde-900">Atajos</h3>
           <div className="grid grid-cols-2 gap-2.5">
+            <Atajo
+              href="/jefe/asistente"
+              icono={Sparkles}
+              titulo="Asistente"
+              sub="Preguntale a la finca"
+            />
             <BuscadorGlobal variante="atajo" />
             <Atajo
               href="/jefe/resumen"
