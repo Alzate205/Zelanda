@@ -1,15 +1,20 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { FormularioEditarLote } from "./FormularioEditarLote";
-import { FormSiembra } from "./_form-siembra";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { FormularioEditarLote } from './FormularioEditarLote';
+import { FormSiembra } from './_form-siembra';
+import { ZonaPeligro } from './_zona-peligro';
 
-export const metadata: Metadata = { title: "Editar lote" };
+export const metadata: Metadata = { title: 'Editar lote' };
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
-  try { return BigInt(raw); } catch { return null; }
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
 }
 
 function formatearISO(d: Date | null): string | null {
@@ -17,12 +22,8 @@ function formatearISO(d: Date | null): string | null {
   return d.toISOString().slice(0, 10);
 }
 
-export default async function PaginaEditarLote({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function PaginaEditarLote({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   const idBig = parsearId(id);
   if (!idBig) notFound();
@@ -54,10 +55,8 @@ export default async function PaginaEditarLote({
           notas: lote.notas,
         }}
       />
-      <FormSiembra
-        loteId={String(lote.id)}
-        fechaLote={formatearISO(lote.fecha_siembra)}
-      />
+      <FormSiembra loteId={String(lote.id)} fechaLote={formatearISO(lote.fecha_siembra)} />
+      <ZonaPeligro loteId={String(lote.id)} nombre={lote.nombre} />
     </div>
   );
 }

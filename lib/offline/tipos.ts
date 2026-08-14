@@ -45,6 +45,8 @@ export type ItemColaAvance = {
   arboles_lista: number[];
   observaciones: string | null;
   estado_apiario: EstadoApiario | null;
+  // Se sube aparte antes de encolar; sin señal queda en null (la foto no se difiere).
+  foto_path: string | null;
   estado: EstadoCola;
   intentos: number;
   ultimo_error: string | null;

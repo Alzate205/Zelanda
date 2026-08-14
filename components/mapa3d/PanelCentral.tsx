@@ -25,6 +25,7 @@ import {
   Download,
   Stethoscope,
   Sparkles,
+  ClipboardCopy,
   X,
 } from 'lucide-react';
 import type { SnapshotJefe, AlertaTareaJefe } from '@/lib/offline/tipos';
@@ -181,6 +182,12 @@ export function PanelCentral({
               icono={Sparkles}
               titulo="Asistente"
               sub="Preguntale a la finca"
+            />
+            <Atajo
+              href="/jefe/informe-ia"
+              icono={ClipboardCopy}
+              titulo="Informe IA"
+              sub="Copiar para Claude"
             />
             <BuscadorGlobal variante="atajo" />
             <Atajo

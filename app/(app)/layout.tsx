@@ -19,7 +19,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       >
         {children}
       </main>
-      <BottomNav rol={usuario.rol} />
+      {/* El trabajador navega solo entre sus tareas: sin nav no hay dónde perderse. */}
+      {usuario.rol === 'TRABAJADOR' ? null : <BottomNav rol={usuario.rol} />}
       <PushPrompt />
       <SyncEngineInit />
       <GuardarRolLocal rol={usuario.rol} />

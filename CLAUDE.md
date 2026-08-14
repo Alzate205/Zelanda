@@ -98,10 +98,12 @@ Hay **4 roles** con interfaces diferenciadas (mismo proyecto, vistas distintas s
 
 ### 4.4 TRABAJADOR
 
-- Ve sus tareas asignadas
-- Ve qué tiene prestado de bodega
-- Registra avance (tramo continuo / árboles sueltos / novedad)
-- Adjunta fotos opcionales
+- Ve sus tareas asignadas (única pantalla; ver Fase 9 en §9)
+- Marca una tarea como terminada, o registra avance parcial
+- Reporta novedades sobre un árbol
+- Adjunta fotos opcionales (requieren señal)
+
+> Desde la Fase 9 el trabajador **no** tiene bottom nav ni perfil. `/trabajador/prestamos` (lo que tiene prestado de bodega), `/trabajador/tareas` y `/trabajador/pendientes` siguen existiendo pero no son alcanzables desde su UI.
 
 > **Sobre apicultura:** Las tareas de apicultura (visita al apiario, cosecha de miel) se asignan a cualquier trabajador disponible. No hay sub-rol "apicultor" — el conocimiento se reparte en el equipo y el despacho de equipo apícola va a quien tenga la asignación.
 
@@ -438,6 +440,43 @@ Smoke de Playwright que encadena **login → asignar tarea → registrar avance*
 
 Ya implementados de esa revisión: registro de aplicaciones insumo→lote (`/jefe/aplicaciones`, spec `docs/superpowers/specs/2026-06-12-aplicaciones-insumos-lote-design.md`), ficha técnica del químico + alerta de carencia (spec `docs/superpowers/specs/2026-06-12-ficha-tecnica-carencia-design.md`: ficha en bodega, banner ámbar al registrar cosecha con push al jefe, línea de carencia en el panel del lote del mapa y advertencia en el wizard de asignación de cosecha), lluvia real de 7 días en el panel de clima, NDVI persistido en Supabase Storage.
 
+### ✅ Fase 9 — Vista de trabajador simplificada (COMPLETADA — 2026-08-14)
+
+Los trabajadores de campo casi no manejan celular, así que su interfaz se redujo a una sola pantalla, estilo tablero de cocina. **BODEGA, ALMACÉN y JEFE quedaron intactos.**
+
+- **`/trabajador` = lista plana de tarjetas grandes** (una por asignación, todas iguales). Se quitaron el saludo, el eyebrow "Mi día", la jerarquía "tarea en curso / siguientes" y los recordatorios. Cada tarjeta muestra tarea, lote y `Llevas X de Y árboles`, y lleva directo a registrar avance.
+- **Sin bottom nav para TRABAJADOR** (`app/(app)/layout.tsx`). `/trabajador/tareas`, `/trabajador/prestamos` y `/trabajador/pendientes` siguen existiendo pero ya no tienen entrada desde la UI.
+- **Header mínimo para TRABAJADOR** (`HeaderApp.tsx`): logo + nombre + cerrar sesión. Sin link a `/mi-perfil`, sin avatar, sin etiqueta de rol.
+- **"Terminé toda la tarea"** — botón grande con confirmación de un toque. Por dentro registra un TRAMO desde `ultimo_arbol_trabajado + 1` hasta `total_arboles`, lo que dispara el auto-COMPLETADA existente. Reusa `enviarAvance`, así que **funciona sin señal**.
+- **Avance parcial en un solo campo**: el trabajador solo escribe "hasta qué árbol llegué"; el "desde" se calcula y se muestra como texto. "Sueltos" y "Notas" quedaron detrás del enlace "Otra forma".
+- **Foto opcional en el avance** — usa la columna `registros_avance.foto_path`, que ya existía sin usarse (no hubo migración). Se sube antes por `POST /api/trabajador/foto-avance` y solo el path viaja en el JSON del avance. **La foto requiere señal**: si falla, aparece un botón "Guardar sin la foto" y el avance se guarda igual (mismo criterio que las novedades, que tampoco difieren fotos).
+- **Escala táctil**: botones de 64-68 px y tipografía más grande en todas las pantallas del trabajador.
+- Se conserva el botón fijo **"Reportar novedad"**.
+
+### ✅ Fase 10 — Informe copiable para la IA (COMPLETADA — 2026-08-14)
+
+`/jefe/informe-ia` ("Preguntarle a la IA") genera el estado completo de la finca en texto markdown, con un botón para copiarlo y pegarlo en una conversación de Claude.
+
+**Por qué existe teniendo `/jefe/asistente`:** el asistente necesita `ANTHROPIC_API_KEY` y cobra por uso. Mientras no haya key configurada, esta pantalla es la vía que funciona con la suscripción de Claude.ai. Las dos conviven: el asistente responde en vivo, el informe se copia y se pega.
+
+- **`lib/ia/informe-finca.ts`** — `redactarInforme(datos)` es **pura** (sin BD ni red) y se testea entera en `informe-finca.test.ts`. Mismo patrón que `validar-sql.ts` y `diagnostico.ts`.
+- **`lib/ia/recolectar-informe.ts`** — la capa de consulta. Reusa `construirSnapshotJefe()`, `obtenerClimaFinca()`, `diagnosticar()`, `faseDelMes()` y `calcularSaldosPeriodo()`, y suma cosecha por lote/año, inventario bajo mínimo y 6 meses de ingresos/costos.
+- **Anonimización en el redactor, no en la consulta.** Los nombres de personas entran a `redactarInforme` y salen como "Trabajador 1, 2, 3…". Vive ahí a propósito: si viviera en la capa de consulta, un cambio en esa capa podría dejar salir nombres sin que ningún test lo notara. Hay un test que lo verifica. Nombres de lotes, clientes y proveedores sí se conservan.
+- **Secciones:** contexto e instrucciones al modelo, alertas, tareas, producción (kg/ha y kg/árbol derivados por lote), sanidad, clima, fenología, inventario, finanzas y preguntas sugeridas.
+- **Es una foto, no un vivo.** La fecha de corte va en el encabezado y el texto se lo advierte al modelo.
+- Enlazado desde `/jefe/resumen` y desde el atajo "Informe IA" del centro de control.
+
+### ✅ Fase 11 — Puesta en marcha con datos reales (COMPLETADA — 2026-08-14)
+
+Lo que faltaba para cargar la finca de verdad, en vez de los datos de prototipo.
+
+- **Creación masiva de árboles por tandas** ✅ — `lib/arboles.ts` (`tandasDePlacas`, puro y testeado) parte el `createMany` en tandas de 1.000. **Medido contra la base real: 2.300 árboles en 2,2 s.** Antes era una sola sentencia con todas las filas.
+- **Gestión de lotes** ✅ — `/jefe/lotes/nuevo` para crear, y borrado con **soft-delete** en `/jefe/lotes/[id]/editar` detrás de dos puertas: abrir el bloque y escribir el nombre del lote. Borrar marca `deleted_at` en el lote y sus árboles; **se niega si el lote tiene tareas abiertas**, porque dejarían al trabajador con una asignación que no lleva a ninguna parte. Antes no existía ninguna forma de crear ni borrar un lote: solo el seed.
+- **Validación compartida** ✅ — `lib/lotes.ts` (`validarDatosLote`, `confirmacionBorradoValida`), pura y testeada. La usan crear y editar, así que el techo de `MAX_ARBOLES_POR_LOTE` (10.000, para atajar un cero de más) aplica en ambos. Acepta coma decimal en hectáreas.
+- **Limpieza de datos de prueba** ✅ — `npm run limpiar:prueba` (simula) / `npm run limpiar:prueba:aplicar` (borra). Vacía lo transaccional y los árboles, resetea `lotes.total_arboles` a 0, y **conserva catálogos, personas y usuarios**. Con `--incluir-catalogos` borra también herramientas, insumos, clientes, proveedores y tarifas. Nunca toca usuarios: borrar el tuyo te deja fuera de la app.
+
+**Orden para cargar la finca real:** limpiar datos de prueba → lotes (crear/renombrar los que hagan falta) → hectáreas y total de árboles en cada lote (los árboles se generan solos) → polígonos con `npm run importar:kml` → apiarios e instalaciones → tipos de tarea y frecuencias → personas y accesos → herramientas e insumos → clientes, proveedores y tarifas.
+
 ---
 
 ## 10. Cómo trabajar con este proyecto
@@ -506,5 +545,5 @@ CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 
 ---
 
-**Versión del documento:** 1.3 · Junio 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI; Fase 8: smoke e2e de flujos críticos)
+**Versión del documento:** 1.6 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA; Fase 11: puesta en marcha con datos reales)
 **Autor:** Samuel Alzate

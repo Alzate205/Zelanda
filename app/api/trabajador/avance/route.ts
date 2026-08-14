@@ -12,7 +12,15 @@ type Body = {
   arboles_lista: number[];
   observaciones: string | null;
   estado_apiario?: 'BIEN' | 'CON_PROBLEMAS' | 'CRITICO' | null;
+  foto_path?: string | null;
 };
+
+// La foto ya se subió a Storage vía /api/trabajador/foto-avance; acá solo llega la ruta.
+function fotoValida(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const p = v.trim();
+  return p.startsWith('avance/') && p.length <= 300 ? p : null;
+}
 
 function esUuid(s: unknown): s is string {
   return (
@@ -64,6 +72,7 @@ export async function POST(req: Request) {
   }
 
   const observaciones = body.observaciones?.trim() || null;
+  const foto_path = fotoValida(body.foto_path);
 
   if (body.tipo_registro === 'VISITA') {
     if (asignacion.apiario_id === null) {
@@ -86,6 +95,7 @@ export async function POST(req: Request) {
           arboles_lista: [],
           observaciones,
           estado_apiario: estadoApiario,
+          foto_path,
         },
       });
       await tx.asignaciones.update({
@@ -196,6 +206,7 @@ export async function POST(req: Request) {
         arboles_lista,
         cantidad_arboles: cantidad,
         observaciones,
+        foto_path,
       },
     });
     await tx.asignaciones.update({

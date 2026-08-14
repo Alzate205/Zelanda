@@ -48,15 +48,16 @@ test.describe.serial('Flujos críticos', () => {
     await login(pageTrab, E2E_TRABAJADOR.email, E2E_TRABAJADOR.password);
     await expect(pageTrab).toHaveURL(/\/trabajador$/);
 
-    await pageTrab.goto('/trabajador/tareas');
+    // La pantalla del trabajador es la lista de tarjetas: se toca la tarea.
     await pageTrab
       .getByRole('link', { name: new RegExp(E2E_TIPO_TAREA) })
       .first()
       .click();
     await expect(pageTrab).toHaveURL(/\/trabajador\/avance\//);
 
-    // Avance TRAMO 1–5 (lote real con miles de árboles → queda EN_CURSO).
-    await pageTrab.locator('#desde').fill('1');
+    // Avance parcial: el "desde" lo calcula la app, sólo se escribe el "hasta".
+    // Lote real con miles de árboles → la asignación queda EN_CURSO.
+    await pageTrab.getByRole('button', { name: /Avancé hasta un árbol/ }).click();
     await pageTrab.locator('#hasta').fill('5');
     await pageTrab.getByRole('button', { name: /Registrar/ }).click();
     await expect(pageTrab).toHaveURL(/\/trabajador\/exito\//);

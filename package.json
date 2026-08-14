@@ -27,6 +27,8 @@
     "verificar:migracion": "node --env-file=.env --env-file=.env.local scripts/verificar-migracion-nucleo.mjs",
     "importar:kml": "node --env-file=.env --env-file=.env.local scripts/importar-kml.mjs",
     "importar:kml:aplicar": "node --env-file=.env --env-file=.env.local scripts/importar-kml.mjs --aplicar",
+    "limpiar:prueba": "node --env-file=.env --env-file=.env.local scripts/limpiar-datos-prueba.mjs",
+    "limpiar:prueba:aplicar": "node --env-file=.env --env-file=.env.local scripts/limpiar-datos-prueba.mjs --aplicar",
     "ci": "npm run lint && npm run test && npm run build",
     "check:types": "tsc --noEmit"
   },

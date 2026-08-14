@@ -56,6 +56,7 @@ function payloadAvance(i: ItemColaAvance) {
     arboles_lista: i.arboles_lista,
     observaciones: i.observaciones,
     estado_apiario: i.estado_apiario,
+    foto_path: i.foto_path ?? null,
   };
 }
 
