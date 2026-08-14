@@ -453,6 +453,19 @@ Los trabajadores de campo casi no manejan celular, así que su interfaz se reduj
 - **Escala táctil**: botones de 64-68 px y tipografía más grande en todas las pantallas del trabajador.
 - Se conserva el botón fijo **"Reportar novedad"**.
 
+### ✅ Fase 10 — Informe copiable para la IA (COMPLETADA — 2026-08-14)
+
+`/jefe/informe-ia` ("Preguntarle a la IA") genera el estado completo de la finca en texto markdown, con un botón para copiarlo y pegarlo en una conversación de Claude.
+
+**Por qué existe teniendo `/jefe/asistente`:** el asistente necesita `ANTHROPIC_API_KEY` y cobra por uso. Mientras no haya key configurada, esta pantalla es la vía que funciona con la suscripción de Claude.ai. Las dos conviven: el asistente responde en vivo, el informe se copia y se pega.
+
+- **`lib/ia/informe-finca.ts`** — `redactarInforme(datos)` es **pura** (sin BD ni red) y se testea entera en `informe-finca.test.ts`. Mismo patrón que `validar-sql.ts` y `diagnostico.ts`.
+- **`lib/ia/recolectar-informe.ts`** — la capa de consulta. Reusa `construirSnapshotJefe()`, `obtenerClimaFinca()`, `diagnosticar()`, `faseDelMes()` y `calcularSaldosPeriodo()`, y suma cosecha por lote/año, inventario bajo mínimo y 6 meses de ingresos/costos.
+- **Anonimización en el redactor, no en la consulta.** Los nombres de personas entran a `redactarInforme` y salen como "Trabajador 1, 2, 3…". Vive ahí a propósito: si viviera en la capa de consulta, un cambio en esa capa podría dejar salir nombres sin que ningún test lo notara. Hay un test que lo verifica. Nombres de lotes, clientes y proveedores sí se conservan.
+- **Secciones:** contexto e instrucciones al modelo, alertas, tareas, producción (kg/ha y kg/árbol derivados por lote), sanidad, clima, fenología, inventario, finanzas y preguntas sugeridas.
+- **Es una foto, no un vivo.** La fecha de corte va en el encabezado y el texto se lo advierte al modelo.
+- Enlazado desde `/jefe/resumen` y desde el atajo "Informe IA" del centro de control.
+
 ---
 
 ## 10. Cómo trabajar con este proyecto
@@ -521,5 +534,5 @@ CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 
 ---
 
-**Versión del documento:** 1.4 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI; Fase 8: smoke e2e de flujos críticos; Fase 9: vista de trabajador simplificada)
+**Versión del documento:** 1.5 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA)
 **Autor:** Samuel Alzate
