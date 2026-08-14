@@ -57,10 +57,12 @@ const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
 
 export function CentroControl({
   nombrePila,
+  saludo,
   snapshotInicial,
   geo,
 }: {
   nombrePila: string;
+  saludo: string;
   snapshotInicial: SnapshotJefe;
   geo: GeoFinca;
 }) {
@@ -300,7 +302,7 @@ export function CentroControl({
         <div className="pointer-events-auto self-start rounded-2xl border border-white/60 bg-zelanda-beige-50/85 px-3.5 py-2 shadow-card backdrop-blur-md">
           <Eyebrow>Centro de control</Eyebrow>
           <p className="m-0 font-serif text-[17px] leading-tight text-zelanda-verde-900">
-            Buen día, {nombrePila}
+            {saludo}, {nombrePila}
           </p>
           <p className="m-0 text-[10.5px] text-zelanda-verde-700">{fechaHoy}</p>
         </div>

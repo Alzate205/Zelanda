@@ -1,5 +1,6 @@
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { saludoPorHora } from '@/lib/fecha';
 import { ListaTareasCliente } from './_lista-tareas-cliente';
 import type { SnapshotTrabajador } from '@/lib/offline/tipos';
 
@@ -106,6 +107,7 @@ export default async function PaginaInicioTrabajador() {
   return (
     <ListaTareasCliente
       nombrePila={nombrePila}
+      saludo={saludoPorHora()}
       snapshotInicial={snapshot}
       recordatorios={recordatorios}
     />
