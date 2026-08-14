@@ -42,7 +42,7 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@prisma/client": "^6.19.3",
     "@sentry/nextjs": "^8.12.0",
-    "@supabase/ssr": "^0.10.3",
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.105.4",
     "idb": "^8.0.3",
     "leaflet": "^1.9.4",
