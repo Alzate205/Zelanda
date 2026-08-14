@@ -1,16 +1,7 @@
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { saludoPorHora } from '@/lib/fecha';
 import { ListaTareasCliente } from './_lista-tareas-cliente';
 import type { SnapshotTrabajador } from '@/lib/offline/tipos';
-
-export type RecordatorioTrabajador = {
-  id: string;
-  titulo: string;
-  fecha: string;
-  estado: 'vencido' | 'hoy' | 'proximo';
-  dias: number;
-};
 
 export const metadata = { title: 'Mis tareas' };
 
@@ -19,7 +10,6 @@ export default async function PaginaInicioTrabajador() {
   const nombrePila = usuario.nombre_completo.split(' ')[0];
 
   let snapshot: SnapshotTrabajador | null = null;
-  let recordatorios: RecordatorioTrabajador[] = [];
   if (usuario.persona_id !== null) {
     const personaId = BigInt(usuario.persona_id);
     const asignaciones = await prisma.asignaciones.findMany({
@@ -44,32 +34,6 @@ export default async function PaginaInicioTrabajador() {
       where: { deleted_at: null, total_arboles: { gt: 0 } },
       select: { id: true, nombre: true, total_arboles: true },
       orderBy: { nombre: 'asc' },
-    });
-
-    const recordsRaw = await prisma.recordatorios.findMany({
-      where: {
-        asignado_a_persona_id: personaId,
-        completado_en: null,
-        fecha: { lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-      },
-      orderBy: { fecha: 'asc' },
-      take: 10,
-      select: { id: true, titulo: true, fecha: true },
-    });
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    recordatorios = recordsRaw.map((r) => {
-      const f = new Date(r.fecha);
-      f.setHours(0, 0, 0, 0);
-      const dias = Math.round((f.getTime() - hoy.getTime()) / 86400000);
-      return {
-        id: String(r.id),
-        titulo: r.titulo,
-        fecha: r.fecha.toISOString(),
-        estado:
-          dias < 0 ? ('vencido' as const) : dias === 0 ? ('hoy' as const) : ('proximo' as const),
-        dias,
-      };
     });
 
     snapshot = {
@@ -104,12 +68,5 @@ export default async function PaginaInicioTrabajador() {
     };
   }
 
-  return (
-    <ListaTareasCliente
-      nombrePila={nombrePila}
-      saludo={saludoPorHora()}
-      snapshotInicial={snapshot}
-      recordatorios={recordatorios}
-    />
-  );
+  return <ListaTareasCliente nombrePila={nombrePila} snapshotInicial={snapshot} />;
 }

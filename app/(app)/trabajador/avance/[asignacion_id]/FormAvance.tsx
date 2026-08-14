@@ -1,22 +1,30 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronLeft, CloudOff } from "lucide-react";
-import { enviarAvance } from "@/lib/offline/api-cliente";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import type { EstadoApiario } from "@/lib/offline/tipos";
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, CloudOff, Check, ListPlus } from 'lucide-react';
+import { enviarAvance } from '@/lib/offline/api-cliente';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { SubirFoto } from '@/components/shared/SubirFoto';
+import type { EstadoApiario } from '@/lib/offline/tipos';
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-2 block min-h-[64px] w-full rounded-xl border-2 border-zelanda-beige-300 bg-white px-4 text-2xl text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+const labelBase = 'block text-base font-semibold text-zelanda-verde-800';
+
+const botonGrande =
+  'flex min-h-[68px] w-full items-center justify-center gap-3 rounded-2xl px-4 text-center text-lg font-semibold transition';
+
+const botonPrimario = `${botonGrande} bg-zelanda-verde-700 text-zelanda-beige-50 hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60 [box-shadow:0_3px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]`;
+
+const botonSecundario = `${botonGrande} border-2 border-zelanda-beige-300 bg-white text-zelanda-verde-800 hover:border-zelanda-verde-300`;
 
 type Asignacion = {
   id: string;
   tipoTarea: string;
-  area: "CULTIVO" | "APICULTURA";
+  area: 'CULTIVO' | 'APICULTURA';
   esCosechaMiel: boolean;
   loteNombre: string | null;
   totalArboles: number | null;
@@ -25,6 +33,9 @@ type Asignacion = {
   apiarioNombre: string | null;
   totalColmenas: number | null;
 };
+
+/** Pasos de la pantalla. En cultivo se arranca siempre en 'inicio'. */
+type Paso = 'inicio' | 'confirmar' | 'tramo' | 'sueltos';
 
 function parsearListaNumeros(raw: string): number[] | null {
   const tokens = raw.split(/[\s,;]+/).filter(Boolean);
@@ -38,48 +49,78 @@ function parsearListaNumeros(raw: string): number[] | null {
   return nums;
 }
 
-const ESTADOS_APIARIO: Array<{
-  value: EstadoApiario;
-  etiqueta: string;
-  color: string;
-}> = [
-  { value: "BIEN", etiqueta: "Bien", color: "bg-estado-aldia text-white border-estado-aldia" },
-  { value: "CON_PROBLEMAS", etiqueta: "Con problemas", color: "bg-estado-proxima text-white border-estado-proxima" },
-  { value: "CRITICO", etiqueta: "Crítico", color: "bg-estado-vencida text-white border-estado-vencida" },
+const ESTADOS_APIARIO: Array<{ value: EstadoApiario; etiqueta: string; color: string }> = [
+  { value: 'BIEN', etiqueta: 'Bien', color: 'bg-estado-aldia text-white border-estado-aldia' },
+  {
+    value: 'CON_PROBLEMAS',
+    etiqueta: 'Con problemas',
+    color: 'bg-estado-proxima text-white border-estado-proxima',
+  },
+  {
+    value: 'CRITICO',
+    etiqueta: 'Crítico',
+    color: 'bg-estado-vencida text-white border-estado-vencida',
+  },
 ];
 
 export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
+  const [fotoFallo, setFotoFallo] = useState(false);
   const [pendiente, startTransition] = useTransition();
-  const esCultivo = asignacion.area === "CULTIVO";
+  const esCultivo = asignacion.area === 'CULTIVO';
   const esCosechaMiel = asignacion.esCosechaMiel;
   const esVisitaApiario = !esCultivo && !esCosechaMiel;
-  const [tipo, setTipo] = useState<"TRAMO" | "SUELTOS">("TRAMO");
+  const [paso, setPaso] = useState<Paso>('inicio');
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
+
+  const total = asignacion.totalArboles ?? 0;
+  // El árbol donde arranca el tramo se calcula solo: el trabajador nunca lo escribe.
+  const desdeAuto = Math.max(1, Math.min(asignacion.ultimoArbolTrabajado + 1, total || 1));
+
+  function irA(p: Paso) {
+    setError(null);
+    setFotoFallo(false);
+    setPaso(p);
+  }
+
+  /** Sube la foto si la hay. Devuelve el path, o `false` si falló el envío. */
+  async function resolverFoto(formData: FormData): Promise<string | null | false> {
+    const foto = formData.get('foto');
+    if (!(foto instanceof File) || foto.size === 0) return null;
+    if (!online) return false;
+    try {
+      const fd = new FormData();
+      fd.append('foto', foto);
+      const res = await fetch('/api/trabajador/foto-avance', { method: 'POST', body: fd });
+      if (!res.ok) return false;
+      const j = (await res.json()) as { path?: string };
+      return j.path ?? false;
+    } catch {
+      return false;
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
+    const sinFoto = submitter?.getAttribute('name') === 'sin_foto';
+    const observaciones = String(formData.get('observaciones') ?? '').trim() || null;
 
     if (esCosechaMiel) {
-      const kg = Number(String(formData.get("kg") ?? "").trim());
+      const kg = Number(String(formData.get('kg') ?? '').trim());
       if (!Number.isFinite(kg) || kg <= 0) {
-        setError("Los kilos cosechados deben ser positivos.");
+        setError('Los kilos cosechados deben ser positivos.');
         return;
       }
       startTransition(async () => {
-        const res = await fetch("/api/trabajador/cosecha-miel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            asignacion_id: asignacion.id,
-            kg,
-            notas: observaciones,
-          }),
+        const res = await fetch('/api/trabajador/cosecha-miel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ asignacion_id: asignacion.id, kg, notas: observaciones }),
         });
         if (!res.ok) {
           const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -91,194 +132,241 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
       return;
     }
 
+    // Datos del avance según el camino elegido.
+    let tipo_registro: 'TRAMO' | 'SUELTOS' | 'VISITA';
+    let arbol_desde: number | null = null;
+    let arbol_hasta: number | null = null;
+    let arboles_lista: number[] = [];
+
     if (esVisitaApiario) {
       if (!estadoApiario) {
-        setError("Indicá el estado general del apiario.");
+        setError('Indica cómo encontraste el apiario.');
         return;
       }
-      startTransition(async () => {
-        const r = await enviarAvance({
-          asignacion_id: asignacion.id,
-          tipo_registro: "VISITA",
-          arbol_desde: null,
-          arbol_hasta: null,
-          arboles_lista: [],
-          observaciones,
-          estado_apiario: estadoApiario,
-        });
-        if (!r.ok) {
-          setError(r.error);
+      tipo_registro = 'VISITA';
+    } else if (paso === 'confirmar') {
+      if (total <= 0) {
+        setError('Este lote todavía no tiene árboles cargados.');
+        return;
+      }
+      tipo_registro = 'TRAMO';
+      arbol_desde = desdeAuto;
+      arbol_hasta = total;
+    } else if (paso === 'tramo') {
+      const h = parseInt(String(formData.get('hasta') ?? ''), 10);
+      if (!Number.isInteger(h) || h < 1) {
+        setError('Escribe el número del árbol donde quedaste.');
+        return;
+      }
+      if (total > 0 && h > total) {
+        setError(`El lote llega hasta el árbol ${total}.`);
+        return;
+      }
+      if (h < desdeAuto) {
+        setError(`Ya llevas hasta el árbol ${asignacion.ultimoArbolTrabajado}. Escribe uno mayor.`);
+        return;
+      }
+      tipo_registro = 'TRAMO';
+      arbol_desde = desdeAuto;
+      arbol_hasta = h;
+    } else {
+      const lista = parsearListaNumeros(String(formData.get('lista') ?? ''));
+      if (!lista || lista.length === 0) {
+        setError('Escribe los números de los árboles separados por coma.');
+        return;
+      }
+      if (total > 0) {
+        const fuera = lista.filter((n) => n > total);
+        if (fuera.length > 0) {
+          setError(`El lote llega hasta el árbol ${total}.`);
           return;
         }
-        router.push(`/trabajador/exito/${asignacion.id}`);
-      });
-      return;
+      }
+      tipo_registro = 'SUELTOS';
+      arboles_lista = lista;
     }
 
-    if (tipo === "TRAMO") {
-      const d = parseInt(String(formData.get("desde") ?? ""), 10);
-      const h = parseInt(String(formData.get("hasta") ?? ""), 10);
-      if (!Number.isInteger(d) || !Number.isInteger(h) || d < 1 || h < 1) {
-        setError("Desde y hasta deben ser enteros positivos.");
-        return;
-      }
-      if (asignacion.totalArboles && (d > asignacion.totalArboles || h > asignacion.totalArboles)) {
-        setError(`Los números deben estar entre 1 y ${asignacion.totalArboles}.`);
-        return;
-      }
-      if (d > h) {
-        setError("Desde no puede ser mayor que Hasta.");
-        return;
-      }
-      startTransition(async () => {
-        const r = await enviarAvance({
-          asignacion_id: asignacion.id,
-          tipo_registro: "TRAMO",
-          arbol_desde: d,
-          arbol_hasta: h,
-          arboles_lista: [],
-          observaciones,
-          estado_apiario: null,
-        });
-        if (!r.ok) {
-          setError(r.error);
+    startTransition(async () => {
+      let foto_path: string | null = null;
+      if (!sinFoto) {
+        const resultadoFoto = await resolverFoto(formData);
+        if (resultadoFoto === false) {
+          setFotoFallo(true);
           return;
         }
-        router.push(`/trabajador/exito/${asignacion.id}`);
+        foto_path = resultadoFoto;
+      }
+
+      const r = await enviarAvance({
+        asignacion_id: asignacion.id,
+        tipo_registro,
+        arbol_desde,
+        arbol_hasta,
+        arboles_lista,
+        observaciones,
+        estado_apiario: esVisitaApiario ? estadoApiario : null,
+        foto_path,
       });
-    } else {
-      const lista = parsearListaNumeros(String(formData.get("lista") ?? ""));
-      if (!lista || lista.length === 0) {
-        setError("Lista de números inválida o vacía.");
+      if (!r.ok) {
+        setError(r.error);
         return;
       }
-      if (asignacion.totalArboles) {
-        const fuera = lista.filter((n) => n > asignacion.totalArboles!);
-        if (fuera.length > 0) {
-          setError(`Algunos números superan el total (${asignacion.totalArboles}).`);
-          return;
-        }
-      }
-      startTransition(async () => {
-        const r = await enviarAvance({
-          asignacion_id: asignacion.id,
-          tipo_registro: "SUELTOS",
-          arbol_desde: null,
-          arbol_hasta: null,
-          arboles_lista: lista,
-          observaciones,
-          estado_apiario: null,
-        });
-        if (!r.ok) {
-          setError(r.error);
-          return;
-        }
-        router.push(`/trabajador/exito/${asignacion.id}`);
-      });
-    }
+      router.push(`/trabajador/exito/${asignacion.id}`);
+    });
   }
 
+  const destino = esCultivo
+    ? `Lote ${asignacion.loteNombre}`
+    : `Apiario ${asignacion.apiarioNombre}`;
+
   return (
-    <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <Link
-        href="/trabajador"
-        className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Mis tareas
-      </Link>
+    <form onSubmit={onSubmit} className="space-y-6 pb-8" noValidate>
+      {paso === 'inicio' ? (
+        <Link
+          href="/trabajador"
+          className="-ml-2 inline-flex min-h-touch items-center gap-1 rounded px-2 py-1 text-base text-zelanda-verde-700 hover:text-zelanda-verde-900"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Mis tareas
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() => irA('inicio')}
+          className="-ml-2 inline-flex min-h-touch items-center gap-1 rounded px-2 py-1 text-base text-zelanda-verde-700 hover:text-zelanda-verde-900"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Atrás
+        </button>
+      )}
 
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          {esCultivo ? `Lote ${asignacion.loteNombre}` : `Apiario ${asignacion.apiarioNombre}`}
-        </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{asignacion.tipoTarea}</h1>
-        {esCultivo && asignacion.totalArboles !== null ? (
-          <p className="mt-1 text-sm text-zelanda-verde-700">
-            Progreso: {asignacion.arbolesCompletados} / {asignacion.totalArboles} árboles
-            {asignacion.ultimoArbolTrabajado > 0 ? (
-              <> · último: árbol {asignacion.ultimoArbolTrabajado}</>
-            ) : null}
+        <p className="text-[11px] uppercase tracking-[0.18em] text-zelanda-verde-700">{destino}</p>
+        <h1 className="mt-1 font-serif text-3xl text-zelanda-verde-900">{asignacion.tipoTarea}</h1>
+        {esCultivo && total > 0 ? (
+          <p className="mt-1.5 text-base text-zelanda-verde-700">
+            Llevas {asignacion.arbolesCompletados.toLocaleString('es-CO')} de{' '}
+            {total.toLocaleString('es-CO')} árboles
           </p>
         ) : null}
       </header>
 
       {esCultivo ? (
         <>
-          <div className="grid grid-flow-col auto-cols-fr gap-0 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 p-[3px]">
-            <button
-              type="button"
-              onClick={() => setTipo("TRAMO")}
-              className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                tipo === "TRAMO"
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
-              }`}
-            >
-              Tramo
-            </button>
-            <button
-              type="button"
-              onClick={() => setTipo("SUELTOS")}
-              className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
-                tipo === "SUELTOS"
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700 hover:text-zelanda-verde-900"
-              }`}
-            >
-              Sueltos
-            </button>
-          </div>
+          {paso === 'inicio' ? (
+            <div className="space-y-4">
+              <button type="button" onClick={() => irA('confirmar')} className={botonPrimario}>
+                <Check className="h-7 w-7" />
+                Terminé toda la tarea
+              </button>
 
-          <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-            {tipo === "TRAMO" ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="desde" className={labelBase}>Desde árbol</label>
-                  <input id="desde" name="desde" type="number" inputMode="numeric" pattern="[0-9]*" min="1" required className={inputBase} />
-                </div>
-                <div>
-                  <label htmlFor="hasta" className={labelBase}>Hasta árbol</label>
-                  <input id="hasta" name="hasta" type="number" inputMode="numeric" pattern="[0-9]*" min="1" required className={inputBase} />
-                </div>
+              <p className="text-center text-sm text-zelanda-verde-700">¿No la terminaste?</p>
+
+              <button type="button" onClick={() => irA('tramo')} className={botonSecundario}>
+                Avancé hasta un árbol
+              </button>
+
+              <button
+                type="button"
+                onClick={() => irA('sueltos')}
+                className="mx-auto flex min-h-touch items-center gap-2 text-sm text-zelanda-verde-700 underline underline-offset-4 hover:text-zelanda-verde-900"
+              >
+                <ListPlus className="h-4 w-4" />
+                Otra forma: árboles sueltos
+              </button>
+            </div>
+          ) : null}
+
+          {paso === 'confirmar' ? (
+            <section className="space-y-5 rounded-2xl border-2 border-zelanda-verde-300 bg-white p-5 shadow-card">
+              <p className="text-center font-serif text-2xl text-zelanda-verde-900">
+                ¿Terminaste toda la tarea?
+              </p>
+              <p className="text-center text-base text-zelanda-verde-700">
+                Se va a guardar como terminada y desaparece de tus tareas.
+              </p>
+              <SubirFoto name="foto" />
+              <button type="submit" disabled={pendiente} className={botonPrimario}>
+                <Check className="h-7 w-7" />
+                {pendiente ? 'Guardando…' : 'Sí, terminé'}
+              </button>
+              <button type="button" onClick={() => irA('inicio')} className={botonSecundario}>
+                No, todavía no
+              </button>
+            </section>
+          ) : null}
+
+          {paso === 'tramo' ? (
+            <section className="space-y-5 rounded-2xl border-2 border-zelanda-beige-200 bg-white p-5 shadow-card">
+              <p className="text-base text-zelanda-verde-700">
+                Vas desde el árbol{' '}
+                <strong className="font-serif text-xl text-zelanda-verde-900">{desdeAuto}</strong>
+              </p>
+              <div>
+                <label htmlFor="hasta" className={labelBase}>
+                  ¿Hasta qué árbol llegaste?
+                </label>
+                <input
+                  id="hasta"
+                  name="hasta"
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={desdeAuto}
+                  required
+                  className={inputBase}
+                />
               </div>
-            ) : (
+              <SubirFoto name="foto" />
+              <button type="submit" disabled={pendiente} className={botonPrimario}>
+                {pendiente ? 'Guardando…' : 'Registrar'}
+              </button>
+            </section>
+          ) : null}
+
+          {paso === 'sueltos' ? (
+            <section className="space-y-5 rounded-2xl border-2 border-zelanda-beige-200 bg-white p-5 shadow-card">
               <div>
                 <label htmlFor="lista" className={labelBase}>
-                  Números de árboles (separados por coma o espacio)
+                  Números de los árboles
                 </label>
                 <textarea
                   id="lista"
                   name="lista"
                   rows={3}
                   required
-                  placeholder="12, 45, 67, 89"
-                  className={`${inputBase} min-h-[80px] resize-y`}
+                  placeholder="12, 45, 67"
+                  className={`${inputBase} min-h-[100px] resize-y`}
                 />
               </div>
-            )}
-
-            <div>
-              <label htmlFor="observaciones" className={labelBase}>Notas (opcional)</label>
-              <textarea
-                id="observaciones"
-                name="observaciones"
-                rows={2}
-                className={`${inputBase} min-h-[60px] resize-y`}
-              />
-            </div>
-          </section>
+              <div>
+                <label htmlFor="observaciones" className={labelBase}>
+                  Notas (opcional)
+                </label>
+                <textarea
+                  id="observaciones"
+                  name="observaciones"
+                  rows={2}
+                  className={`${inputBase} min-h-[80px] resize-y text-base`}
+                />
+              </div>
+              <SubirFoto name="foto" />
+              <button type="submit" disabled={pendiente} className={botonPrimario}>
+                {pendiente ? 'Guardando…' : 'Registrar'}
+              </button>
+            </section>
+          ) : null}
         </>
       ) : esCosechaMiel ? (
-        <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <section className="space-y-5 rounded-2xl border-2 border-zelanda-beige-200 bg-white p-5 shadow-card">
           {asignacion.totalColmenas !== null ? (
-            <p className="text-sm text-zelanda-verde-700">
+            <p className="text-base text-zelanda-verde-700">
               {asignacion.totalColmenas} colmenas en el apiario.
             </p>
           ) : null}
           <div>
             <label htmlFor="kg" className={labelBase}>
-              Kg de miel cosechados
+              ¿Cuántos kilos de miel sacaste?
             </label>
             <input
               id="kg"
@@ -299,33 +387,36 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
               id="observaciones"
               name="observaciones"
               rows={3}
-              className={`${inputBase} min-h-[80px] resize-y`}
+              className={`${inputBase} min-h-[80px] resize-y text-base`}
             />
           </div>
-          <p className="text-xs text-zelanda-verde-700">
-            Al registrar, la asignación queda completada.
+          <button type="submit" disabled={pendiente || !online} className={botonPrimario}>
+            {pendiente ? 'Guardando…' : 'Registrar'}
+          </button>
+          <p className="text-center text-sm text-zelanda-verde-700">
+            Al registrar, la tarea queda terminada.
           </p>
         </section>
       ) : (
-        <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <section className="space-y-5 rounded-2xl border-2 border-zelanda-beige-200 bg-white p-5 shadow-card">
           {asignacion.totalColmenas !== null ? (
-            <p className="text-sm text-zelanda-verde-700">
+            <p className="text-base text-zelanda-verde-700">
               {asignacion.totalColmenas} colmenas en el apiario.
             </p>
           ) : null}
 
           <div>
-            <p className={labelBase}>Estado general del apiario</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <p className={labelBase}>¿Cómo encontraste el apiario?</p>
+            <div className="mt-2 grid gap-3">
               {ESTADOS_APIARIO.map((e) => (
                 <button
                   key={e.value}
                   type="button"
                   onClick={() => setEstadoApiario(e.value)}
-                  className={`min-h-touch rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  className={`min-h-[64px] rounded-xl border-2 px-4 text-lg font-semibold transition ${
                     estadoApiario === e.value
                       ? e.color
-                      : "border-zelanda-beige-300 bg-white text-zelanda-verde-800"
+                      : 'border-zelanda-beige-300 bg-white text-zelanda-verde-800'
                   }`}
                 >
                   {e.etiqueta}
@@ -336,59 +427,62 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
 
           <div>
             <label htmlFor="observaciones" className={labelBase}>
-              Observaciones (qué se hizo, hallazgos)
+              Notas (opcional)
             </label>
             <textarea
               id="observaciones"
               name="observaciones"
-              rows={4}
-              className={`${inputBase} min-h-[100px] resize-y`}
+              rows={3}
+              className={`${inputBase} min-h-[80px] resize-y text-base`}
             />
           </div>
-          <p className="text-xs text-zelanda-verde-700">
-            Al registrar, la asignación queda completada.
-          </p>
+          <SubirFoto name="foto" />
+          <button type="submit" disabled={pendiente} className={botonPrimario}>
+            <Check className="h-7 w-7" />
+            {pendiente ? 'Guardando…' : 'Terminé la visita'}
+          </button>
         </section>
       )}
 
-      {!online && !esCosechaMiel ? (
-        <p className="flex items-center gap-2 rounded-md border border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-2 text-xs text-zelanda-ocre-700">
-          <CloudOff className="h-3.5 w-3.5" />
-          Sin señal — el avance se guardará y subirá al volver la conexión.
+      {!online && !esCosechaMiel && paso !== 'inicio' ? (
+        <p className="flex items-center gap-2 rounded-xl border-2 border-zelanda-ocre-300 bg-zelanda-ocre-50 px-3 py-3 text-sm text-zelanda-ocre-700">
+          <CloudOff className="h-5 w-5 shrink-0" />
+          Sin señal. Lo que registres se guarda y sube solo cuando vuelva la señal.
         </p>
       ) : null}
 
       {!online && esCosechaMiel ? (
-        <p className="flex items-center gap-2 rounded-md border border-estado-vencida/40 bg-estado-vencida/10 px-3 py-2 text-xs text-estado-vencida">
-          <CloudOff className="h-3.5 w-3.5" />
-          Sin señal — la cosecha de miel requiere conexión, conectate antes de registrar.
+        <p className="flex items-center gap-2 rounded-xl border-2 border-estado-vencida/40 bg-estado-vencida/10 px-3 py-3 text-sm text-estado-vencida">
+          <CloudOff className="h-5 w-5 shrink-0" />
+          Sin señal. La cosecha de miel necesita señal para registrarse.
         </p>
+      ) : null}
+
+      {fotoFallo ? (
+        <div className="space-y-3 rounded-xl border-2 border-zelanda-ocre-300 bg-zelanda-ocre-50 p-4">
+          <p role="alert" className="text-sm text-zelanda-ocre-700">
+            No se pudo subir la foto. Intenta otra vez, o guarda el trabajo sin la foto.
+          </p>
+          <button
+            type="submit"
+            name="sin_foto"
+            value="1"
+            disabled={pendiente}
+            className={botonSecundario}
+          >
+            Guardar sin la foto
+          </button>
+        </div>
       ) : null}
 
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+          className="rounded-xl border-2 border-estado-vencida/20 bg-estado-vencida/10 px-3 py-3 text-base text-estado-vencida"
         >
           {error}
         </p>
       ) : null}
-
-      <div className="flex gap-2">
-        <Link
-          href="/trabajador"
-          className="flex min-h-touch flex-1 items-center justify-center rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
-        >
-          Cancelar
-        </Link>
-        <button
-          type="submit"
-          disabled={pendiente || (esCosechaMiel && !online)}
-          className="flex min-h-touch flex-[1.4] items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:cursor-not-allowed disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
-        >
-          {pendiente ? "Registrando…" : "Registrar"}
-        </button>
-      </div>
     </form>
   );
 }
