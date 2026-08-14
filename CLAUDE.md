@@ -466,6 +466,17 @@ Los trabajadores de campo casi no manejan celular, así que su interfaz se reduj
 - **Es una foto, no un vivo.** La fecha de corte va en el encabezado y el texto se lo advierte al modelo.
 - Enlazado desde `/jefe/resumen` y desde el atajo "Informe IA" del centro de control.
 
+### ✅ Fase 11 — Puesta en marcha con datos reales (COMPLETADA — 2026-08-14)
+
+Lo que faltaba para cargar la finca de verdad, en vez de los datos de prototipo.
+
+- **Creación masiva de árboles por tandas** ✅ — `lib/arboles.ts` (`tandasDePlacas`, puro y testeado) parte el `createMany` en tandas de 1.000. **Medido contra la base real: 2.300 árboles en 2,2 s.** Antes era una sola sentencia con todas las filas.
+- **Gestión de lotes** ✅ — `/jefe/lotes/nuevo` para crear, y borrado con **soft-delete** en `/jefe/lotes/[id]/editar` detrás de dos puertas: abrir el bloque y escribir el nombre del lote. Borrar marca `deleted_at` en el lote y sus árboles; **se niega si el lote tiene tareas abiertas**, porque dejarían al trabajador con una asignación que no lleva a ninguna parte. Antes no existía ninguna forma de crear ni borrar un lote: solo el seed.
+- **Validación compartida** ✅ — `lib/lotes.ts` (`validarDatosLote`, `confirmacionBorradoValida`), pura y testeada. La usan crear y editar, así que el techo de `MAX_ARBOLES_POR_LOTE` (10.000, para atajar un cero de más) aplica en ambos. Acepta coma decimal en hectáreas.
+- **Limpieza de datos de prueba** ✅ — `npm run limpiar:prueba` (simula) / `npm run limpiar:prueba:aplicar` (borra). Vacía lo transaccional y los árboles, resetea `lotes.total_arboles` a 0, y **conserva catálogos, personas y usuarios**. Con `--incluir-catalogos` borra también herramientas, insumos, clientes, proveedores y tarifas. Nunca toca usuarios: borrar el tuyo te deja fuera de la app.
+
+**Orden para cargar la finca real:** limpiar datos de prueba → lotes (crear/renombrar los que hagan falta) → hectáreas y total de árboles en cada lote (los árboles se generan solos) → polígonos con `npm run importar:kml` → apiarios e instalaciones → tipos de tarea y frecuencias → personas y accesos → herramientas e insumos → clientes, proveedores y tarifas.
+
 ---
 
 ## 10. Cómo trabajar con este proyecto
@@ -534,5 +545,5 @@ CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 
 ---
 
-**Versión del documento:** 1.5 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa: centro de control 3D, clima, predicción y NDVI; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA)
+**Versión del documento:** 1.6 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA; Fase 11: puesta en marcha con datos reales)
 **Autor:** Samuel Alzate

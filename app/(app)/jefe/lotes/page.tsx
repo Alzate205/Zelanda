@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Hexagon, Map as MapIcon } from 'lucide-react';
+import { Hexagon, Map as MapIcon, Plus } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { obtenerGeoFinca } from '@/lib/geo-finca';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -28,12 +28,21 @@ export default async function PaginaLotes() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <Eyebrow>Cultivo y apicultura</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Lotes y apiarios</h1>
-        <p className="mt-0.5 text-sm text-zelanda-verde-700">
-          {lotesParaMapa.length} lotes · {apiariosParaMapa.length} apiarios
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <Eyebrow>Cultivo y apicultura</Eyebrow>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Lotes y apiarios</h1>
+          <p className="mt-0.5 text-sm text-zelanda-verde-700">
+            {lotesParaMapa.length} lotes · {apiariosParaMapa.length} apiarios
+          </p>
+        </div>
+        <Link
+          href="/jefe/lotes/nuevo"
+          className="flex min-h-touch shrink-0 items-center gap-1.5 rounded-xl bg-zelanda-verde-700 px-3.5 text-sm font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900)]"
+        >
+          <Plus className="h-4 w-4" />
+          Nuevo lote
+        </Link>
       </header>
 
       {totalPendiente > 0 && (
