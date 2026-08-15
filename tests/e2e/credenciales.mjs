@@ -15,5 +15,9 @@ export const E2E_TRABAJADOR = {
   nombre: 'E2E Trabajador Test',
 };
 
-export const E2E_LOTE = 'Armenia'; // lote real existente, solo lectura
+// Lote propio del test: se crea en el seed y se borra en el teardown. Antes se
+// usaba un lote real en solo lectura, pero registrar avance exige que el lote
+// tenga árboles, y sembrarlos en un lote real ensucia los datos de la finca.
+export const E2E_LOTE = 'E2E Lote Test';
+export const E2E_LOTE_ARBOLES = 50;
 export const E2E_TIPO_TAREA = 'Riego'; // tipo de tarea CULTIVO existente

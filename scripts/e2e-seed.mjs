@@ -5,7 +5,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { PrismaClient } from '@prisma/client';
-import { E2E_JEFE, E2E_TRABAJADOR } from '../tests/e2e/credenciales.mjs';
+import {
+  E2E_JEFE,
+  E2E_TRABAJADOR,
+  E2E_LOTE,
+  E2E_LOTE_ARBOLES,
+} from '../tests/e2e/credenciales.mjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -81,6 +86,48 @@ async function asegurarVinculacionActiva(personaId, tipo, rolFinca, extra = {}) 
   }
 }
 
+/**
+ * Lote propio del test, con árboles sembrados.
+ *
+ * Registrar avance exige que el lote tenga árboles (`/api/trabajador/avance`
+ * responde 409 "Lote sin árboles cargados" si no), así que el flujo crítico no
+ * se puede probar sobre un lote vacío. Se usa un lote propio en vez de sembrar
+ * en uno real para no mezclar datos de test con los de la finca.
+ */
+async function asegurarLoteTest() {
+  let lote = await prisma.lotes.findFirst({ where: { nombre: E2E_LOTE } });
+  if (!lote) {
+    lote = await prisma.lotes.create({
+      data: {
+        nombre: E2E_LOTE,
+        hectareas: 1,
+        total_arboles: E2E_LOTE_ARBOLES,
+        notas: 'Lote de pruebas e2e. Se borra en el teardown.',
+      },
+    });
+  } else if (lote.deleted_at) {
+    // Quedó soft-borrado por una corrida interrumpida: se revive.
+    lote = await prisma.lotes.update({
+      where: { id: lote.id },
+      data: { deleted_at: null, total_arboles: E2E_LOTE_ARBOLES },
+    });
+  }
+
+  const cuantos = await prisma.arboles.count({
+    where: { lote_id: lote.id, deleted_at: null },
+  });
+  if (cuantos < E2E_LOTE_ARBOLES) {
+    await prisma.arboles.createMany({
+      data: Array.from({ length: E2E_LOTE_ARBOLES - cuantos }, (_, i) => ({
+        lote_id: lote.id,
+        numero_placa: cuantos + i + 1,
+      })),
+      skipDuplicates: true,
+    });
+  }
+  return lote;
+}
+
 async function asegurarUsuario(authId, email, nombre, rol, personaId) {
   const data = { email, nombre_completo: nombre, rol, persona_id: personaId, activo: true };
   const existente = await prisma.usuarios.findUnique({ where: { id: authId } });
@@ -120,7 +167,15 @@ try {
   await prisma.registros_avance.deleteMany({ where: { persona_id: trabPersona.id } });
   await prisma.asignaciones.deleteMany({ where: { persona_id: trabPersona.id } });
 
-  console.log('✓ Seed e2e listo. jefe:', jefeAuthId, '· trabajador:', trabAuthId);
+  await asegurarLoteTest();
+
+  console.log(
+    '✓ Seed e2e listo. jefe:',
+    jefeAuthId,
+    '· trabajador:',
+    trabAuthId,
+    `· lote "${E2E_LOTE}" (${E2E_LOTE_ARBOLES} árboles)`
+  );
 } catch (e) {
   console.error('✗ Seed e2e falló:', e?.message ?? String(e));
   process.exitCode = 1;

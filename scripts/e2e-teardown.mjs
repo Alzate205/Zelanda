@@ -6,7 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { PrismaClient } from '@prisma/client';
-import { E2E_JEFE, E2E_TRABAJADOR } from '../tests/e2e/credenciales.mjs';
+import { E2E_JEFE, E2E_TRABAJADOR, E2E_LOTE } from '../tests/e2e/credenciales.mjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -58,7 +58,42 @@ try {
     await prisma.personas.deleteMany({ where: { id: { in: personaIds } } });
   }
 
-  console.log('✓ Teardown e2e listo. personas borradas:', personaIds.length);
+  // Lote de test: borrado real, no soft-delete. No debe quedar rondando en la
+  // lista de lotes de la finca. Hijos primero: novedades → árboles → lote.
+  const loteTest = await prisma.lotes.findFirst({
+    where: { nombre: E2E_LOTE },
+    select: { id: true },
+  });
+  let arbolesBorrados = 0;
+  if (loteTest) {
+    const arboles = await prisma.arboles.findMany({
+      where: { lote_id: loteTest.id },
+      select: { id: true },
+    });
+    const arbolIds = arboles.map((a) => a.id);
+    if (arbolIds.length > 0) {
+      await prisma.novedades.deleteMany({ where: { arbol_id: { in: arbolIds } } });
+    }
+    // Puede haber avances de otra persona si una corrida quedó a medias.
+    const asigs = await prisma.asignaciones.findMany({
+      where: { lote_id: loteTest.id },
+      select: { id: true },
+    });
+    if (asigs.length > 0) {
+      const asigIds = asigs.map((a) => a.id);
+      await prisma.registros_avance.deleteMany({ where: { asignacion_id: { in: asigIds } } });
+      await prisma.despachos.deleteMany({ where: { asignacion_id: { in: asigIds } } });
+    }
+    await prisma.asignaciones.deleteMany({ where: { lote_id: loteTest.id } });
+    arbolesBorrados = (await prisma.arboles.deleteMany({ where: { lote_id: loteTest.id } })).count;
+    await prisma.lotes.delete({ where: { id: loteTest.id } });
+  }
+
+  console.log(
+    '✓ Teardown e2e listo. personas borradas:',
+    personaIds.length,
+    loteTest ? `· lote de test y ${arbolesBorrados} árboles borrados` : '· sin lote de test'
+  );
 } catch (e) {
   console.error('✗ Teardown e2e falló:', e?.message ?? String(e));
   process.exitCode = 1;
