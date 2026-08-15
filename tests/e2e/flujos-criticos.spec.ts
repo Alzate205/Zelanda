@@ -1,6 +1,24 @@
 import { test, expect, type Page } from '@playwright/test';
 import { E2E_JEFE, E2E_TRABAJADOR, E2E_LOTE, E2E_TIPO_TAREA } from './credenciales.mjs';
 
+/**
+ * En dev, Next compila la ruta al vuelo y el centro de control dispara su
+ * propia navegación al montar: un `goto` puede abortarse. Se reintenta.
+ */
+async function irA(page: Page, ruta: string) {
+  let ultimo: unknown;
+  for (let i = 0; i < 4; i++) {
+    try {
+      await page.goto(ruta, { waitUntil: 'domcontentloaded' });
+      return;
+    } catch (e) {
+      ultimo = e;
+      await page.waitForTimeout(2000);
+    }
+  }
+  throw ultimo;
+}
+
 async function login(page: Page, email: string, password: string) {
   await page.goto('/login');
   await page.locator('#identificador').fill(email);
@@ -12,7 +30,7 @@ test.describe.serial('Flujos críticos', () => {
   test('login → asignar tarea → registrar avance', async ({ browser }) => {
     // El flujo encadena varios server actions/redirects en frío (login,
     // crear asignación, registrar avance), así que damos margen al test entero.
-    test.setTimeout(120_000);
+    test.setTimeout(300_000);
 
     // ── Paso 1: login jefe ───────────────────────────────────────────────
     const ctxJefe = await browser.newContext();
@@ -21,7 +39,7 @@ test.describe.serial('Flujos críticos', () => {
     await expect(pageJefe).toHaveURL(/\/jefe$/);
 
     // ── Paso 2: asignar tarea (wizard de 4 pasos) ────────────────────────
-    await pageJefe.goto('/jefe/asignaciones/nueva');
+    await irA(pageJefe, '/jefe/asignaciones/nueva');
 
     // Paso 1 wizard: buscar el lote y seleccionarlo (el buscador oculta los
     // "sugeridos", así que sólo queda una fila que matchea el nombre).

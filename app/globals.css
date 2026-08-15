@@ -49,6 +49,36 @@ nav {
   user-select: none;
 }
 
+/*
+ * Campos de fecha y hora en celular.
+ *
+ * En iOS y Android el control nativo trae un ancho intrínseco propio (el texto
+ * de la fecha más el indicador del calendario) que puede ser mayor que la
+ * columna donde vive. Como los items de grid nacen con `min-width: auto`, el
+ * campo no puede encogerse y empuja la rejilla fuera de la pantalla. En los
+ * formularios de pagos y jornales la fecha comparte una rejilla de dos
+ * columnas, que es donde menos margen hay.
+ *
+ * `min-width: 0` le permite encogerse; `appearance: none` quita el tamaño
+ * intrínseco que impone el control nativo de iOS. El selector nativo se sigue
+ * abriendo al tocarlo: esto solo afecta cómo se dibuja el campo, no su
+ * comportamiento.
+ */
+input[type='date'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='time'] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Sin esto, Safari centra el texto verticalmente de forma distinta al resto. */
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 @layer utilities {
   /* Respeta el home-indicator / gesture bar en celulares (notch inferior) */
   .safe-bottom {
