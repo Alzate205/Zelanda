@@ -1,24 +1,15 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import { crearClienteSupabaseAdmin } from "@/lib/supabase/admin";
-import { sanitizarError } from "@/lib/errores";
-import type {
-  RolUsuario,
-  TipoVinculacion,
-  TipoPeriodoPago,
-  EsquemaPagoDestajo,
-} from "@/types";
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import { crearClienteSupabaseAdmin } from '@/lib/supabase/admin';
+import { sanitizarError } from '@/lib/errores';
+import { validarUsername, validarClave, emailDesdeUsername } from '@/lib/acceso';
+import type { RolUsuario, TipoVinculacion, TipoPeriodoPago, EsquemaPagoDestajo } from '@/types';
 
-const ESQUEMAS_DESTAJO_VALIDOS = [
-  "NUNCA",
-  "ADICIONAL",
-  "REEMPLAZA_DIA",
-  "SOLO_DESTAJO",
-] as const;
+const ESQUEMAS_DESTAJO_VALIDOS = ['NUNCA', 'ADICIONAL', 'REEMPLAZA_DIA', 'SOLO_DESTAJO'] as const;
 
 function parsearEsquemaDestajo(v: string): EsquemaPagoDestajo | null {
   if (!v) return null;
@@ -35,64 +26,64 @@ export type EstadoFormulario = {
 const ESTADO_INICIAL: EstadoFormulario = { error: null, exito: null };
 
 function esRolValido(v: string): v is RolUsuario {
-  return v === "JEFE" || v === "BODEGA" || v === "ALMACEN" || v === "TRABAJADOR";
+  return v === 'JEFE' || v === 'BODEGA' || v === 'ALMACEN' || v === 'TRABAJADOR';
 }
 
 function esTipoVinculacionValido(v: string): v is TipoVinculacion {
-  return v === "FIJO" || v === "JORNALERO" || v === "CONTRATISTA" || v === "FAMILIAR";
+  return v === 'FIJO' || v === 'JORNALERO' || v === 'CONTRATISTA' || v === 'FAMILIAR';
 }
 
 function esPeriodoPagoValido(v: string): v is TipoPeriodoPago {
-  return v === "MENSUAL" || v === "QUINCENAL" || v === "SEMANAL";
+  return v === 'MENSUAL' || v === 'QUINCENAL' || v === 'SEMANAL';
 }
 
 export async function crearMiembro(
   _prev: EstadoFormulario,
-  formData: FormData,
+  formData: FormData
 ): Promise<EstadoFormulario> {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   // --- Datos persona ---
-  const nombre_completo = String(formData.get("nombre_completo") ?? "").trim();
-  const cedula = String(formData.get("cedula") ?? "").trim() || null;
-  const telefono = String(formData.get("telefono") ?? "").trim() || null;
-  const notas = String(formData.get("notas") ?? "").trim() || null;
+  const nombre_completo = String(formData.get('nombre_completo') ?? '').trim();
+  const cedula = String(formData.get('cedula') ?? '').trim() || null;
+  const telefono = String(formData.get('telefono') ?? '').trim() || null;
+  const notas = String(formData.get('notas') ?? '').trim() || null;
 
-  const fechaNacRaw = String(formData.get("fecha_nacimiento") ?? "").trim();
+  const fechaNacRaw = String(formData.get('fecha_nacimiento') ?? '').trim();
   let fecha_nacimiento: Date | null = null;
   if (fechaNacRaw) {
     const d = new Date(fechaNacRaw);
     if (Number.isNaN(d.getTime())) {
-      return { ...ESTADO_INICIAL, error: "Fecha de nacimiento inválida." };
+      return { ...ESTADO_INICIAL, error: 'Fecha de nacimiento inválida.' };
     }
     const hoy = new Date();
     hoy.setHours(23, 59, 59, 999);
     if (d > hoy) {
-      return { ...ESTADO_INICIAL, error: "La fecha de nacimiento no puede ser futura." };
+      return { ...ESTADO_INICIAL, error: 'La fecha de nacimiento no puede ser futura.' };
     }
     fecha_nacimiento = d;
   }
 
   // --- Datos vinculación ---
-  const tipoVinculacionRaw = String(formData.get("tipo_vinculacion") ?? "");
-  const rol_finca = String(formData.get("rol_finca") ?? "").trim();
-  const salarioRaw = String(formData.get("salario_base") ?? "").trim();
-  const periodoPagoRaw = String(formData.get("periodo_pago") ?? "");
-  const tarifaJornalRaw = String(formData.get("tarifa_jornal") ?? "").trim();
-  const esquemaDestajoRaw = String(formData.get("esquema_pago_destajo") ?? "");
+  const tipoVinculacionRaw = String(formData.get('tipo_vinculacion') ?? '');
+  const rol_finca = String(formData.get('rol_finca') ?? '').trim();
+  const salarioRaw = String(formData.get('salario_base') ?? '').trim();
+  const periodoPagoRaw = String(formData.get('periodo_pago') ?? '');
+  const tarifaJornalRaw = String(formData.get('tarifa_jornal') ?? '').trim();
+  const esquemaDestajoRaw = String(formData.get('esquema_pago_destajo') ?? '');
 
   // --- Acceso ---
-  const crear_acceso = formData.get("crear_acceso") === "on";
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const rolAppRaw = String(formData.get("rol_app") ?? "");
+  const crear_acceso = formData.get('crear_acceso') === 'on';
+  const usernameRaw = String(formData.get('username') ?? '');
+  const password = String(formData.get('password') ?? '');
+  const rolAppRaw = String(formData.get('rol_app') ?? '');
 
   // --- Validaciones persona ---
   if (!nombre_completo) {
-    return { ...ESTADO_INICIAL, error: "El nombre completo es obligatorio." };
+    return { ...ESTADO_INICIAL, error: 'El nombre completo es obligatorio.' };
   }
   if (!esTipoVinculacionValido(tipoVinculacionRaw)) {
-    return { ...ESTADO_INICIAL, error: "Selecciona un tipo de vinculación válido." };
+    return { ...ESTADO_INICIAL, error: 'Selecciona un tipo de vinculación válido.' };
   }
   const tipo = tipoVinculacionRaw;
 
@@ -101,43 +92,57 @@ export async function crearMiembro(
   let periodo_pago: TipoPeriodoPago | null = null;
   let tarifa_jornal: number | null = null;
 
-  if (tipo === "FIJO") {
+  if (tipo === 'FIJO') {
     if (!salarioRaw) {
-      return { ...ESTADO_INICIAL, error: "Salario base obligatorio para tipo FIJO." };
+      return { ...ESTADO_INICIAL, error: 'Salario base obligatorio para tipo FIJO.' };
     }
-    const s = Number(salarioRaw.replace(/\./g, ""));
+    const s = Number(salarioRaw.replace(/\./g, ''));
     if (!Number.isFinite(s) || s <= 0) {
-      return { ...ESTADO_INICIAL, error: "Salario base debe ser un número positivo." };
+      return { ...ESTADO_INICIAL, error: 'Salario base debe ser un número positivo.' };
     }
     salario_base = s;
     if (!esPeriodoPagoValido(periodoPagoRaw)) {
-      return { ...ESTADO_INICIAL, error: "Selecciona un período de pago válido para tipo FIJO." };
+      return { ...ESTADO_INICIAL, error: 'Selecciona un período de pago válido para tipo FIJO.' };
     }
     periodo_pago = periodoPagoRaw;
-  } else if (tipo === "JORNALERO") {
+  } else if (tipo === 'JORNALERO') {
     if (!tarifaJornalRaw) {
-      return { ...ESTADO_INICIAL, error: "Tarifa por jornal obligatoria para tipo JORNALERO." };
+      return { ...ESTADO_INICIAL, error: 'Tarifa por jornal obligatoria para tipo JORNALERO.' };
     }
-    const t = Number(tarifaJornalRaw.replace(/\./g, ""));
+    const t = Number(tarifaJornalRaw.replace(/\./g, ''));
     if (!Number.isFinite(t) || t <= 0) {
-      return { ...ESTADO_INICIAL, error: "Tarifa por jornal debe ser un número positivo." };
+      return { ...ESTADO_INICIAL, error: 'Tarifa por jornal debe ser un número positivo.' };
     }
     tarifa_jornal = t;
   }
 
   // --- Validaciones acceso ---
+  // Mismo criterio que /jefe/equipo/[id]/acceso: nombre de usuario y clave
+  // corta. El correo que exige Supabase se arma solo y no se muestra.
   let rol_app: RolUsuario | null = null;
+  let username = '';
+  let email = '';
   if (crear_acceso) {
-    if (!email || !email.includes("@")) {
-      return { ...ESTADO_INICIAL, error: "Email inválido para crear acceso." };
-    }
-    if (!password || password.length < 8) {
-      return { ...ESTADO_INICIAL, error: "La contraseña debe tener al menos 8 caracteres." };
-    }
+    const vUser = validarUsername(usernameRaw);
+    if (!vUser.ok) return { ...ESTADO_INICIAL, error: vUser.error };
+    username = vUser.username;
+    email = emailDesdeUsername(username);
+
+    const vClave = validarClave(password);
+    if (!vClave.ok) return { ...ESTADO_INICIAL, error: vClave.error };
+
     if (!esRolValido(rolAppRaw)) {
-      return { ...ESTADO_INICIAL, error: "Selecciona un rol válido para el acceso." };
+      return { ...ESTADO_INICIAL, error: 'Selecciona un rol válido para el acceso.' };
     }
     rol_app = rolAppRaw;
+
+    const repetido = await prisma.usuarios.findFirst({
+      where: { username },
+      select: { id: true },
+    });
+    if (repetido) {
+      return { ...ESTADO_INICIAL, error: `Ya hay alguien con el usuario "${username}".` };
+    }
   }
 
   // --- 1. Crear persona (id manual, BIGINT sin autoincrement post-migración)
@@ -166,20 +171,23 @@ export async function crearMiembro(
       personaId = p.id;
       break;
     } catch (e) {
-      const msg = (e as Error)?.message ?? "Error desconocido";
+      const msg = (e as Error)?.message ?? 'Error desconocido';
       if (/unique constraint.*cedula/i.test(msg)) {
-        return { ...ESTADO_INICIAL, error: "Ya existe una persona con esa cédula." };
+        return { ...ESTADO_INICIAL, error: 'Ya existe una persona con esa cédula.' };
       }
-      if (/unique constraint.*pkey|unique constraint.*"personas_pkey"/i.test(msg) && intentos < MAX_INTENTOS) {
+      if (
+        /unique constraint.*pkey|unique constraint.*"personas_pkey"/i.test(msg) &&
+        intentos < MAX_INTENTOS
+      ) {
         continue;
       }
-      return { ...ESTADO_INICIAL, error: sanitizarError(e, "jefe/equipo/crear-persona") };
+      return { ...ESTADO_INICIAL, error: sanitizarError(e, 'jefe/equipo/crear-persona') };
     }
   }
 
   const esquema_pago_destajo =
-    tipo === "FIJO" || tipo === "JORNALERO"
-      ? (parsearEsquemaDestajo(esquemaDestajoRaw) ?? "NUNCA")
+    tipo === 'FIJO' || tipo === 'JORNALERO'
+      ? parsearEsquemaDestajo(esquemaDestajoRaw) ?? 'NUNCA'
       : null;
 
   // --- 2. Crear vinculación ---
@@ -200,14 +208,14 @@ export async function crearMiembro(
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     return {
       ...ESTADO_INICIAL,
-      error: sanitizarError(e, "jefe/equipo/crear-vinculacion"),
+      error: sanitizarError(e, 'jefe/equipo/crear-vinculacion'),
     };
   }
 
   // --- 3. Acceso al sistema (opcional) ---
   if (!crear_acceso) {
-    revalidatePath("/jefe/equipo");
-    redirect("/jefe/equipo");
+    revalidatePath('/jefe/equipo');
+    redirect('/jefe/equipo');
   }
 
   const supabaseAdmin = crearClienteSupabaseAdmin();
@@ -222,12 +230,15 @@ export async function crearMiembro(
     // Rollback: vinculación + persona
     await prisma.vinculaciones.deleteMany({ where: { persona_id: personaId } }).catch(() => {});
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
-    const yaRegistrado = /already registered|already exists/i.test(authError?.message ?? "");
+    const yaRegistrado = /already registered|already exists/i.test(authError?.message ?? '');
     if (yaRegistrado) {
-      return { ...ESTADO_INICIAL, error: "Ese correo ya está registrado en el sistema." };
+      return { ...ESTADO_INICIAL, error: `Ya hay alguien con el usuario "${username}".` };
     }
-    console.error("[jefe/equipo/auth-create]", authError?.message);
-    return { ...ESTADO_INICIAL, error: "Ocurrió un error inesperado al crear el acceso. Intentá de nuevo." };
+    console.error('[jefe/equipo/auth-create]', authError?.message);
+    return {
+      ...ESTADO_INICIAL,
+      error: 'Ocurrió un error inesperado al crear el acceso. Intentá de nuevo.',
+    };
   }
 
   try {
@@ -235,6 +246,8 @@ export async function crearMiembro(
       data: {
         id: authData.user.id,
         email,
+        // La columna que consulta el login para resolver el correo interno.
+        username,
         nombre_completo,
         rol: rol_app!,
         persona_id: personaId,
@@ -248,19 +261,19 @@ export async function crearMiembro(
     await prisma.personas.delete({ where: { id: personaId } }).catch(() => {});
     return {
       ...ESTADO_INICIAL,
-      error: sanitizarError(e, "jefe/equipo/enlazar-acceso"),
+      error: sanitizarError(e, 'jefe/equipo/enlazar-acceso'),
     };
   }
 
-  revalidatePath("/jefe/equipo");
-  redirect("/jefe/equipo");
+  revalidatePath('/jefe/equipo');
+  redirect('/jefe/equipo');
 }
 
 export async function cambiarEstadoMiembro(formData: FormData) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
-  const idRaw = String(formData.get("id") ?? "");
-  const activar = formData.get("activar") === "true";
+  const idRaw = String(formData.get('id') ?? '');
+  const activar = formData.get('activar') === 'true';
 
   if (!/^\d+$/.test(idRaw)) return;
   const id = BigInt(idRaw);
@@ -275,5 +288,5 @@ export async function cambiarEstadoMiembro(formData: FormData) {
     data: { activo: activar },
   });
 
-  revalidatePath("/jefe/equipo");
+  revalidatePath('/jefe/equipo');
 }

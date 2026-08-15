@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import type { TipoPeriodoPago } from '@prisma/client';
 import { crearMiembro, type EstadoFormulario } from '../acciones';
 import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+import { MIN_CLAVE, sugerirUsername } from '@/lib/acceso';
 
 interface Props {
   jornalTarifaDefault: number | null;
@@ -39,6 +40,8 @@ export function FormularioNuevoMiembro({
     'FIJO' | 'JORNALERO' | 'CONTRATISTA' | 'FAMILIAR'
   >('FIJO');
   const [crearAcceso, setCrearAcceso] = useState(true);
+  const [username, setUsername] = useState('');
+  const [usuarioEditado, setUsuarioEditado] = useState(false);
   const [salarioBase, setSalarioBase] = useState(
     fijoSalarioDefault != null ? fijoSalarioDefault.toString() : ''
   );
@@ -77,6 +80,11 @@ export function FormularioNuevoMiembro({
             type="text"
             autoComplete="name"
             required
+            onChange={(e) => {
+              // Propone el usuario mientras se escribe el nombre, hasta que el
+              // jefe lo edite a mano: ahí manda lo que él puso.
+              if (!usuarioEditado) setUsername(sugerirUsername(e.target.value));
+            }}
             className={inputBase}
           />
         </div>
@@ -295,34 +303,45 @@ export function FormularioNuevoMiembro({
         {crearAcceso ? (
           <div className="space-y-4 border-t border-zelanda-beige-200 pt-4">
             <div>
-              <label htmlFor="email" className={labelBase}>
-                Correo <span className="text-estado-vencida">*</span>
+              <label htmlFor="username" className={labelBase}>
+                Nombre de usuario <span className="text-estado-vencida">*</span>
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setUsuarioEditado(true);
+                }}
                 required={crearAcceso}
                 className={inputBase}
               />
+              <p className="mt-1.5 text-xs text-zelanda-verde-700">
+                Con esto entra a la app. No hace falta correo.
+              </p>
             </div>
 
             <div>
               <label htmlFor="password" className={labelBase}>
-                Contraseña <span className="text-estado-vencida">*</span>
+                Clave <span className="text-estado-vencida">*</span>
               </label>
               <input
                 id="password"
                 name="password"
-                type="password"
-                autoComplete="new-password"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
                 required={crearAcceso}
-                minLength={8}
+                minLength={MIN_CLAVE}
                 className={inputBase}
               />
               <p className="mt-1.5 text-xs text-zelanda-verde-700">
-                Mínimo 8 caracteres. Compártela por canal seguro.
+                Mínimo {MIN_CLAVE} caracteres: pueden ser 4 números, como 1234.
               </p>
             </div>
 
