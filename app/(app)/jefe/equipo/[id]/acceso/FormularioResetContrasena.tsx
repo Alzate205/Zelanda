@@ -1,23 +1,18 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import { resetearContrasenaUsuario, type EstadoAcceso } from "./acciones";
+import { useActionState } from 'react';
+import { resetearContrasenaUsuario, type EstadoAcceso } from './acciones';
+import { MIN_CLAVE } from '@/lib/acceso';
 
 const ESTADO_INICIAL: EstadoAcceso = { error: null, exito: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
+const labelBase =
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-export function FormularioResetContrasena({
-  usuarioId,
-}: {
-  usuarioId: string;
-}) {
-  const [estado, accion, pendiente] = useActionState(
-    resetearContrasenaUsuario,
-    ESTADO_INICIAL,
-  );
+export function FormularioResetContrasena({ usuarioId }: { usuarioId: string }) {
+  const [estado, accion, pendiente] = useActionState(resetearContrasenaUsuario, ESTADO_INICIAL);
 
   return (
     <form action={accion} className="space-y-3" noValidate>
@@ -25,17 +20,21 @@ export function FormularioResetContrasena({
 
       <div>
         <label htmlFor="contrasena_nueva" className={labelBase}>
-          Nueva contraseña
+          Clave nueva
         </label>
         <input
           id="contrasena_nueva"
           name="contrasena_nueva"
-          type="password"
-          autoComplete="new-password"
-          minLength={8}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          minLength={MIN_CLAVE}
           required
           className={inputBase}
         />
+        <p className="mt-1.5 text-xs text-zelanda-verde-700">
+          Mínimo {MIN_CLAVE} caracteres: pueden ser 4 números.
+        </p>
       </div>
 
       <div>
@@ -45,9 +44,10 @@ export function FormularioResetContrasena({
         <input
           id="contrasena_confirmacion"
           name="contrasena_confirmacion"
-          type="password"
-          autoComplete="new-password"
-          minLength={8}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          minLength={MIN_CLAVE}
           required
           className={inputBase}
         />
@@ -75,7 +75,7 @@ export function FormularioResetContrasena({
         disabled={pendiente}
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 text-sm font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pendiente ? "Reseteando…" : "Resetear contraseña"}
+        {pendiente ? 'Reseteando…' : 'Resetear contraseña'}
       </button>
     </form>
   );

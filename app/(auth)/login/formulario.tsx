@@ -48,7 +48,7 @@ export function FormularioLogin({ redirigir }: { redirigir?: string }) {
             name="password"
             type={mostrarPassword ? 'text' : 'password'}
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder="••••"
             required
             className="h-12 w-full rounded-xl border border-zelanda-beige-300 bg-white px-4 pr-12 text-[15px] placeholder:text-zelanda-verde-700/40 outline-none transition-all focus:border-zelanda-verde-400 focus:outline focus:outline-2 focus:outline-zelanda-verde-400/20"
           />
