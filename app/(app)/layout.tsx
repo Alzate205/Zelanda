@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { requerirUsuario } from '@/lib/auth';
 import { HeaderApp } from '@/components/shared/HeaderApp';
+import { DiagnosticoDesborde } from '@/components/shared/DiagnosticoDesborde';
 import { BottomNav } from '@/components/shared/BottomNav';
 import { PushPrompt } from '@/components/shared/PushPrompt';
 import { SyncEngineInit } from '@/components/shared/SyncEngineInit';
@@ -26,6 +28,10 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <GuardarRolLocal rol={usuario.rol} />
       <BannerOffline />
       <InstalarPWABanner />
+      {/* Temporal: panel de diagnóstico, se activa con ?diag=1 en la URL. */}
+      <Suspense fallback={null}>
+        <DiagnosticoDesborde />
+      </Suspense>
     </div>
   );
 }
