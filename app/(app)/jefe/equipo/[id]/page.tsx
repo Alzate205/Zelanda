@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   ChevronLeft,
   Pencil,
@@ -11,14 +11,14 @@ import {
   Sprout,
   AlertCircle,
   CheckCircle2,
-} from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AvatarIniciales } from "@/components/shared/AvatarIniciales";
-import { BadgeRol, BadgeBase } from "@/components/shared/BadgeRol";
-import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
-import { formatearFechaCorta } from "@/lib/utils";
-import type { RolUsuario, TipoVinculacion } from "@/types";
+} from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
+import { BadgeRol, BadgeBase } from '@/components/shared/BadgeRol';
+import { ETIQUETA_TIPO_VINCULACION } from '@/lib/constantes';
+import { formatearFechaCorta } from '@/lib/utils';
+import type { RolUsuario, TipoVinculacion } from '@/types';
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -36,20 +36,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const idBig = parsearId(id);
-  if (!idBig) return { title: "Miembro no encontrado" };
+  if (!idBig) return { title: 'Miembro no encontrado' };
   const persona = await prisma.personas.findUnique({
     where: { id: idBig },
     select: { nombre_completo: true },
   });
-  return { title: persona?.nombre_completo ?? "Miembro no encontrado" };
+  return { title: persona?.nombre_completo ?? 'Miembro no encontrado' };
 }
 
-export default async function DetalleMiembro({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function DetalleMiembro({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   const idBig = parsearId(id);
   if (!idBig) notFound();
@@ -70,8 +66,8 @@ export default async function DetalleMiembro({
     prisma.personas.findUnique({
       where: { id: idBig },
       include: {
-        usuarios: { select: { id: true, email: true, rol: true, activo: true } },
-        vinculaciones: { orderBy: { fecha_inicio: "desc" } },
+        usuarios: { select: { id: true, email: true, username: true, rol: true, activo: true } },
+        vinculaciones: { orderBy: { fecha_inicio: 'desc' } },
       },
     }),
     prisma.cosechas.aggregate({
@@ -85,7 +81,7 @@ export default async function DetalleMiembro({
     prisma.registros_avance.aggregate({
       where: {
         persona_id: idBig,
-        tipo_registro: { in: ["TRAMO", "SUELTOS"] },
+        tipo_registro: { in: ['TRAMO', 'SUELTOS'] },
         fecha_registro: { gte: hace30dias },
       },
       _sum: { cantidad_arboles: true },
@@ -93,7 +89,7 @@ export default async function DetalleMiembro({
     prisma.registros_avance.aggregate({
       where: {
         persona_id: idBig,
-        tipo_registro: { in: ["TRAMO", "SUELTOS"] },
+        tipo_registro: { in: ['TRAMO', 'SUELTOS'] },
       },
       _sum: { cantidad_arboles: true },
     }),
@@ -106,12 +102,12 @@ export default async function DetalleMiembro({
     prisma.asignaciones.count({
       where: {
         persona_id: idBig,
-        estado: "COMPLETADA",
+        estado: 'COMPLETADA',
         fecha_completada: { gte: hace30dias },
       },
     }),
     prisma.asignaciones.count({
-      where: { persona_id: idBig, estado: "COMPLETADA" },
+      where: { persona_id: idBig, estado: 'COMPLETADA' },
     }),
   ]);
 
@@ -127,12 +123,10 @@ export default async function DetalleMiembro({
   const arb30d = arboles30d._sum.cantidad_arboles ?? 0;
   const arbTotal = arbolesTotal._sum.cantidad_arboles ?? 0;
 
-  const hayActividad =
-    kgTotal > 0 || arbTotal > 0 || novedadesTotal > 0 || tareasTotal > 0;
+  const hayActividad = kgTotal > 0 || arbTotal > 0 || novedadesTotal > 0 || tareasTotal > 0;
 
-  const fmtKg = (n: number) =>
-    n.toLocaleString("es-CO", { maximumFractionDigits: 2 });
-  const fmtN = (n: number) => n.toLocaleString("es-CO");
+  const fmtKg = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 });
+  const fmtN = (n: number) => n.toLocaleString('es-CO');
 
   return (
     <div className="space-y-5">
@@ -146,11 +140,7 @@ export default async function DetalleMiembro({
 
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 text-center shadow-card">
         <div className="flex justify-center">
-          <AvatarIniciales
-            id={idStr}
-            nombre={persona.nombre_completo}
-            tamano="lg"
-          />
+          <AvatarIniciales id={idStr} nombre={persona.nombre_completo} tamano="lg" />
         </div>
         <h1 className="mt-2.5 font-serif text-[22px] text-zelanda-verde-900">
           {persona.nombre_completo}
@@ -159,15 +149,13 @@ export default async function DetalleMiembro({
           {vincActiva ? (
             <BadgeBase tono="info">
               {ETIQUETA_TIPO_VINCULACION[vincActiva.tipo as TipoVinculacion]}
-              {vincActiva.rol_finca ? ` · ${vincActiva.rol_finca}` : ""}
+              {vincActiva.rol_finca ? ` · ${vincActiva.rol_finca}` : ''}
             </BadgeBase>
           ) : (
             <BadgeBase tono="alerta">Sin vinculación</BadgeBase>
           )}
           {usuario ? <BadgeRol rol={usuario.rol as RolUsuario} /> : null}
-          {!persona.activo ? (
-            <BadgeBase tono="alerta">Inactivo</BadgeBase>
-          ) : null}
+          {!persona.activo ? <BadgeBase tono="alerta">Inactivo</BadgeBase> : null}
         </div>
         <div className="mt-4 flex justify-center">
           <Link
@@ -182,25 +170,29 @@ export default async function DetalleMiembro({
 
       {/* Datos personales */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Datos personales
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Datos personales</h2>
         <dl className="mt-3 space-y-3 text-sm">
           <div className="flex items-center gap-3">
             <IdCard className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Cédula</dt>
-            <dd className="text-zelanda-verde-900">{persona.cedula ?? "—"}</dd>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+              Cédula
+            </dt>
+            <dd className="text-zelanda-verde-900">{persona.cedula ?? '—'}</dd>
           </div>
           <div className="flex items-center gap-3">
             <Phone className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Teléfono</dt>
-            <dd className="text-zelanda-verde-900">{persona.telefono ?? "—"}</dd>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+              Teléfono
+            </dt>
+            <dd className="text-zelanda-verde-900">{persona.telefono ?? '—'}</dd>
           </div>
           <div className="flex items-center gap-3">
             <Calendar className="h-4 w-4 shrink-0 text-zelanda-verde-700/60" />
-            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Nacimiento</dt>
+            <dt className="w-20 text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+              Nacimiento
+            </dt>
             <dd className="text-zelanda-verde-900">
-              {persona.fecha_nacimiento ? formatearFechaCorta(persona.fecha_nacimiento) : "—"}
+              {persona.fecha_nacimiento ? formatearFechaCorta(persona.fecha_nacimiento) : '—'}
             </dd>
           </div>
         </dl>
@@ -213,23 +205,27 @@ export default async function DetalleMiembro({
 
       {/* Vinculación activa */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Vinculación activa
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Vinculación activa</h2>
         {vincActiva ? (
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Tipo</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                Tipo
+              </dt>
               <dd className="mt-0.5 font-medium text-zelanda-verde-900">
                 {ETIQUETA_TIPO_VINCULACION[vincActiva.tipo as TipoVinculacion]}
               </dd>
             </div>
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Rol en la finca</dt>
-              <dd className="mt-0.5 text-zelanda-verde-900">{vincActiva.rol_finca ?? "—"}</dd>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                Rol en la finca
+              </dt>
+              <dd className="mt-0.5 text-zelanda-verde-900">{vincActiva.rol_finca ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Desde</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                Desde
+              </dt>
               <dd className="mt-0.5 text-zelanda-verde-900">
                 {formatearFechaCorta(vincActiva.fecha_inicio)}
               </dd>
@@ -240,7 +236,7 @@ export default async function DetalleMiembro({
                   Salario base ({vincActiva.periodo_pago?.toLowerCase()})
                 </dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">
-                  $ {Number(vincActiva.salario_base).toLocaleString("es-CO")}
+                  $ {Number(vincActiva.salario_base).toLocaleString('es-CO')}
                 </dd>
               </div>
             ) : null}
@@ -250,26 +246,20 @@ export default async function DetalleMiembro({
                   Tarifa por jornal
                 </dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">
-                  $ {Number(vincActiva.tarifa_jornal).toLocaleString("es-CO")}
+                  $ {Number(vincActiva.tarifa_jornal).toLocaleString('es-CO')}
                 </dd>
               </div>
             ) : null}
           </dl>
         ) : (
-          <p className="mt-2 text-sm text-zelanda-verde-700">
-            Sin vinculación activa.
-          </p>
+          <p className="mt-2 text-sm text-zelanda-verde-700">Sin vinculación activa.</p>
         )}
       </section>
 
       {/* Productividad */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Productividad
-        </h2>
-        <p className="mt-1 text-xs text-zelanda-verde-700">
-          Últimos 30 días · acumulado total.
-        </p>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Productividad</h2>
+        <p className="mt-1 text-xs text-zelanda-verde-700">Últimos 30 días · acumulado total.</p>
 
         {hayActividad ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -278,52 +268,32 @@ export default async function DetalleMiembro({
                 <TrendingUp className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-wider">Cosecha</p>
               </div>
-              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
-                {fmtKg(kg30d)} kg
-              </p>
-              <p className="text-xs text-zelanda-verde-700/70">
-                {fmtKg(kgTotal)} kg total
-              </p>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">{fmtKg(kg30d)} kg</p>
+              <p className="text-xs text-zelanda-verde-700/70">{fmtKg(kgTotal)} kg total</p>
             </div>
             <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
               <div className="flex items-center gap-1.5 text-zelanda-verde-700">
                 <Sprout className="h-4 w-4" />
-                <p className="text-xs uppercase tracking-wider">
-                  Árboles atendidos
-                </p>
+                <p className="text-xs uppercase tracking-wider">Árboles atendidos</p>
               </div>
-              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
-                {fmtN(arb30d)}
-              </p>
-              <p className="text-xs text-zelanda-verde-700/70">
-                {fmtN(arbTotal)} total
-              </p>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">{fmtN(arb30d)}</p>
+              <p className="text-xs text-zelanda-verde-700/70">{fmtN(arbTotal)} total</p>
             </div>
             <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
               <div className="flex items-center gap-1.5 text-zelanda-verde-700">
                 <AlertCircle className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-wider">Novedades</p>
               </div>
-              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
-                {fmtN(novedades30d)}
-              </p>
-              <p className="text-xs text-zelanda-verde-700/70">
-                {fmtN(novedadesTotal)} total
-              </p>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">{fmtN(novedades30d)}</p>
+              <p className="text-xs text-zelanda-verde-700/70">{fmtN(novedadesTotal)} total</p>
             </div>
             <div className="rounded-lg border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
               <div className="flex items-center gap-1.5 text-zelanda-verde-700">
                 <CheckCircle2 className="h-4 w-4" />
-                <p className="text-xs uppercase tracking-wider">
-                  Tareas completadas
-                </p>
+                <p className="text-xs uppercase tracking-wider">Tareas completadas</p>
               </div>
-              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">
-                {fmtN(tareas30d)}
-              </p>
-              <p className="text-xs text-zelanda-verde-700/70">
-                {fmtN(tareasTotal)} total
-              </p>
+              <p className="mt-1 font-serif text-xl text-zelanda-verde-900">{fmtN(tareas30d)}</p>
+              <p className="text-xs text-zelanda-verde-700/70">{fmtN(tareasTotal)} total</p>
             </div>
           </div>
         ) : (
@@ -341,16 +311,14 @@ export default async function DetalleMiembro({
           </h2>
           <ul className="mt-3 space-y-3">
             {historial.map((v) => (
-              <li
-                key={String(v.id)}
-                className="border-l-2 border-zelanda-beige-300 pl-3"
-              >
+              <li key={String(v.id)} className="border-l-2 border-zelanda-beige-300 pl-3">
                 <p className="text-sm font-medium text-zelanda-verde-900">
                   {ETIQUETA_TIPO_VINCULACION[v.tipo as TipoVinculacion]}
-                  {v.rol_finca ? ` · ${v.rol_finca}` : ""}
+                  {v.rol_finca ? ` · ${v.rol_finca}` : ''}
                 </p>
                 <p className="text-xs text-zelanda-verde-700">
-                  {formatearFechaCorta(v.fecha_inicio)} → {v.fecha_fin ? formatearFechaCorta(v.fecha_fin) : "activo"}
+                  {formatearFechaCorta(v.fecha_inicio)} →{' '}
+                  {v.fecha_fin ? formatearFechaCorta(v.fecha_fin) : 'activo'}
                 </p>
               </li>
             ))}
@@ -361,24 +329,26 @@ export default async function DetalleMiembro({
       {/* Acceso */}
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-serif text-base text-zelanda-verde-900">
-            Acceso al sistema
-          </h2>
+          <h2 className="font-serif text-base text-zelanda-verde-900">Acceso al sistema</h2>
           <Link
             href={`/jefe/equipo/${idStr}/acceso`}
             className="inline-flex min-h-touch items-center rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-xs font-medium text-zelanda-verde-800 transition hover:bg-zelanda-beige-100"
           >
-            {usuario ? "Gestionar" : "Dar acceso"}
+            {usuario ? 'Gestionar' : 'Dar acceso'}
           </Link>
         </div>
         {usuario ? (
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Correo</dt>
-              <dd className="mt-0.5 text-zelanda-verde-900">{usuario.email}</dd>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                Entra con
+              </dt>
+              <dd className="mt-0.5 text-zelanda-verde-900">{usuario.username ?? usuario.email}</dd>
             </div>
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">Rol</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
+                Rol
+              </dt>
               <dd className="mt-0.5 text-zelanda-verde-900">{usuario.rol}</dd>
             </div>
           </dl>
