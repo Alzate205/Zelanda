@@ -25,5 +25,8 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    // El arranque en frío compila MapLibre, Prisma y el resto: 60 s (el valor
+    // por defecto) no alcanza cuando la caché de Next está vacía.
+    timeout: 180_000,
   },
 });

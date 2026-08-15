@@ -477,6 +477,18 @@ Lo que faltaba para cargar la finca de verdad, en vez de los datos de prototipo.
 
 **Orden para cargar la finca real:** limpiar datos de prueba → lotes (crear/renombrar los que hagan falta) → hectáreas y total de árboles en cada lote (los árboles se generan solos) → polígonos con `npm run importar:kml` → apiarios e instalaciones → tipos de tarea y frecuencias → personas y accesos → herramientas e insumos → clientes, proveedores y tarifas.
 
+### ✅ Fase 12 — Acceso con nombre de usuario y clave corta (COMPLETADA — 2026-08-15)
+
+En la finca casi nadie tiene correo, y una clave larga termina escrita en un papel pegado a la pared.
+
+- **El acceso se crea con nombre de usuario**, no con correo. El email que exige Supabase se arma solo (`usuario@zelanda.local`) y no se muestra en ninguna pantalla. Se sugiere desde el primer nombre de la persona y es editable.
+- **Clave mínima de 4 caracteres** (antes 8), al crear y al resetear, para que pueda ser un PIN numérico. El campo abre el teclado numérico y se ve mientras se escribe, para poder dictarla.
+- **`lib/acceso.ts`** — validación pura y testeada: normaliza tildes y mayúsculas, convierte "Juan Carlos" en `juan.carlos`, y rechaza correos y caracteres que romperían el email interno.
+- **Bug arreglado:** `crearAccesoParaPersona` nunca guardaba `username`, que es la columna que consulta `resolverEmail` en el login. Los usuarios creados desde la app no podían entrar con nombre de usuario aunque el login lo soportara desde hacía tiempo.
+- **Comprobado contra Supabase real:** acepta claves de 4 caracteres sin tocar la configuración del proyecto.
+
+> **Seguridad:** 4 dígitos son 10.000 combinaciones y el único freno es el límite de intentos de Supabase. Es una decisión consciente del dueño, tomada sabiendo el riesgo, para gente que trabaja con guantes y sin costumbre de teclear.
+
 ---
 
 ## 10. Cómo trabajar con este proyecto
@@ -545,5 +557,5 @@ CDSE_CLIENT_ID= / CDSE_CLIENT_SECRET=
 
 ---
 
-**Versión del documento:** 1.6 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA; Fase 11: puesta en marcha con datos reales)
+**Versión del documento:** 1.6 · Agosto 2026 (Fases 6 y 7 cerradas, Zelanda 2.0 completa; Fase 8: smoke e2e; Fase 9: vista de trabajador simplificada; Fase 10: informe copiable para la IA; Fase 11: puesta en marcha con datos reales; Fase 12: acceso con usuario y clave corta)
 **Autor:** Samuel Alzate
