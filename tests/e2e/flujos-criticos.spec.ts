@@ -25,8 +25,13 @@ test.describe.serial('Flujos críticos', () => {
 
     // Paso 1 wizard: buscar el lote y seleccionarlo (el buscador oculta los
     // "sugeridos", así que sólo queda una fila que matchea el nombre).
+    // El lote de test también sale en "sugeridos" (no tiene historial), así que
+    // el nombre matchea dos botones: el sugerido y el del resultado de búsqueda.
     await pageJefe.getByPlaceholder(/Buscar lote/).fill(E2E_LOTE);
-    await pageJefe.getByRole('button', { name: new RegExp(E2E_LOTE) }).click();
+    await pageJefe
+      .getByRole('button', { name: new RegExp(E2E_LOTE) })
+      .first()
+      .click();
     await pageJefe.getByRole('button', { name: 'Continuar' }).click();
 
     // Paso 2 wizard: elegir el tipo de tarea de cultivo.
