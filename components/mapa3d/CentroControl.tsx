@@ -48,6 +48,9 @@ const BTN_MAPA =
 const BTN_MAPA_ACTIVO =
   'pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-zelanda-verde-700 text-zelanda-beige-50 shadow-card';
 
+/** Por debajo de esto el mapa no sirve de nada; encima de esto, tapa la pantalla. */
+const ALTO_MINIMO_MAPA = 240;
+
 const FORMATEADOR_FECHA = new Intl.DateTimeFormat('es-CO', {
   weekday: 'long',
   day: 'numeric',
@@ -103,16 +106,33 @@ export function CentroControl({
   // El mapa llena el espacio entre el header y la bottom nav.
   useEffect(() => {
     function medir() {
-      const el = contRef.current;
-      if (!el) return;
-      const top = el.getBoundingClientRect().top;
-      const nav = document.querySelector('nav');
-      const navAltura = nav ? nav.getBoundingClientRect().height : 64;
-      setAltura(Math.max(420, window.innerHeight - top - navAltura));
+      if (!contRef.current) return;
+      const alto = (el: Element | null, siFalta: number) =>
+        el ? el.getBoundingClientRect().height : siFalta;
+      // Header y nav están pegados arriba y abajo, así que su alto es el
+      // descuento correcto sin importar el scroll. Antes se usaba el `top` del
+      // contenedor, que cambia al desplazarse y daba una medida corrida.
+      const descuento =
+        alto(document.querySelector('header'), 64) + alto(document.querySelector('nav'), 64);
+      // visualViewport es lo que de verdad se ve en el celular: innerHeight no
+      // descuenta las barras del navegador cuando están a la vista.
+      const visible = window.visualViewport?.height ?? window.innerHeight;
+      // El piso era 420, y en una pantalla baja eso hacía que el mapa se pasara
+      // de largo: la barra de abajo lo tapaba y la página ganaba scroll. Vale
+      // más un mapa chico que uno cortado.
+      setAltura(Math.max(ALTO_MINIMO_MAPA, visible - descuento));
     }
     medir();
     window.addEventListener('resize', medir);
-    return () => window.removeEventListener('resize', medir);
+    window.addEventListener('orientationchange', medir);
+    // En iOS, mostrar u ocultar la barra de direcciones cambia el alto visible
+    // sin disparar `resize` de window.
+    window.visualViewport?.addEventListener('resize', medir);
+    return () => {
+      window.removeEventListener('resize', medir);
+      window.removeEventListener('orientationchange', medir);
+      window.visualViewport?.removeEventListener('resize', medir);
+    };
   }, []);
 
   const estadoPorLote = useMemo(() => {
