@@ -1,19 +1,19 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { parseRangoFechas, whereFecha, aIso } from "@/lib/rango-fechas";
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { parseRangoFechas, whereFecha, aIso } from '@/lib/rango-fechas';
 
-export const metadata = { title: "Salidas" };
+export const metadata = { title: 'Salidas' };
 
 const TONO_TIPO: Record<string, string> = {
-  VENTA: "bg-zelanda-verde-700/10 text-zelanda-verde-800",
-  CONSUMO: "bg-zelanda-ocre-700/10 text-zelanda-ocre-800",
-  PERDIDA: "bg-estado-vencida/10 text-estado-vencida",
-  OTRO: "bg-zelanda-beige-200 text-zelanda-verde-700",
+  VENTA: 'bg-zelanda-verde-700/10 text-zelanda-verde-800',
+  CONSUMO: 'bg-zelanda-ocre-700/10 text-zelanda-ocre-800',
+  PERDIDA: 'bg-estado-vencida/10 text-estado-vencida',
+  OTRO: 'bg-zelanda-beige-200 text-zelanda-verde-700',
 };
 
-const TIPOS = ["VENTA", "CONSUMO", "PERDIDA", "OTRO"] as const;
+const TIPOS = ['VENTA', 'CONSUMO', 'PERDIDA', 'OTRO'] as const;
 type TipoSalida = (typeof TIPOS)[number];
 
 function esTipoValido(v: string): v is TipoSalida {
@@ -25,15 +25,15 @@ export default async function PaginaSalidas({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requerirUsuario("ALMACEN");
+  await requerirUsuario('ALMACEN');
 
   const sp = await searchParams;
   const rango = parseRangoFechas(sp);
-  const tipoRaw = typeof sp.tipo === "string" ? sp.tipo : "";
+  const tipoRaw = typeof sp.tipo === 'string' ? sp.tipo : '';
   const filtroTipo = esTipoValido(tipoRaw) ? { tipo: tipoRaw } : {};
 
   const where = {
-    ...whereFecha("fecha", rango),
+    ...whereFecha('fecha', rango),
     ...filtroTipo,
   };
 
@@ -41,7 +41,7 @@ export default async function PaginaSalidas({
     prisma.salidas_cosecha.findMany({
       where,
       take: 100,
-      orderBy: { fecha: "desc" },
+      orderBy: { fecha: 'desc' },
     }),
     prisma.salidas_cosecha.aggregate({
       where,
@@ -51,15 +51,16 @@ export default async function PaginaSalidas({
   ]);
 
   const fmt = (d: Date) =>
-    d.toLocaleString("es-CO", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+    d.toLocaleString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      // Se renderiza en el servidor (UTC): sin la zona explícita la hora sale 5h adelantada.
+      timeZone: 'America/Bogota',
     });
 
-  const hayFiltros =
-    rango.desde !== null || rango.hasta !== null || tipoRaw !== "";
+  const hayFiltros = rango.desde !== null || rango.hasta !== null || tipoRaw !== '';
 
   return (
     <div className="space-y-5">
@@ -68,15 +69,12 @@ export default async function PaginaSalidas({
           <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
             Almacén
           </p>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Salidas
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Salidas</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-            {totales._count._all}{" "}
-            {totales._count._all === 1 ? "salida" : "salidas"} ·{" "}
-            {Number(totales._sum.cantidad_kg ?? 0).toLocaleString("es-CO", {
+            {totales._count._all} {totales._count._all === 1 ? 'salida' : 'salidas'} ·{' '}
+            {Number(totales._sum.cantidad_kg ?? 0).toLocaleString('es-CO', {
               maximumFractionDigits: 0,
-            })}{" "}
+            })}{' '}
             kg
           </p>
         </div>
@@ -150,22 +148,24 @@ export default async function PaginaSalidas({
           </div>
         </div>
         <p className="mt-3 text-xs text-zelanda-verde-700/70">
-          {totales._count._all} salida{totales._count._all === 1 ? "" : "s"} ·{" "}
-          {Number(totales._sum.cantidad_kg ?? 0).toLocaleString("es-CO", {
+          {totales._count._all} salida{totales._count._all === 1 ? '' : 's'} ·{' '}
+          {Number(totales._sum.cantidad_kg ?? 0).toLocaleString('es-CO', {
             maximumFractionDigits: 2,
-          })}{" "}
+          })}{' '}
           kg
-          {tipoRaw === "VENTA" && totales._sum.precio_total
-            ? ` · $${Number(totales._sum.precio_total).toLocaleString("es-CO", { maximumFractionDigits: 0 })}`
-            : ""}
+          {tipoRaw === 'VENTA' && totales._sum.precio_total
+            ? ` · $${Number(totales._sum.precio_total).toLocaleString('es-CO', {
+                maximumFractionDigits: 0,
+              })}`
+            : ''}
         </p>
       </form>
 
       {salidas.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
           {hayFiltros
-            ? "No hay salidas que coincidan con los filtros."
-            : "Aún no hay salidas registradas."}
+            ? 'No hay salidas que coincidan con los filtros.'
+            : 'Aún no hay salidas registradas.'}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -180,7 +180,9 @@ export default async function PaginaSalidas({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.04em] ${TONO_TIPO[s.tipo] ?? ""}`}
+                    className={`rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.04em] ${
+                      TONO_TIPO[s.tipo] ?? ''
+                    }`}
                   >
                     {s.tipo}
                   </span>
@@ -190,15 +192,13 @@ export default async function PaginaSalidas({
                     </span>
                   ) : null}
                 </div>
-                <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                  {fmt(s.fecha)}
-                </p>
+                <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">{fmt(s.fecha)}</p>
               </div>
               <span className="font-serif text-[18px] text-zelanda-verde-900">
                 −
-                {Number(s.cantidad_kg).toLocaleString("es-CO", {
+                {Number(s.cantidad_kg).toLocaleString('es-CO', {
                   maximumFractionDigits: 0,
-                })}{" "}
+                })}{' '}
                 <span className="text-[11px] text-zelanda-verde-700">kg</span>
               </span>
             </div>

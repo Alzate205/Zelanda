@@ -70,6 +70,8 @@ export default async function PaginaDetalleDespacho({
       month: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      // Se renderiza en el servidor (UTC): sin la zona explícita la hora sale 5h adelantada.
+      timeZone: 'America/Bogota',
     });
 
   const tareaTxt = despacho.asignacion?.tipos_tarea?.nombre ?? null;

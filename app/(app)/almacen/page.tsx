@@ -25,6 +25,8 @@ function fmtHora(d: Date): string {
   return d.toLocaleTimeString('es-CO', {
     hour: '2-digit',
     minute: '2-digit',
+    // Se renderiza en el servidor (UTC): sin la zona explícita la hora sale 5h adelantada.
+    timeZone: 'America/Bogota',
   });
 }
 

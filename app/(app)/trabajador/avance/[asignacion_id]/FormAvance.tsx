@@ -74,6 +74,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const esVisitaApiario = !esCultivo && !esCosechaMiel;
   const [paso, setPaso] = useState<Paso>('inicio');
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
+  const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
 
   const total = asignacion.totalArboles ?? 0;
   // El árbol donde arranca el tramo se calcula solo: el trabajador nunca lo escribe.
@@ -211,6 +212,13 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         setError(r.error);
         return;
       }
+      if (r.offline) {
+        // La pantalla de éxito la arma el servidor a partir de la tarea ya
+        // cerrada, y sin señal el servidor todavía no sabe nada de esto: ir
+        // para allá dejaba al trabajador en una navegación que no carga.
+        setGuardadoSinSenal(true);
+        return;
+      }
       router.push(`/trabajador/exito/${asignacion.id}`);
     });
   }
@@ -218,6 +226,29 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const destino = esCultivo
     ? `Lote ${asignacion.loteNombre}`
     : `Apiario ${asignacion.apiarioNombre}`;
+
+  if (guardadoSinSenal) {
+    return (
+      <div className="space-y-6 pb-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zelanda-ocre-600/15 text-zelanda-ocre-700">
+          <CloudOff className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl text-zelanda-verde-900">Guardado en el celular</h1>
+          <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
+            No hay señal, así que el trabajo quedó anotado acá y se envía solo apenas vuelva
+            internet. No hace falta que lo repitas.
+          </p>
+        </div>
+        <Link href="/trabajador" className={botonPrimario}>
+          Volver a mis tareas
+        </Link>
+        <Link href="/trabajador/pendientes" className={botonSecundario}>
+          Ver lo que falta enviar
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-6 pb-8" noValidate>

@@ -15,18 +15,31 @@ import type {
   ItemColaSalida,
 } from './tipos';
 import { captureException } from '@/lib/sentry';
+import { clasificarRespuesta } from './clasificar';
+import { esDeLaSesion, usuarioLocal } from './sesion';
 
-const BACKOFFS_MS = [1000, 5000, 30000, 300000];
+/** Lo que pasó en una corrida, para poder decírselo al que apretó el botón. */
+export type ResumenSync = {
+  subidos: number;
+  pendientes: number;
+  fallidos: number;
+  ultimoError: string | null;
+  sinSenal: boolean;
+  /** Items encolados por otra cuenta en este mismo celular: no se tocan. */
+  ajenos: number;
+};
+
 const MAX_INTENTOS = 5;
 const CONCURRENCIA_POR_TIPO = 3;
 
-function backoff(intentos: number): number {
-  return BACKOFFS_MS[Math.min(intentos, BACKOFFS_MS.length - 1)];
-}
-
-function esperar(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+const TIPOS: TipoCola[] = [
+  'avance',
+  'novedad',
+  'despacho_crear',
+  'despacho_cerrar',
+  'cosecha',
+  'salida',
+];
 
 async function procesarEnParalelo<T>(
   items: T[],
@@ -148,7 +161,8 @@ function payloadDeItem(tipo: TipoCola, item: unknown): unknown {
 }
 
 class SyncEngineImpl {
-  private corriendo = false;
+  /** La corrida en curso, si la hay. Quien llega en medio se cuelga de ella. */
+  private corriendo: Promise<ResumenSync> | null = null;
   private inicializado = false;
 
   init(): void {
@@ -170,33 +184,60 @@ class SyncEngineImpl {
     }
   }
 
-  async procesarCola(): Promise<void> {
-    if (this.corriendo) return;
-    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-    this.corriendo = true;
-    try {
-      await this.procesarTipo('avance');
-      await this.procesarTipo('novedad');
-      await this.procesarTipo('despacho_crear');
-      await this.procesarTipo('despacho_cerrar');
-      await this.procesarTipo('cosecha');
-      await this.procesarTipo('salida');
-    } finally {
-      this.corriendo = false;
-    }
+  /**
+   * Vacía la cola y cuenta qué pasó. Si ya hay una corrida en curso devuelve
+   * esa misma promesa: apretar el botón dos veces no debe contestar "nada".
+   */
+  procesarCola(): Promise<ResumenSync> {
+    if (this.corriendo) return this.corriendo;
+    const corrida = this.correr().finally(() => {
+      this.corriendo = null;
+    });
+    this.corriendo = corrida;
+    return corrida;
   }
 
-  private async procesarTipo(tipo: TipoCola): Promise<void> {
-    const items = await listarPendientesPorTipo(tipo);
-    await procesarEnParalelo(items, CONCURRENCIA_POR_TIPO, (item) => this.procesarItem(tipo, item));
+  private async correr(): Promise<ResumenSync> {
+    const resumen: ResumenSync = {
+      subidos: 0,
+      pendientes: 0,
+      fallidos: 0,
+      ultimoError: null,
+      sinSenal: false,
+      ajenos: 0,
+    };
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      resumen.sinSenal = true;
+      return resumen;
+    }
+    for (const tipo of TIPOS) {
+      await this.procesarTipo(tipo, resumen);
+    }
+    return resumen;
+  }
+
+  private async procesarTipo(tipo: TipoCola, resumen: ResumenSync): Promise<void> {
+    const todos = await listarPendientesPorTipo(tipo);
+    const actual = usuarioLocal();
+    // Subir con la sesión de hoy lo que encoló otra cuenta se lo atribuiría a
+    // quien está adentro ahora. Eso espera a que su dueño vuelva a entrar.
+    const items = todos.filter((i) => esDeLaSesion(i.usuario_id, actual));
+    resumen.ajenos += todos.length - items.length;
+    await procesarEnParalelo(items, CONCURRENCIA_POR_TIPO, (item) =>
+      this.procesarItem(tipo, item, resumen)
+    );
   }
 
   private async procesarItem(
     tipo: TipoCola,
-    item: { id_local: string; intentos: number; ultimo_error: string | null } & object
+    item: { id_local: string; intentos: number; ultimo_error: string | null } & object,
+    resumen: ResumenSync
   ): Promise<void> {
     if (item.intentos >= MAX_INTENTOS) {
-      await marcarErrorPermanente(tipo, item.id_local, item.ultimo_error ?? 'Máximo de reintentos');
+      const error = item.ultimo_error ?? 'Máximo de reintentos';
+      await marcarErrorPermanente(tipo, item.id_local, error);
+      resumen.fallidos += 1;
+      resumen.ultimoError = error;
       return;
     }
     await marcarSubiendo(tipo, item.id_local);
@@ -207,21 +248,30 @@ class SyncEngineImpl {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (res.ok) {
+      const clase = clasificarRespuesta(res.status);
+      if (clase === 'ok') {
         await marcarSubido(tipo, item.id_local);
-      } else if (res.status >= 400 && res.status < 500) {
+        resumen.subidos += 1;
+      } else if (clase === 'permanente') {
         const j = await res.json().catch(() => ({} as { error?: string }));
-        await marcarErrorPermanente(tipo, item.id_local, j.error ?? `HTTP ${res.status}`);
+        const error = j.error ?? `HTTP ${res.status}`;
+        await marcarErrorPermanente(tipo, item.id_local, error);
+        resumen.fallidos += 1;
+        resumen.ultimoError = error;
       } else {
-        await marcarFallidoTemp(tipo, item.id_local, `HTTP ${res.status}`);
-        await esperar(backoff(item.intentos));
+        const error = `HTTP ${res.status}`;
+        await marcarFallidoTemp(tipo, item.id_local, error);
+        resumen.pendientes += 1;
+        resumen.ultimoError = error;
       }
     } catch (e) {
       try {
         captureException(e);
       } catch {}
-      await marcarFallidoTemp(tipo, item.id_local, (e as Error).message);
-      await esperar(backoff(item.intentos));
+      const error = (e as Error).message;
+      await marcarFallidoTemp(tipo, item.id_local, error);
+      resumen.pendientes += 1;
+      resumen.ultimoError = error;
     }
   }
 }

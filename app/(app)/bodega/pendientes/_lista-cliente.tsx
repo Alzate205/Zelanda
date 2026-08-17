@@ -1,15 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
-import { listarTodos, borrarItem, reintentar } from "@/lib/offline/cola";
-import { SyncEngine } from "@/lib/offline/sync";
-import { suscribirseACambios } from "@/lib/offline/eventos";
-import type {
-  ItemColaDespachoCrear,
-  ItemColaDespachoCerrar,
-} from "@/lib/offline/tipos";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react';
+import { listarTodosDeLaSesion, borrarItem, reintentar } from '@/lib/offline/cola';
+import { SyncEngine } from '@/lib/offline/sync';
+import { suscribirseACambios } from '@/lib/offline/eventos';
+import { BotonSincronizar } from '@/components/shared/BotonSincronizar';
+import type { ItemColaDespachoCrear, ItemColaDespachoCerrar } from '@/lib/offline/tipos';
 
 export function ListaPendientesBodega() {
   const [crear, setCrear] = useState<ItemColaDespachoCrear[]>([]);
@@ -17,7 +15,7 @@ export function ListaPendientesBodega() {
 
   useEffect(() => {
     async function refrescar() {
-      const t = await listarTodos();
+      const t = await listarTodosDeLaSesion();
       setCrear(t.despachos_crear);
       setCerrar(t.despachos_cerrar);
     }
@@ -26,11 +24,11 @@ export function ListaPendientesBodega() {
   }, []);
 
   const items = [
-    ...crear.map((d) => ({ kind: "despacho_crear" as const, ...d })),
-    ...cerrar.map((d) => ({ kind: "despacho_cerrar" as const, ...d })),
+    ...crear.map((d) => ({ kind: 'despacho_crear' as const, ...d })),
+    ...cerrar.map((d) => ({ kind: 'despacho_cerrar' as const, ...d })),
   ].sort((a, b) => b.creado_en - a.creado_en);
 
-  const conErrores = items.filter((it) => it.estado === "error_permanente").length;
+  const conErrores = items.filter((it) => it.estado === 'error_permanente').length;
 
   return (
     <div className="space-y-5 pb-24">
@@ -46,23 +44,14 @@ export function ListaPendientesBodega() {
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Sincronización
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Pendientes
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Pendientes</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          {items.length} {items.length === 1 ? "despacho" : "despachos"}
-          {conErrores > 0 ? ` · ${conErrores} con error` : ""}
+          {items.length} {items.length === 1 ? 'despacho' : 'despachos'}
+          {conErrores > 0 ? ` · ${conErrores} con error` : ''}
         </p>
       </header>
 
-      <button
-        type="button"
-        onClick={() => SyncEngine.procesarCola()}
-        className="inline-flex min-h-touch items-center gap-2 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 text-sm font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
-      >
-        <RefreshCw className="h-4 w-4" />
-        Sincronizar ahora
-      </button>
+      <BotonSincronizar />
 
       {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
@@ -71,22 +60,21 @@ export function ListaPendientesBodega() {
       ) : (
         <ul className="space-y-2">
           {items.map((it) => {
-            const esError = it.estado === "error_permanente";
-            const subiendo = it.estado === "subiendo";
+            const esError = it.estado === 'error_permanente';
+            const subiendo = it.estado === 'subiendo';
             const borde = esError
-              ? "border-l-estado-vencida"
+              ? 'border-l-estado-vencida'
               : subiendo
-                ? "border-l-zelanda-verde-500"
-                : "border-l-zelanda-ocre-400";
-            const titulo =
-              it.kind === "despacho_crear"
-                ? "Nuevo despacho"
-                : "Cierre de despacho";
+              ? 'border-l-zelanda-verde-500'
+              : 'border-l-zelanda-ocre-400';
+            const titulo = it.kind === 'despacho_crear' ? 'Nuevo despacho' : 'Cierre de despacho';
             const detalle =
-              it.kind === "despacho_crear"
-                ? `${it.items.length} item${it.items.length === 1 ? "" : "s"}`
-                : `Despacho #${it.despacho_id} · ${it.items.length} item${it.items.length === 1 ? "" : "s"}`;
-            const fecha = new Date(it.creado_en).toLocaleString("es-CO");
+              it.kind === 'despacho_crear'
+                ? `${it.items.length} item${it.items.length === 1 ? '' : 's'}`
+                : `Despacho #${it.despacho_id} · ${it.items.length} item${
+                    it.items.length === 1 ? '' : 's'
+                  }`;
+            const fecha = new Date(it.creado_en).toLocaleString('es-CO');
             return (
               <li
                 key={it.id_local}
@@ -94,28 +82,18 @@ export function ListaPendientesBodega() {
               >
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">
-                      {titulo}
-                    </p>
-                    <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">
-                      {detalle}
-                    </p>
-                    <p className="m-0 mt-0.5 text-[11px] text-zelanda-verde-700/70">
-                      {fecha}
-                    </p>
+                    <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">{titulo}</p>
+                    <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">{detalle}</p>
+                    <p className="m-0 mt-0.5 text-[11px] text-zelanda-verde-700/70">{fecha}</p>
                     {esError ? (
                       <p className="mt-1.5 flex items-center gap-1 text-[11.5px] text-estado-vencida">
                         <AlertTriangle className="h-3 w-3" />
-                        {it.ultimo_error ?? "Error de sincronización"}
+                        {it.ultimo_error ?? 'Error de sincronización'}
                       </p>
                     ) : subiendo ? (
-                      <p className="mt-1 text-[11.5px] text-zelanda-verde-700">
-                        Subiendo…
-                      </p>
+                      <p className="mt-1 text-[11.5px] text-zelanda-verde-700">Subiendo…</p>
                     ) : (
-                      <p className="mt-1 text-[11.5px] text-zelanda-verde-700">
-                        Pendiente
-                      </p>
+                      <p className="mt-1 text-[11.5px] text-zelanda-verde-700">Pendiente</p>
                     )}
                   </div>
                   {esError ? (
@@ -123,9 +101,7 @@ export function ListaPendientesBodega() {
                       <button
                         type="button"
                         onClick={() =>
-                          reintentar(it.kind, it.id_local).then(() =>
-                            SyncEngine.procesarCola(),
-                          )
+                          reintentar(it.kind, it.id_local).then(() => SyncEngine.procesarCola())
                         }
                         className="rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 px-2.5 py-1 text-[11.5px] font-semibold text-zelanda-verde-800 hover:bg-zelanda-beige-200"
                       >

@@ -1,28 +1,25 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { parseRangoFechas, whereFecha, aIso } from "@/lib/rango-fechas";
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { parseRangoFechas, whereFecha, aIso } from '@/lib/rango-fechas';
 
-export const metadata = { title: "Cosechas" };
+export const metadata = { title: 'Cosechas' };
 
 export default async function PaginaCosechas({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requerirUsuario("ALMACEN");
+  await requerirUsuario('ALMACEN');
 
   const sp = await searchParams;
   const rango = parseRangoFechas(sp);
-  const loteIdRaw = typeof sp.lote === "string" ? sp.lote : "";
-  const filtroLote =
-    loteIdRaw && /^\d+$/.test(loteIdRaw)
-      ? { lote_id: BigInt(loteIdRaw) }
-      : {};
+  const loteIdRaw = typeof sp.lote === 'string' ? sp.lote : '';
+  const filtroLote = loteIdRaw && /^\d+$/.test(loteIdRaw) ? { lote_id: BigInt(loteIdRaw) } : {};
 
   const where = {
-    ...whereFecha("fecha", rango),
+    ...whereFecha('fecha', rango),
     ...filtroLote,
   };
 
@@ -30,7 +27,7 @@ export default async function PaginaCosechas({
     prisma.cosechas.findMany({
       where,
       take: 100,
-      orderBy: { fecha: "desc" },
+      orderBy: { fecha: 'desc' },
       include: {
         persona: { select: { nombre_completo: true } },
         lotes: { select: { nombre: true } },
@@ -38,7 +35,7 @@ export default async function PaginaCosechas({
     }),
     prisma.lotes.findMany({
       where: { deleted_at: null },
-      orderBy: { nombre: "asc" },
+      orderBy: { nombre: 'asc' },
       select: { id: true, nombre: true },
     }),
     prisma.cosechas.aggregate({
@@ -49,15 +46,16 @@ export default async function PaginaCosechas({
   ]);
 
   const fmt = (d: Date) =>
-    d.toLocaleString("es-CO", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+    d.toLocaleString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      // Se renderiza en el servidor (UTC): sin la zona explícita la hora sale 5h adelantada.
+      timeZone: 'America/Bogota',
     });
 
-  const hayFiltros =
-    rango.desde !== null || rango.hasta !== null || loteIdRaw !== "";
+  const hayFiltros = rango.desde !== null || rango.hasta !== null || loteIdRaw !== '';
 
   return (
     <div className="space-y-5">
@@ -66,15 +64,12 @@ export default async function PaginaCosechas({
           <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
             Almacén
           </p>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-            Cosechas
-          </h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Cosechas</h1>
           <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-            {totales._count._all}{" "}
-            {totales._count._all === 1 ? "cosecha" : "cosechas"} ·{" "}
-            {Number(totales._sum.peso_kg ?? 0).toLocaleString("es-CO", {
+            {totales._count._all} {totales._count._all === 1 ? 'cosecha' : 'cosechas'} ·{' '}
+            {Number(totales._sum.peso_kg ?? 0).toLocaleString('es-CO', {
               maximumFractionDigits: 0,
-            })}{" "}
+            })}{' '}
             kg
           </p>
         </div>
@@ -148,10 +143,10 @@ export default async function PaginaCosechas({
           </div>
         </div>
         <p className="mt-3 text-xs text-zelanda-verde-700/70">
-          {totales._count._all} cosecha{totales._count._all === 1 ? "" : "s"} ·{" "}
-          {Number(totales._sum.peso_kg ?? 0).toLocaleString("es-CO", {
+          {totales._count._all} cosecha{totales._count._all === 1 ? '' : 's'} ·{' '}
+          {Number(totales._sum.peso_kg ?? 0).toLocaleString('es-CO', {
             maximumFractionDigits: 2,
-          })}{" "}
+          })}{' '}
           kg total
         </p>
       </form>
@@ -159,8 +154,8 @@ export default async function PaginaCosechas({
       {cosechas.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
           {hayFiltros
-            ? "No hay cosechas que coincidan con los filtros."
-            : "Aún no hay cosechas registradas."}
+            ? 'No hay cosechas que coincidan con los filtros.'
+            : 'Aún no hay cosechas registradas.'}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -177,15 +172,14 @@ export default async function PaginaCosechas({
                   {c.lotes.nombre} · {c.persona.nombre_completo}
                 </p>
                 <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                  {c.metodo_medicion === "CANASTA" ? "Canastas" : "Báscula"} ·{" "}
-                  {fmt(c.fecha)}
+                  {c.metodo_medicion === 'CANASTA' ? 'Canastas' : 'Báscula'} · {fmt(c.fecha)}
                 </p>
               </div>
               <span className="font-serif text-[18px] text-zelanda-verde-900">
                 +
-                {Number(c.peso_kg).toLocaleString("es-CO", {
+                {Number(c.peso_kg).toLocaleString('es-CO', {
                   maximumFractionDigits: 0,
-                })}{" "}
+                })}{' '}
                 <span className="text-[11px] text-zelanda-verde-700">kg</span>
               </span>
             </div>

@@ -7,6 +7,20 @@ import { suscribirPush } from '../../app/(app)/_acciones/push';
 const POSPONER_KEY = 'push-postponed-until';
 const POSPONER_DIAS = 7;
 
+/**
+ * Acota cualquier espera que pueda no terminar nunca.
+ *
+ * `serviceWorker.ready` no resuelve si el worker no llega a activarse, y en un
+ * celular recién instalado eso pasa. Sin tope, el botón se quedaba en
+ * "Activando..." para siempre.
+ */
+function conTope<T>(promesa: Promise<T>, ms: number, que: string): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`timeout de ${que}`)), ms)),
+  ]);
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const base64Plana = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -19,6 +33,7 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 export function PushPrompt() {
   const [mostrar, setMostrar] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -32,16 +47,18 @@ export function PushPrompt() {
 
   const activar = async () => {
     setEnviando(true);
+    setAviso(null);
     try {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
         setMostrar(false);
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await conTope(navigator.serviceWorker.ready, 10000, 'arranque de la app');
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) {
         console.warn('VAPID public key faltante');
+        setAviso('No se pudo activar. Avisale al jefe de la finca.');
         return;
       }
       // Una suscripción vieja (de una instalación anterior) puede dejar
@@ -55,26 +72,26 @@ export function PushPrompt() {
           /* noop */
         }
       }
-      const sub = (await Promise.race([
+      const sub = await conTope(
         reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
         }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout de suscripción')), 15000)
-        ),
-      ])) as PushSubscription;
+        15000,
+        'suscripción'
+      );
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
       fd.set('p256dh', json.keys?.p256dh ?? '');
       fd.set('auth', json.keys?.auth ?? '');
       fd.set('userAgent', navigator.userAgent);
-      await suscribirPush(fd);
+      await conTope(suscribirPush(fd), 15000, 'registro en el servidor');
       setMostrar(false);
     } catch (e) {
       console.warn('Suscripción push falló', e);
-      setMostrar(false);
+      // Antes se cerraba el aviso en silencio y parecía que había funcionado.
+      setAviso('No se pudo activar ahora. Probá de nuevo con mejor señal.');
     } finally {
       setEnviando(false);
     }
@@ -99,6 +116,11 @@ export function PushPrompt() {
             <p className="mt-1 text-xs text-zelanda-verde-700/80">
               Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.
             </p>
+            {aviso ? (
+              <p role="status" className="mt-2 text-xs text-estado-vencida">
+                {aviso}
+              </p>
+            ) : null}
             <div className="mt-3 flex gap-2">
               <button
                 type="button"

@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
-import { cerrarSesion } from '@/app/(auth)/login/acciones';
+import { BotonCerrarSesion } from './BotonCerrarSesion';
 import { AvatarIniciales } from './AvatarIniciales';
 import { BrandMark } from './BrandMark';
 import { BotonPanel } from './BotonPanel';
@@ -20,15 +19,7 @@ export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
           <p className="min-w-0 flex-1 truncate font-serif text-[17px] leading-tight">
             {usuario.nombre_completo}
           </p>
-          <form action={cerrarSesion}>
-            <button
-              type="submit"
-              aria-label="Cerrar sesión"
-              className="flex min-h-touch min-w-touch items-center justify-center rounded-lg p-2 text-zelanda-beige-100 transition hover:bg-white/10"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </form>
+          <BotonCerrarSesion />
         </div>
       </header>
     );
@@ -57,15 +48,7 @@ export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
           </div>
         </Link>
         {usuario.rol === 'JEFE' ? <BotonPanel /> : null}
-        <form action={cerrarSesion}>
-          <button
-            type="submit"
-            aria-label="Cerrar sesión"
-            className="flex min-h-touch min-w-touch items-center justify-center rounded-lg p-2 text-zelanda-beige-100 transition hover:bg-white/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        </form>
+        <BotonCerrarSesion />
       </div>
     </header>
   );

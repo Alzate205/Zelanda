@@ -1,10 +1,18 @@
 // Service worker para Hacienda La Zelanda — sub-fase 5.2b
 // Push + cache de app shell para navegación offline.
 
-const VERSION = 'b1-2';
+// La versión se sube a mano en cada cambio de este archivo. Al activarse borra
+// las cachés de versiones viejas: es la vía para invalidar contenido que quedó
+// mal guardado en los celulares (por ejemplo, páginas de otra cuenta).
+const VERSION = 'b2-1';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
+// Guarda de quién son las páginas cacheadas. No lleva versión: sobrevive a los
+// deploys porque la pregunta que responde ("¿sigue siendo el mismo usuario?")
+// no depende de la versión del worker.
+const CACHE_SESION = 'zelanda-sesion';
+const URL_DUENO = 'https://zelanda.local/dueno';
 const HOSTS_BALDOSAS = [
   'mt0.google.com',
   'mt1.google.com',
@@ -18,24 +26,60 @@ const SHELL_URLS = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon
 
 const RUTAS_NAVEGABLES = ['/trabajador', '/bodega', '/almacen', '/jefe', '/mi-perfil'];
 
-// HTML mínimo que decide a qué home ir según el rol guardado en localStorage.
+const ESTILO_PAGINA =
+  'body{background:#F5F1E8;color:#3D5C42;font-family:system-ui;display:flex;flex-direction:column;' +
+  'align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center;gap:12px}' +
+  'a{display:inline-block;background:#3D5C42;color:#F5F1E8;text-decoration:none;padding:12px 20px;border-radius:12px;font-weight:600}' +
+  'p{margin:0;max-width:34ch;line-height:1.5}';
+
+/**
+ * HTML mínimo que manda a la home del rol que inició sesión en este celular.
+ *
+ * Antes caía a "/trabajador" cuando no había rol guardado, y por eso un usuario
+ * de bodega abría la app sin señal y aterrizaba en la pantalla del trabajador.
+ * Ahora, si no sabemos el rol, no adivinamos: pedimos abrir con internet.
+ */
 const LAUNCHER_HTML = `<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#3D5C42">
 <title>La Zelanda</title>
-<style>body{background:#F5F1E8;color:#3D5C42;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}</style>
+<style>${ESTILO_PAGINA}</style>
 </head><body>
-<p>Cargando…</p>
+<p id="msj">Cargando…</p>
 <script>
 (function(){
   var mapa={TRABAJADOR:"/trabajador",BODEGA:"/bodega",ALMACEN:"/almacen",JEFE:"/jefe"};
   var rol=null;
   try{rol=localStorage.getItem("zelanda_rol_ultimo")}catch(e){}
-  location.replace(mapa[rol]||"/trabajador");
+  if(mapa[rol]){location.replace(mapa[rol]);return}
+  document.getElementById("msj").textContent=
+    "No hay sesión guardada en este celular. Conectate a internet una vez para entrar.";
 })();
 </script>
 </body></html>`;
+
+/** Página para una ruta que no quedó guardada: ofrece volver a la home del rol. */
+function paginaSinSenal(mensaje) {
+  return `<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#3D5C42">
+<title>Sin señal · La Zelanda</title>
+<style>${ESTILO_PAGINA}</style>
+</head><body>
+<p>${mensaje}</p>
+<a id="volver" href="/">Volver al inicio</a>
+<script>
+(function(){
+  var mapa={TRABAJADOR:"/trabajador",BODEGA:"/bodega",ALMACEN:"/almacen",JEFE:"/jefe"};
+  var rol=null;
+  try{rol=localStorage.getItem("zelanda_rol_ultimo")}catch(e){}
+  if(mapa[rol])document.getElementById("volver").href=mapa[rol];
+})();
+</script>
+</body></html>`;
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -50,12 +94,82 @@ self.addEventListener('activate', (event) => {
       const claves = await caches.keys();
       await Promise.all(
         claves
-          .filter((k) => k.startsWith('zelanda-') && !k.endsWith(VERSION))
+          // CACHE_SESION no lleva versión y debe sobrevivir: es lo que permite
+          // detectar un cambio de cuenta después de un deploy.
+          .filter((k) => k.startsWith('zelanda-') && k !== CACHE_SESION && !k.endsWith(VERSION))
           .map((k) => caches.delete(k))
       );
       await self.clients.claim();
     })()
   );
+});
+
+// === Dueño de las cachés ===
+//
+// El shell y los payloads RSC son HTML YA AUTENTICADO: traen el nombre, las
+// tareas y los datos de quien los pidió. Si en el mismo celular entra otra
+// persona, servirle esas respuestas es filtrarle la sesión ajena. Por eso la
+// app avisa quién está adentro y acá se borra todo cuando cambia.
+
+async function leerDueno() {
+  try {
+    const cache = await caches.open(CACHE_SESION);
+    const hit = await cache.match(URL_DUENO);
+    if (!hit) return null;
+    return await hit.text();
+  } catch {
+    return null;
+  }
+}
+
+async function guardarDueno(usuarioId) {
+  const cache = await caches.open(CACHE_SESION);
+  await cache.put(URL_DUENO, new Response(usuarioId));
+}
+
+async function borrarCachesDeUsuario() {
+  const claves = await caches.keys();
+  await Promise.all(
+    claves
+      // Las baldosas del mapa son públicas: no identifican a nadie y volver a
+      // bajarlas cuesta datos, así que se conservan.
+      .filter((k) => k.startsWith('zelanda-shell-') || k.startsWith('zelanda-datos-'))
+      .map((k) => caches.delete(k))
+  );
+}
+
+async function registrarSesion(usuarioId) {
+  if (!usuarioId) return;
+  const anterior = await leerDueno();
+  if (anterior === usuarioId) return;
+  if (anterior !== null) await borrarCachesDeUsuario();
+  await guardarDueno(usuarioId);
+}
+
+async function olvidarSesion() {
+  await borrarCachesDeUsuario();
+  try {
+    const cache = await caches.open(CACHE_SESION);
+    await cache.delete(URL_DUENO);
+  } catch {
+    /* la caché de sesión no existe: nada que olvidar */
+  }
+}
+
+self.addEventListener('message', (event) => {
+  const dato = event.data;
+  if (!dato || typeof dato !== 'object') return;
+  if (dato.tipo === 'sesion') {
+    event.waitUntil(registrarSesion(dato.usuarioId));
+    return;
+  }
+  if (dato.tipo === 'cerrar-sesion') {
+    event.waitUntil(olvidarSesion());
+    return;
+  }
+  if (dato.tipo === 'precargar' && Array.isArray(dato.urls)) {
+    event.waitUntil(precargarPantallas(dato.urls));
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -138,18 +252,70 @@ async function navegacionConFallback(req, url) {
       });
     }
     // Cache directo de la ruta pedida
-    const hit = await cache.match(req);
+    const hit = await cache.match(req, { ignoreVary: true });
     if (hit) return hit;
-    // Fallback: cualquier home de rol que tengamos cacheada
-    for (const ruta of ['/trabajador', '/bodega', '/almacen', '/jefe']) {
-      const home = await cache.match(ruta);
-      if (home) return home;
-    }
-    return new Response('<h1>Sin señal</h1><p>Abrí la app con internet al menos una vez.</p>', {
-      status: 503,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    });
+    // NO se sirve la home de otro rol como respaldo. Esas páginas vienen
+    // renderizadas con el nombre y los datos de quien las pidió, así que
+    // devolverlas a otra persona la hacía aterrizar en una sesión que no es
+    // suya (un usuario de bodega abría la app y caía en /trabajador).
+    return new Response(
+      paginaSinSenal('Esta pantalla no quedó guardada en el celular y no hay señal para traerla.'),
+      { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
   }
+}
+
+/**
+ * Deja listas para usar sin señal las pantallas que la app pida.
+ *
+ * Hacen falta dos respuestas por pantalla: el HTML (para cuando se abre la app
+ * de cero o se recarga) y el payload RSC (para cuando se llega navegando con un
+ * Link desde adentro). El prefetch de Next no sirve: trae payloads parciales y
+ * `rscNetworkFirst` los descarta a propósito.
+ */
+const PRECARGA_CONCURRENCIA = 3;
+const PRECARGA_MAX = 60;
+
+async function precargarUna(url, shell, datos) {
+  // Las dos piezas de la misma pantalla se piden a la vez: en serie, con varias
+  // tareas asignadas, la precarga tardaba tanto que el trabajador salía al
+  // campo antes de que terminara.
+  const [html, rsc] = await Promise.all([
+    fetch(url.href, { credentials: 'same-origin', headers: { Accept: 'text/html' } }),
+    fetch(url.href, { credentials: 'same-origin', headers: { RSC: '1' } }),
+  ]);
+  if (html.ok && !html.redirected) await shell.put(url.href, html.clone());
+  if (rsc.ok && !rsc.redirected) await datos.put(claveRsc(url), rsc.clone());
+}
+
+async function precargarPantallas(urls) {
+  const shell = await caches.open(CACHE_SHELL);
+  const datos = await caches.open(CACHE_DATOS);
+
+  const lista = [];
+  for (const raw of urls.slice(0, PRECARGA_MAX)) {
+    try {
+      const url = new URL(raw, self.location.origin);
+      if (url.origin === self.location.origin) lista.push(url);
+    } catch {
+      // URL inservible: se ignora.
+    }
+  }
+
+  let siguiente = 0;
+  async function turno() {
+    while (siguiente < lista.length) {
+      const url = lista[siguiente++];
+      try {
+        await precargarUna(url, shell, datos);
+      } catch {
+        // Se cortó la señal: lo que falte se precarga en la próxima carga.
+        return;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(PRECARGA_CONCURRENCIA, lista.length) }, turno));
 }
 
 async function cacheFirst(req, cacheName) {

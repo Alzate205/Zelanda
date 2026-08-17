@@ -1,49 +1,50 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { useColaPendientes } from "@/hooks/useColaPendientes";
+import Link from 'next/link';
+import { CloudOff, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useColaPendientes } from '@/hooks/useColaPendientes';
+import type { RolUsuario } from '@/types';
 
-const PATH_PENDIENTES_POR_ROL: Record<string, string> = {
-  JEFE: "/trabajador/pendientes",
-  TRABAJADOR: "/trabajador/pendientes",
-  BODEGA: "/bodega/pendientes",
-  ALMACEN: "/almacen/pendientes",
+/**
+ * Dónde revisa sus pendientes cada rol. El JEFE no aparece a propósito: no
+ * registra nada por la cola offline, así que nunca tiene pendientes propios.
+ */
+const PATH_PENDIENTES_POR_ROL: Partial<Record<RolUsuario, string>> = {
+  TRABAJADOR: '/trabajador/pendientes',
+  BODEGA: '/bodega/pendientes',
+  ALMACEN: '/almacen/pendientes',
 };
 
-export function BannerOffline() {
+export function BannerOffline({ rol }: { rol: RolUsuario }) {
   const online = useOnlineStatus();
   const { total, errores } = useColaPendientes();
-  const [rol, setRol] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      setRol(localStorage.getItem("zelanda_rol_ultimo"));
-    } catch {
-      setRol(null);
-    }
-  }, []);
+  // La cola vive en el navegador, no en la cuenta. Si el jefe entra al celular
+  // donde trabajó alguien más, le salía la alerta de sincronizar por registros
+  // que no son suyos y que él no puede resolver.
+  const destino = PATH_PENDIENTES_POR_ROL[rol];
+  const pendientes = destino ? total : 0;
+  const conError = destino ? errores : 0;
 
-  if (online && total === 0) return null;
+  if (online && pendientes === 0) return null;
 
-  let tono = "bg-zelanda-ocre-50 border-zelanda-ocre-300 text-zelanda-ocre-700";
+  let tono = 'bg-zelanda-ocre-50 border-zelanda-ocre-300 text-zelanda-ocre-700';
   let Icono = CloudOff;
   let texto: string;
 
-  if (!online && total > 0) {
-    texto = `${total} pendiente${total === 1 ? "" : "s"} · Sin señal`;
+  if (!online && pendientes > 0) {
+    texto = `${pendientes} pendiente${pendientes === 1 ? '' : 's'} · Sin señal`;
   } else if (!online) {
-    texto = "Sin señal";
-  } else if (errores > 0) {
-    tono = "bg-estado-vencida/10 border-estado-vencida/40 text-estado-vencida";
+    texto = 'Sin señal';
+  } else if (conError > 0) {
+    tono = 'bg-estado-vencida/10 border-estado-vencida/40 text-estado-vencida';
     Icono = AlertTriangle;
-    texto = `${errores} con error · revisar`;
+    texto = `${conError} con error · revisar`;
   } else {
-    tono = "bg-zelanda-verde-50 border-zelanda-verde-300 text-zelanda-verde-800";
+    tono = 'bg-zelanda-verde-50 border-zelanda-verde-300 text-zelanda-verde-800';
     Icono = RefreshCw;
-    texto = `Sincronizando · ${total} pendiente${total === 1 ? "" : "s"}`;
+    texto = `Sincronizando · ${pendientes} pendiente${pendientes === 1 ? '' : 's'}`;
   }
 
   const cuerpo = (
@@ -58,13 +59,10 @@ export function BannerOffline() {
   return (
     <div
       className="fixed inset-x-0 z-30 mx-auto flex max-w-screen-md justify-center px-4"
-      style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
+      style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
-      {total > 0 && rol ? (
-        <Link
-          href={PATH_PENDIENTES_POR_ROL[rol] ?? "/trabajador/pendientes"}
-          aria-label="Ver pendientes"
-        >
+      {pendientes > 0 && destino ? (
+        <Link href={destino} aria-label="Ver pendientes">
           {cuerpo}
         </Link>
       ) : (
