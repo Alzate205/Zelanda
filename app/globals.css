@@ -50,6 +50,23 @@ nav {
 }
 
 /*
+ * Tamaño mínimo de letra en campos, solo en pantallas táctiles.
+ *
+ * Safari de iOS amplía la página al enfocar un campo cuya letra mide menos de
+ * 16px. Los formularios usan 15px por diseño, así que en el iPhone cada toque
+ * en un campo dejaba la página ampliada y corrida, y al cerrar el teclado no
+ * volvía sola a su sitio. El `!important` es a propósito: hay que ganarle a la
+ * utilidad `text-[15px]` de Tailwind, que tiene más especificidad que `input`.
+ */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/*
  * Campos de fecha y hora en celular.
  *
  * En iOS y Android el control nativo trae un ancho intrínseco propio (el texto

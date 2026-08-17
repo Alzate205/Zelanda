@@ -1,20 +1,49 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, Check } from "lucide-react";
-import { crearPago, type EstadoPago } from "../acciones";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Check } from 'lucide-react';
+import { crearPago, type EstadoPago } from '../acciones';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
 
 const ESTADO_INICIAL: EstadoPago = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
 const labelBase =
-  "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-type Persona = { id: string; nombre: string };
+type PeriodoPago = 'MENSUAL' | 'QUINCENAL' | 'SEMANAL';
+
+type Persona = {
+  id: string;
+  nombre: string;
+  salarioBase: number | null;
+  periodoPago: PeriodoPago | null;
+};
+
+// Días que cubre cada periodicidad. Mismo criterio que diasEstandar() en lib/saldos-calculo.
+const DIAS_POR_PERIODO: Record<PeriodoPago, number> = {
+  MENSUAL: 30,
+  QUINCENAL: 15,
+  SEMANAL: 7,
+};
+
+const ETIQUETA_PERIODO: Record<PeriodoPago, string> = {
+  MENSUAL: 'Mensual',
+  QUINCENAL: 'Quincenal',
+  SEMANAL: 'Semanal',
+};
+
+/**
+ * El salario de la vinculación está expresado en SU periodicidad (un base
+ * quincenal de 700.000 es por quincena, no por mes). Si el jefe paga en otra,
+ * se convierte proporcionalmente para no proponer un monto equivocado.
+ */
+function montoDelPeriodo(salarioBase: number, pactado: PeriodoPago, elegido: PeriodoPago): number {
+  return Math.round((salarioBase * DIAS_POR_PERIODO[elegido]) / DIAS_POR_PERIODO[pactado]);
+}
 type Servicio = {
   id: string;
   descripcion: string;
@@ -23,23 +52,29 @@ type Servicio = {
   monto_pactado: number;
 };
 
-type Tipo = "SALARIO" | "ADELANTO" | "JORNAL" | "SERVICIO" | "BONO" | "AJUSTE" | "OTRO";
+type Tipo = 'SALARIO' | 'ADELANTO' | 'JORNAL' | 'SERVICIO' | 'BONO' | 'AJUSTE' | 'OTRO';
 
 const TIPOS: { id: Tipo; etiqueta: string; descripcion: string }[] = [
-  { id: "SALARIO", etiqueta: "Salario", descripcion: "Periódico para fijos" },
-  { id: "JORNAL", etiqueta: "Jornal", descripcion: "Día trabajado" },
-  { id: "SERVICIO", etiqueta: "Servicio", descripcion: "Contrato puntual" },
-  { id: "BONO", etiqueta: "Bono", descripcion: "Extra acordado" },
-  { id: "ADELANTO", etiqueta: "Adelanto", descripcion: "Pago anticipado" },
-  { id: "AJUSTE", etiqueta: "Ajuste", descripcion: "Corrección (+/–)" },
-  { id: "OTRO", etiqueta: "Otro", descripcion: "Sin categoría" },
+  { id: 'SALARIO', etiqueta: 'Salario', descripcion: 'Periódico para fijos' },
+  { id: 'JORNAL', etiqueta: 'Jornal', descripcion: 'Día trabajado' },
+  { id: 'SERVICIO', etiqueta: 'Servicio', descripcion: 'Contrato puntual' },
+  { id: 'BONO', etiqueta: 'Bono', descripcion: 'Extra acordado' },
+  { id: 'ADELANTO', etiqueta: 'Adelanto', descripcion: 'Pago anticipado' },
+  { id: 'AJUSTE', etiqueta: 'Ajuste', descripcion: 'Corrección (+/–)' },
+  { id: 'OTRO', etiqueta: 'Otro', descripcion: 'Sin categoría' },
 ];
+
+/** Monto propuesto para un pago de salario, como cadena de dígitos (lo que espera el input). */
+function sugerenciaSalario(persona: Persona | null, elegido: PeriodoPago): string {
+  if (!persona || persona.salarioBase == null) return '';
+  return String(montoDelPeriodo(persona.salarioBase, persona.periodoPago ?? 'MENSUAL', elegido));
+}
 
 export function FormularioPago({
   personas,
   servicios = [],
   personaIdInicial = null,
-  tipoInicial = "SALARIO",
+  tipoInicial = 'SALARIO',
   servicioIdInicial = null,
 }: {
   personas: Persona[];
@@ -48,16 +83,44 @@ export function FormularioPago({
   tipoInicial?: Tipo;
   servicioIdInicial?: string | null;
 }) {
+  const personaInicial = personas.find((p) => p.id === personaIdInicial) ?? null;
+  const periodoInicial: PeriodoPago = personaInicial?.periodoPago ?? 'MENSUAL';
+
   const [estado, accion, pendiente] = useActionState(crearPago, ESTADO_INICIAL);
   const [tipo, setTipo] = useState<Tipo>(tipoInicial);
   const [conPeriodo, setConPeriodo] = useState(false);
-  const [monto, setMonto] = useState("");
-  const [personaId, setPersonaId] = useState<string>(personaIdInicial ?? "");
-  const [servicioId, setServicioId] = useState<string>(servicioIdInicial ?? "");
+  const [personaId, setPersonaId] = useState<string>(personaIdInicial ?? '');
+  const [periodo, setPeriodo] = useState<PeriodoPago>(periodoInicial);
+  const [monto, setMonto] = useState(
+    tipoInicial === 'SALARIO' ? sugerenciaSalario(personaInicial, periodoInicial) : ''
+  );
+  const [servicioId, setServicioId] = useState<string>(servicioIdInicial ?? '');
 
   const hoy = new Date().toISOString().slice(0, 10);
-  const esAjuste = tipo === "AJUSTE";
-  const esServicio = tipo === "SERVICIO";
+  const esAjuste = tipo === 'AJUSTE';
+  const esServicio = tipo === 'SERVICIO';
+  const esSalario = tipo === 'SALARIO';
+
+  const persona = personas.find((p) => p.id === personaId) ?? null;
+
+  // Semanal solo aparece si esa persona cobra así; para el resto sobra ruido.
+  const periodosOfrecidos: PeriodoPago[] =
+    persona?.periodoPago === 'SEMANAL'
+      ? ['MENSUAL', 'QUINCENAL', 'SEMANAL']
+      : ['MENSUAL', 'QUINCENAL'];
+
+  /**
+   * Propone el monto cada vez que cambia algo que lo determina (persona, periodicidad
+   * o tipo). Entre esos cambios el campo es libre: lo que el jefe escriba se respeta.
+   */
+  function autocompletarMonto(p: Persona | null, per: PeriodoPago, tipoNuevo: Tipo) {
+    if (tipoNuevo !== 'SALARIO') {
+      // Al salir de Salario borramos la sugerencia para que un bono no herede el sueldo.
+      if (monto && monto === sugerenciaSalario(persona, periodo)) setMonto('');
+      return;
+    }
+    setMonto(sugerenciaSalario(p, per));
+  }
 
   const serviciosDeLaPersona = personaId
     ? servicios.filter((s) => s.persona_id === personaId)
@@ -77,9 +140,7 @@ export function FormularioPago({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Registrar
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Nuevo pago
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nuevo pago</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
           Anotá una salida de plata hacia una persona. Queda en el histórico.
         </p>
@@ -97,8 +158,12 @@ export function FormularioPago({
             className={inputBase}
             value={personaId}
             onChange={(e) => {
+              const nueva = personas.find((p) => p.id === e.target.value) ?? null;
+              const per = nueva?.periodoPago ?? 'MENSUAL';
               setPersonaId(e.target.value);
-              setServicioId("");
+              setServicioId('');
+              setPeriodo(per);
+              autocompletarMonto(nueva, per, tipo);
             }}
           >
             <option value="">Selecciona persona…</option>
@@ -126,16 +191,16 @@ export function FormularioPago({
               <option value="">
                 {serviciosDeLaPersona.length === 0
                   ? personaId
-                    ? "No hay contratos abiertos para esta persona"
-                    : "Elegí primero la persona"
-                  : "Selecciona contrato…"}
+                    ? 'No hay contratos abiertos para esta persona'
+                    : 'Elegí primero la persona'
+                  : 'Selecciona contrato…'}
               </option>
               {serviciosDeLaPersona.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.descripcion} ·{" "}
-                  {s.monto_pactado.toLocaleString("es-CO", {
-                    style: "currency",
-                    currency: "COP",
+                  {s.descripcion} ·{' '}
+                  {s.monto_pactado.toLocaleString('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
                     maximumFractionDigits: 0,
                   })}
                 </option>
@@ -154,8 +219,8 @@ export function FormularioPago({
                 key={t.id}
                 className={`flex cursor-pointer flex-col items-start rounded-[10px] border px-3 py-2 transition ${
                   tipo === t.id
-                    ? "border-zelanda-verde-700 bg-zelanda-verde-50 text-zelanda-verde-900"
-                    : "border-zelanda-beige-300 bg-white text-zelanda-verde-700 hover:bg-zelanda-beige-50"
+                    ? 'border-zelanda-verde-700 bg-zelanda-verde-50 text-zelanda-verde-900'
+                    : 'border-zelanda-beige-300 bg-white text-zelanda-verde-700 hover:bg-zelanda-beige-50'
                 }`}
               >
                 <input
@@ -163,7 +228,10 @@ export function FormularioPago({
                   name="tipo"
                   value={t.id}
                   checked={tipo === t.id}
-                  onChange={() => setTipo(t.id)}
+                  onChange={() => {
+                    setTipo(t.id);
+                    autocompletarMonto(persona, periodo, t.id);
+                  }}
                   className="sr-only"
                 />
                 <span className="text-[13px] font-semibold">{t.etiqueta}</span>
@@ -172,6 +240,42 @@ export function FormularioPago({
             ))}
           </div>
         </div>
+
+        {esSalario ? (
+          <div>
+            <label className={labelBase}>Periodicidad</label>
+            <div className="mt-1.5 flex gap-1.5">
+              {periodosOfrecidos.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setPeriodo(p);
+                    autocompletarMonto(persona, p, tipo);
+                  }}
+                  className={`min-h-touch flex-1 rounded-[10px] border px-3 text-[13px] font-semibold transition ${
+                    periodo === p
+                      ? 'border-zelanda-verde-700 bg-zelanda-verde-50 text-zelanda-verde-900'
+                      : 'border-zelanda-beige-300 bg-white text-zelanda-verde-700 hover:bg-zelanda-beige-50'
+                  }`}
+                >
+                  {ETIQUETA_PERIODO[p]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
+              {!persona
+                ? 'Elegí la persona y se carga su salario.'
+                : persona.salarioBase == null
+                ? 'Esta persona no tiene salario en su vinculación: escribí el monto a mano.'
+                : `Salario pactado: ${persona.salarioBase.toLocaleString('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    maximumFractionDigits: 0,
+                  })} ${ETIQUETA_PERIODO[persona.periodoPago ?? 'MENSUAL'].toLowerCase()}.`}
+            </p>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -182,13 +286,11 @@ export function FormularioPago({
               id="monto"
               name="monto"
               type="text"
-              inputMode={esAjuste ? "text" : "numeric"}
+              inputMode={esAjuste ? 'text' : 'numeric'}
               required
-              placeholder={esAjuste ? "puede ser negativo" : "80.000"}
+              placeholder={esAjuste ? 'puede ser negativo' : '80.000'}
               value={formatearMiles(monto)}
-              onChange={(e) =>
-                setMonto(normalizarEntradaNumerica(e.target.value, esAjuste))
-              }
+              onChange={(e) => setMonto(normalizarEntradaNumerica(e.target.value, esAjuste))}
               className={inputBase}
             />
             {esAjuste ? (
@@ -239,9 +341,7 @@ export function FormularioPago({
             onClick={() => setConPeriodo(!conPeriodo)}
             className="text-[12.5px] font-semibold text-zelanda-verde-700 hover:text-zelanda-verde-900"
           >
-            {conPeriodo
-              ? "− Quitar periodo cubierto"
-              : "+ Indicar periodo cubierto (opcional)"}
+            {conPeriodo ? '− Quitar periodo cubierto' : '+ Indicar periodo cubierto (opcional)'}
           </button>
           {conPeriodo ? (
             <div className="mt-2 grid grid-cols-2 gap-3">
@@ -249,23 +349,13 @@ export function FormularioPago({
                 <label htmlFor="cubre_desde" className={labelBase}>
                   Cubre desde
                 </label>
-                <input
-                  id="cubre_desde"
-                  name="cubre_desde"
-                  type="date"
-                  className={inputBase}
-                />
+                <input id="cubre_desde" name="cubre_desde" type="date" className={inputBase} />
               </div>
               <div>
                 <label htmlFor="cubre_hasta" className={labelBase}>
                   Cubre hasta
                 </label>
-                <input
-                  id="cubre_hasta"
-                  name="cubre_hasta"
-                  type="date"
-                  className={inputBase}
-                />
+                <input id="cubre_hasta" name="cubre_hasta" type="date" className={inputBase} />
               </div>
             </div>
           ) : null}
@@ -312,7 +402,7 @@ export function FormularioPago({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <Link
@@ -327,7 +417,7 @@ export function FormularioPago({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente ? "Registrando…" : "Registrar pago"}
+            {pendiente ? 'Registrando…' : 'Registrar pago'}
           </button>
         </div>
       </div>
