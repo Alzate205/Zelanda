@@ -51,6 +51,7 @@ export type ItemColaAvance = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };
 
 export type ItemColaNovedad = {
@@ -63,6 +64,7 @@ export type ItemColaNovedad = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };
 
 export type SnapshotTrabajador = {
@@ -242,6 +244,7 @@ export type ItemColaDespachoCrear = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };
 
 export type ItemColaDespachoCerrar = {
@@ -259,6 +262,7 @@ export type ItemColaDespachoCerrar = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };
 
 export type ItemColaCosecha = {
@@ -274,6 +278,7 @@ export type ItemColaCosecha = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };
 
 export type ItemColaSalida = {
@@ -288,4 +293,5 @@ export type ItemColaSalida = {
   intentos: number;
   ultimo_error: string | null;
   creado_en: number;
+  usuario_id?: string | null;
 };

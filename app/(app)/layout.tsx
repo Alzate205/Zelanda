@@ -6,7 +6,7 @@ import { BottomNav } from '@/components/shared/BottomNav';
 import { PushPrompt } from '@/components/shared/PushPrompt';
 import { SyncEngineInit } from '@/components/shared/SyncEngineInit';
 import { BannerOffline } from '@/components/shared/BannerOffline';
-import { GuardarRolLocal } from '@/components/shared/GuardarRolLocal';
+import { SesionLocal } from '@/components/shared/SesionLocal';
 import { InstalarPWABanner } from '@/components/shared/InstalarPWABanner';
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
@@ -25,8 +25,8 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       {usuario.rol === 'TRABAJADOR' ? null : <BottomNav rol={usuario.rol} />}
       <PushPrompt />
       <SyncEngineInit />
-      <GuardarRolLocal rol={usuario.rol} />
-      <BannerOffline />
+      <SesionLocal usuarioId={usuario.id} rol={usuario.rol} />
+      <BannerOffline rol={usuario.rol} />
       <InstalarPWABanner />
       {/* Temporal: panel de diagnóstico, se activa con ?diag=1 en la URL. */}
       <Suspense fallback={null}>

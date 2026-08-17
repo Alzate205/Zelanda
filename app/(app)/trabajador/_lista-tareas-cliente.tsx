@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { PrecargarOffline } from '@/components/shared/PrecargarOffline';
 import { leerAsignaciones, guardarSnapshotTrabajador, cacheFresca } from '@/lib/offline/cache';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import type { AsignacionCacheada, SnapshotTrabajador } from '@/lib/offline/tipos';
@@ -78,6 +79,18 @@ export function ListaTareasCliente({
     <h1 className="font-serif text-3xl text-zelanda-verde-900">{nombrePila}, tus tareas</h1>
   );
 
+  // Las pantallas donde el trabajador realmente registra: se guardan ahora,
+  // con señal, porque en el monte no habrá con qué traerlas.
+  const paraOffline = (
+    <PrecargarOffline
+      urls={[
+        '/trabajador/novedad/nueva',
+        '/trabajador/pendientes',
+        ...asignaciones.map((a) => `/trabajador/avance/${a.id}`),
+      ]}
+    />
+  );
+
   if (cargando) {
     return (
       <div className="space-y-5 pb-28">
@@ -93,6 +106,7 @@ export function ListaTareasCliente({
     return (
       <div className="space-y-5 pb-28">
         {titulo}
+        {paraOffline}
         <EmptyState
           titulo="Hoy no tienes tareas"
           descripcion="Cuando el jefe te asigne una, aparece aquí."
@@ -105,6 +119,7 @@ export function ListaTareasCliente({
   return (
     <div className="space-y-5 pb-28">
       {titulo}
+      {paraOffline}
 
       <div className="flex flex-col gap-3.5">
         {asignaciones.map((a) => {
