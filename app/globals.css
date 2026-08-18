@@ -121,9 +121,16 @@ input[type='date']::-webkit-date-and-time-value {
    * deslizar aunque el contenido quepa. `100dvh` sigue el alto que de verdad
    * se ve. Van las dos: donde no se entienda `dvh` queda la de arriba.
    */
-  .alto-app {
-    min-height: 100vh;
-    min-height: 100dvh;
+  .marco-app {
+    /* Alto exacto de la pantalla, no mínimo: el marco no crece ni se desplaza.
+       `100vh` mide como si las barras del navegador no existieran, así que
+       `100dvh` va después para los que lo entienden. */
+    height: 100vh;
+    height: 100dvh;
+    /* Acá está la clave del problema que se arrastraba: si el documento
+       scrollea, la barra de abajo se va con él. Con el marco quieto y el
+       scroll adentro del contenido, la barra no se mueve nunca. */
+    overflow: hidden;
   }
 }
 
