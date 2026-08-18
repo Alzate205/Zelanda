@@ -16,7 +16,9 @@ export function ConfirmarBorrado({
   variante = 'peligro',
 }: {
   action: (formData: FormData) => Promise<void>;
-  id: bigint;
+  /** Acepta texto además de bigint: los ids que cruzan del servidor al
+   *  cliente van aplanados, porque un BigInt no es serializable. */
+  id: bigint | string;
   mensaje?: string;
   etiqueta?: string;
   variante?: 'peligro' | 'silencioso';

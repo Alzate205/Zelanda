@@ -46,10 +46,10 @@ function fmtFecha(d: Date): string {
 }
 
 type Pago = {
-  id: bigint;
+  id: string;
   fecha: Date;
   tipo: string;
-  monto: unknown;
+  monto: number;
   metodo_pago: string | null;
   cubre_desde: Date | null;
   cubre_hasta: Date | null;
@@ -119,11 +119,11 @@ export function ListaPagos({ pagos, totalMes }: Props) {
       ) : (
         <ul className="space-y-2">
           {lista.map((p) => {
-            const monto = Number(p.monto);
+            const monto = p.monto;
             const estado = ESTADO_POR_TIPO[p.tipo] ?? 'neutro';
             return (
               <li
-                key={String(p.id)}
+                key={p.id}
                 className="rounded-xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave"
               >
                 <div className="flex items-start justify-between gap-2">

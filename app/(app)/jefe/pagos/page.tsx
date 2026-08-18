@@ -51,7 +51,23 @@ export default async function PaginaPagos() {
         </Link>
       </header>
 
-      <ListaPagos pagos={pagos} totalMes={totalMes} />
+      {/* Se aplanan antes de cruzar al cliente: `monto` es un Decimal y `id` un
+          BigInt, y React avisa —con razón— que no son objetos serializables. */}
+      <ListaPagos
+        pagos={pagos.map((p) => ({
+          id: p.id.toString(),
+          fecha: p.fecha,
+          tipo: p.tipo,
+          monto: Number(p.monto),
+          metodo_pago: p.metodo_pago,
+          cubre_desde: p.cubre_desde,
+          cubre_hasta: p.cubre_hasta,
+          motivo_diferencia: p.motivo_diferencia,
+          notas: p.notas,
+          persona: { nombre_completo: p.persona.nombre_completo },
+        }))}
+        totalMes={totalMes}
+      />
     </div>
   );
 }
