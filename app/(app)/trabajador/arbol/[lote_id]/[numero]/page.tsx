@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import Image from "next/image";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
 import {
   ChevronLeft,
   AlertCircle,
@@ -14,21 +14,21 @@ import {
   Droplets,
   Sprout,
   type LucideIcon,
-} from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { urlFotoFirmada } from "@/lib/supabase/storage";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { formatearFechaCorta } from "@/lib/utils";
+} from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { urlFotoFirmada } from '@/lib/supabase/storage';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { Eyebrow } from '@/components/ui/Eyebrow';
+import { formatearFechaCorta } from '@/lib/utils';
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
-  PLAGA: "Plaga",
-  DANO_FISICO: "Daño físico",
-  ENFERMEDAD: "Enfermedad",
-  OBSERVACION: "Observación",
-  OTRO: "Otro",
+  PLAGA: 'Plaga',
+  DANO_FISICO: 'Daño físico',
+  ENFERMEDAD: 'Enfermedad',
+  OBSERVACION: 'Observación',
+  OTRO: 'Otro',
 };
 
 function parsearId(raw: string): bigint | null {
@@ -66,11 +66,11 @@ function aniosDesde(fecha: Date): {
 
 function iconoPorTarea(nombre: string): LucideIcon {
   const n = nombre.toLowerCase();
-  if (n.includes("rieg")) return Droplets;
-  if (n.includes("poda")) return Scissors;
-  if (n.includes("fert")) return Sprout;
-  if (n.includes("plag")) return Bug;
-  if (n.includes("cosech")) return Apple;
+  if (n.includes('rieg')) return Droplets;
+  if (n.includes('poda')) return Scissors;
+  if (n.includes('fert')) return Sprout;
+  if (n.includes('plag')) return Bug;
+  if (n.includes('cosech')) return Apple;
   return Leaf;
 }
 
@@ -82,12 +82,12 @@ export async function generateMetadata({
   const { lote_id, numero } = await params;
   const id = parsearId(lote_id);
   const num = parsearNumero(numero);
-  if (!id || !num) return { title: "Árbol no encontrado" };
+  if (!id || !num) return { title: 'Árbol no encontrado' };
   const lote = await prisma.lotes.findUnique({
     where: { id },
     select: { nombre: true },
   });
-  return { title: `Árbol ${num} · Lote ${lote?.nombre ?? "?"}` };
+  return { title: `Árbol ${num} · Lote ${lote?.nombre ?? '?'}` };
 }
 
 type RegistroArbol = {
@@ -104,7 +104,7 @@ export default async function FichaArbolTrabajador({
 }: {
   params: Promise<{ lote_id: string; numero: string }>;
 }) {
-  await requerirUsuario("TRABAJADOR");
+  await requerirUsuario('TRABAJADOR');
   const { lote_id, numero } = await params;
 
   const loteId = parsearId(lote_id);
@@ -137,18 +137,17 @@ export default async function FichaArbolTrabajador({
     }),
   ]);
   const cosechaTotalLote = Number(cosechaAgg._sum.peso_kg ?? 0);
-  const promedioKg =
-    arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
+  const promedioKg = arbolesGenerados > 0 ? cosechaTotalLote / arbolesGenerados : 0;
 
   const fechaSiembraEfectiva = arbol.fecha_siembra ?? arbol.lotes.fecha_siembra;
   const edad = fechaSiembraEfectiva
     ? aniosDesde(fechaSiembraEfectiva)
-    : { display: "—", anios: 0, dias: 0 };
+    : { display: '—', anios: 0, dias: 0 };
 
   const [novedades, registrosRaw] = await Promise.all([
     prisma.novedades.findMany({
       where: { arbol_id: arbol.id },
-      orderBy: { fecha: "desc" },
+      orderBy: { fecha: 'desc' },
       include: { persona: { select: { nombre_completo: true } } },
     }),
     prisma.$queryRaw<
@@ -197,7 +196,7 @@ export default async function FichaArbolTrabajador({
         url: await urlFotoFirmada(n.foto_path as string),
         tipo: n.tipo,
         fecha: n.fecha,
-      })),
+      }))
   );
   const fotosValidas = fotos.filter((f) => f.url) as Array<{
     id: string;
@@ -206,10 +205,7 @@ export default async function FichaArbolTrabajador({
     fecha: Date;
   }>;
 
-  const conteoTareas = new globalThis.Map<
-    string,
-    { total: number; ultima: Date }
-  >();
+  const conteoTareas = new globalThis.Map<string, { total: number; ultima: Date }>();
   for (const r of registros) {
     const actual = conteoTareas.get(r.tipo_tarea_nombre);
     if (!actual) {
@@ -222,28 +218,25 @@ export default async function FichaArbolTrabajador({
       if (r.fecha_registro > actual.ultima) actual.ultima = r.fecha_registro;
     }
   }
-  const conteoArr = [...conteoTareas.entries()].sort(
-    (a, b) => b[1].total - a[1].total,
-  );
-  const totalIntervenciones = conteoArr.reduce(
-    (acc, [, v]) => acc + v.total,
-    0,
-  );
+  const conteoArr = [...conteoTareas.entries()].sort((a, b) => b[1].total - a[1].total);
+  const totalIntervenciones = conteoArr.reduce((acc, [, v]) => acc + v.total, 0);
 
   const novedadesAbiertas = novedades.filter((n) => !n.resuelta).length;
-  const arbolIdLegible = `${arbol.lotes.nombre.slice(0, 2).toUpperCase()}-${String(arbol.numero_placa).padStart(3, "0")}`;
-  const estadoVisual = novedadesAbiertas > 0 ? "vencida" : "aldia";
-  const badgeTexto = novedadesAbiertas > 0 ? "Con novedad" : "Saludable";
+  const arbolIdLegible = `${arbol.lotes.nombre.slice(0, 2).toUpperCase()}-${String(
+    arbol.numero_placa
+  ).padStart(3, '0')}`;
+  const estadoVisual = novedadesAbiertas > 0 ? 'vencida' : 'aldia';
+  const badgeTexto = novedadesAbiertas > 0 ? 'Con novedad' : 'Saludable';
 
   return (
-    <div className="-mx-4 -mt-4">
+    <div className="-mx-4 -mt-6">
       <div
         className="px-4 pb-5 pt-3 text-zelanda-beige-50"
         style={{
           background:
-            "radial-gradient(circle at 85% -10%, rgba(193,150,88,0.32), transparent 55%)," +
-            "radial-gradient(circle at 0% 100%, rgba(58,92,68,0.3), transparent 60%)," +
-            "linear-gradient(180deg, #2d4a35, #142c1a)",
+            'radial-gradient(circle at 85% -10%, rgba(193,150,88,0.32), transparent 55%),' +
+            'radial-gradient(circle at 0% 100%, rgba(58,92,68,0.3), transparent 60%),' +
+            'linear-gradient(180deg, #2d4a35, #142c1a)',
         }}
       >
         <div className="flex items-center gap-2">
@@ -268,10 +261,9 @@ export default async function FichaArbolTrabajador({
           <div
             className="flex h-[92px] w-[92px] items-center justify-center rounded-[22px] border-2 border-white/30 font-serif text-[38px] font-semibold text-zelanda-beige-50"
             style={{
-              background:
-                "linear-gradient(160deg, rgba(251,247,240,0.18), rgba(251,247,240,0.05))",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
-              letterSpacing: "-0.03em",
+              background: 'linear-gradient(160deg, rgba(251,247,240,0.18), rgba(251,247,240,0.05))',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+              letterSpacing: '-0.03em',
             }}
           >
             #{arbol.numero_placa}
@@ -285,8 +277,8 @@ export default async function FichaArbolTrabajador({
             </div>
             <p className="m-0 font-serif text-[20px] leading-tight">Hass</p>
             <p className="m-0 mt-1 text-[11.5px] text-zelanda-beige-100/75">
-              Lote {arbol.lotes.nombre} · de{" "}
-              {arbol.lotes.total_arboles.toLocaleString("es-CO")} árboles
+              Lote {arbol.lotes.nombre} · de {arbol.lotes.total_arboles.toLocaleString('es-CO')}{' '}
+              árboles
             </p>
           </div>
         </div>
@@ -294,18 +286,10 @@ export default async function FichaArbolTrabajador({
         <div className="mt-3.5 grid grid-cols-3 gap-1.5">
           <HeroMini
             valor={edad.display}
-            unidad={edad.anios > 0 ? "edad" : "días"}
-            sub={
-              edad.dias > 0
-                ? `${edad.dias.toLocaleString("es-CO")} d`
-                : "sin fecha"
-            }
+            unidad={edad.anios > 0 ? 'edad' : 'días'}
+            sub={edad.dias > 0 ? `${edad.dias.toLocaleString('es-CO')} d` : 'sin fecha'}
           />
-          <HeroMini
-            valor={totalIntervenciones}
-            unidad="tareas"
-            sub="registradas"
-          />
+          <HeroMini valor={totalIntervenciones} unidad="tareas" sub="registradas" />
           <HeroMini
             valor={novedades.length}
             unidad="novedades"
@@ -332,18 +316,14 @@ export default async function FichaArbolTrabajador({
                   Siembra
                 </dt>
                 <dd className="mt-0.5 text-zelanda-verde-900">
-                  {fechaSiembraEfectiva
-                    ? formatearFechaCorta(fechaSiembraEfectiva)
-                    : "—"}
+                  {fechaSiembraEfectiva ? formatearFechaCorta(fechaSiembraEfectiva) : '—'}
                 </dd>
               </div>
               <div>
                 <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Edad
                 </dt>
-                <dd className="mt-0.5 text-zelanda-verde-900">
-                  {edad.display}
-                </dd>
+                <dd className="mt-0.5 text-zelanda-verde-900">{edad.display}</dd>
               </div>
             </dl>
             {arbol.notas ? (
@@ -367,14 +347,13 @@ export default async function FichaArbolTrabajador({
                 </span>
               </div>
               <p className="mt-1.5 text-[11.5px] text-zelanda-verde-700">
-                Lote {arbol.lotes.nombre}:{" "}
+                Lote {arbol.lotes.nombre}:{' '}
                 <strong className="text-zelanda-verde-900">
-                  {cosechaTotalLote.toLocaleString("es-CO", {
+                  {cosechaTotalLote.toLocaleString('es-CO', {
                     maximumFractionDigits: 0,
                   })}
-                </strong>{" "}
-                kg cosechados ÷ {arbolesGenerados.toLocaleString("es-CO")}{" "}
-                árboles
+                </strong>{' '}
+                kg cosechados ÷ {arbolesGenerados.toLocaleString('es-CO')} árboles
               </p>
             </Card>
           </section>
@@ -399,9 +378,7 @@ export default async function FichaArbolTrabajador({
                         <span className="font-serif text-[22px] leading-none text-zelanda-verde-900">
                           {info.total}
                         </span>
-                        <span className="text-[10.5px] text-zelanda-verde-700">
-                          ×
-                        </span>
+                        <span className="text-[10.5px] text-zelanda-verde-700">×</span>
                       </div>
                       <p className="m-0 mt-0.5 text-[11px] font-semibold text-zelanda-verde-900">
                         {nombre}
@@ -455,18 +432,14 @@ export default async function FichaArbolTrabajador({
                   className="rounded-xl border border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge estado={n.resuelta ? "aldia" : "vencida"}>
-                      {n.resuelta
-                        ? "Resuelta"
-                        : (ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo)}
+                    <Badge estado={n.resuelta ? 'aldia' : 'vencida'}>
+                      {n.resuelta ? 'Resuelta' : ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo}
                     </Badge>
                     <span className="text-[11px] text-zelanda-verde-700">
                       {formatearFechaCorta(n.fecha)}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-[13px] text-zelanda-verde-900">
-                    {n.descripcion}
-                  </p>
+                  <p className="mt-1.5 text-[13px] text-zelanda-verde-900">{n.descripcion}</p>
                   <p className="mt-0.5 text-[11px] text-zelanda-verde-700">
                     Por {n.persona.nombre_completo}
                   </p>
@@ -479,8 +452,7 @@ export default async function FichaArbolTrabajador({
         {fotosValidas.length > 0 ? (
           <section className="pb-2">
             <Eyebrow className="mb-2 flex items-center gap-1.5">
-              <Camera className="h-3 w-3" /> Galería · {fotosValidas.length}{" "}
-              fotos
+              <Camera className="h-3 w-3" /> Galería · {fotosValidas.length} fotos
             </Eyebrow>
             <div className="grid grid-cols-4 gap-1.5">
               {fotosValidas.map((f) => (
@@ -505,10 +477,8 @@ export default async function FichaArbolTrabajador({
         {novedadesAbiertas > 0 ? (
           <p className="pb-2 text-center text-[11px] text-zelanda-verde-700/70">
             <AlertCircle className="mr-1 inline h-3 w-3" />
-            {novedadesAbiertas}{" "}
-            {novedadesAbiertas === 1
-              ? "novedad sin resolver"
-              : "novedades sin resolver"}
+            {novedadesAbiertas}{' '}
+            {novedadesAbiertas === 1 ? 'novedad sin resolver' : 'novedades sin resolver'}
           </p>
         ) : null}
       </div>
@@ -516,19 +486,11 @@ export default async function FichaArbolTrabajador({
   );
 }
 
-function HeroMini({
-  valor,
-  unidad,
-  sub,
-}: {
-  valor: React.ReactNode;
-  unidad: string;
-  sub: string;
-}) {
+function HeroMini({ valor, unidad, sub }: { valor: React.ReactNode; unidad: string; sub: string }) {
   return (
     <div
       className="rounded-[10px] border border-white/20 px-2 py-1.5 text-center text-zelanda-beige-50"
-      style={{ background: "rgba(251,247,240,0.10)" }}
+      style={{ background: 'rgba(251,247,240,0.10)' }}
     >
       <p className="m-0 font-serif text-[18px] leading-none">{valor}</p>
       <p className="m-0 mt-0.5 text-[9.5px] uppercase tracking-[0.04em] text-zelanda-beige-100/70">

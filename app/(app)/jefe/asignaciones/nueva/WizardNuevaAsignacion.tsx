@@ -200,7 +200,7 @@ export function WizardNuevaAsignacion({
   ];
 
   return (
-    <div className="-mx-4 -mt-4 flex min-h-svh flex-col">
+    <div className="-mx-4 -mt-6 flex min-h-svh flex-col">
       <div className="bg-gradient-to-b from-zelanda-verde-800 to-zelanda-verde-700 px-4 pb-3 pt-3 text-zelanda-beige-50">
         <div className="flex items-center gap-2">
           <button
