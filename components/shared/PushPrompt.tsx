@@ -21,6 +21,41 @@ function conTope<T>(promesa: Promise<T>, ms: number, que: string): Promise<T> {
   ]);
 }
 
+/**
+ * En iPhone, los avisos push solo funcionan si la app está instalada en la
+ * pantalla de inicio. Desde Safari, el navegador deja pedir el permiso pero
+ * después rechaza la suscripción, y el aviso quedaba culpando a la señal.
+ */
+function esIPhone(): boolean {
+  return /iP(hone|od|ad)/.test(navigator.userAgent);
+}
+
+function estaInstalada(): boolean {
+  const navegadorIOS = navigator as Navigator & { standalone?: boolean };
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches === true ||
+    navegadorIOS.standalone === true
+  );
+}
+
+/**
+ * Traduce el fallo a algo accionable, nombrando el paso que se cayó.
+ * El texto crudo va detrás para poder pasarlo si hay que investigar.
+ */
+function motivo(e: unknown): string {
+  const texto = e instanceof Error ? e.message : String(e);
+  if (texto.includes('arranque de la app')) {
+    return 'La app no terminó de arrancar. Cerrala del todo, volvé a abrirla y probá de nuevo.';
+  }
+  if (texto.includes('registro en el servidor')) {
+    return 'El permiso quedó dado pero no se pudo guardar en el servidor. Probá de nuevo con señal.';
+  }
+  if (esIPhone() && !estaInstalada()) {
+    return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
+  }
+  return `El celular rechazó la suscripción. Mostrale esto al jefe: ${texto}`;
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const base64Plana = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -34,6 +69,7 @@ export function PushPrompt() {
   const [mostrar, setMostrar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [faltaInstalar, setFaltaInstalar] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -42,6 +78,7 @@ export function PushPrompt() {
     if (Notification.permission !== 'default') return;
     const pospuesto = localStorage.getItem(POSPONER_KEY);
     if (pospuesto && Number(pospuesto) > Date.now()) return;
+    setFaltaInstalar(esIPhone() && !estaInstalada());
     setMostrar(true);
   }, []);
 
@@ -90,8 +127,9 @@ export function PushPrompt() {
       setMostrar(false);
     } catch (e) {
       console.warn('Suscripción push falló', e);
-      // Antes se cerraba el aviso en silencio y parecía que había funcionado.
-      setAviso('No se pudo activar ahora. Probá de nuevo con mejor señal.');
+      // Antes decía "probá con mejor señal" pasara lo que pasara, y eso mandaba
+      // a buscar el problema donde no estaba. Ahora nombra el paso que falló.
+      setAviso(motivo(e));
     } finally {
       setEnviando(false);
     }
@@ -114,7 +152,9 @@ export function PushPrompt() {
           <div className="flex-1">
             <p className="font-medium text-zelanda-verde-900">Activar notificaciones</p>
             <p className="mt-1 text-xs text-zelanda-verde-700/80">
-              Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.
+              {faltaInstalar
+                ? 'En iPhone hace falta instalar la app primero: tocá Compartir y luego “Agregar a inicio”. Después abrila desde el icono y activá los avisos ahí.'
+                : 'Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.'}
             </p>
             {aviso ? (
               <p role="status" className="mt-2 text-xs text-estado-vencida">
@@ -122,21 +162,23 @@ export function PushPrompt() {
               </p>
             ) : null}
             <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={activar}
-                disabled={enviando}
-                className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-2 text-sm text-white disabled:opacity-60"
-              >
-                {enviando ? 'Activando...' : 'Activar'}
-              </button>
+              {faltaInstalar ? null : (
+                <button
+                  type="button"
+                  onClick={activar}
+                  disabled={enviando}
+                  className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-2 text-sm text-white disabled:opacity-60"
+                >
+                  {enviando ? 'Activando...' : 'Activar'}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={posponer}
                 disabled={enviando}
                 className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-2 text-sm text-zelanda-verde-700"
               >
-                Más tarde
+                {faltaInstalar ? 'Entendido' : 'Más tarde'}
               </button>
             </div>
           </div>
