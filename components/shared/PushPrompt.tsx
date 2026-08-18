@@ -62,6 +62,14 @@ function motivo(e: unknown): string {
   if (esIPhone() && !estaInstalada()) {
     return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
   }
+  if (e instanceof Error && e.name === 'AbortError') {
+    return (
+      'El servicio de avisos de Apple rechazó el registro. Revisá en el celular: ' +
+      'que el Modo de bajo consumo esté apagado, que haya internet estable, y en ' +
+      'Ajustes → Notificaciones que La Zelanda tenga los avisos permitidos. ' +
+      'Después probá de nuevo.'
+    );
+  }
   const nombre = e instanceof Error && e.name && e.name !== 'Error' ? `${e.name}: ` : '';
   return `El celular rechazó la suscripción en ${location.host}. Mostrale esto al jefe: ${nombre}${texto}`;
 }
@@ -114,28 +122,47 @@ function mismaClave(sub: PushSubscription, clave: Uint8Array): boolean {
  */
 async function suscribir(
   reg: ServiceWorkerRegistration,
-  clave: Uint8Array
+  claveTexto: string,
+  claveBytes: Uint8Array
 ): Promise<PushSubscription> {
   const vieja = await reg.pushManager.getSubscription();
   if (vieja) {
-    if (mismaClave(vieja, clave)) return vieja;
+    if (mismaClave(vieja, claveBytes)) return vieja;
     try {
       await vieja.unsubscribe();
     } catch {
       /* si no deja darla de baja, igual intentamos suscribir */
     }
   }
-  const opciones: PushSubscriptionOptionsInit = {
-    userVisibleOnly: true,
-    applicationServerKey: clave as BufferSource,
-  };
-  try {
-    return await conTope(reg.pushManager.subscribe(opciones), 15000, 'suscripción');
-  } catch {
-    // El servicio de Apple falla de a ratos; un segundo intento suele bastar.
-    await new Promise((listo) => setTimeout(listo, 1500));
-    return conTope(reg.pushManager.subscribe(opciones), 15000, 'suscripción');
+
+  // La especificación acepta la clave como texto base64url o como bytes, y
+  // Safari no trata las dos formas igual: con los bytes devuelve
+  // "AbortError: Failed due to internal service error". Se prueba primero el
+  // texto, que es lo que mejor le sienta, y los bytes quedan de respaldo para
+  // los navegadores que solo entienden esa forma.
+  const formas: (string | Uint8Array)[] = [claveTexto, claveBytes];
+
+  let ultimo: unknown = null;
+  for (const forma of formas) {
+    for (const intento of [1, 2]) {
+      try {
+        return await conTope(
+          reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: forma as unknown as BufferSource,
+          }),
+          15000,
+          'suscripción'
+        );
+      } catch (e) {
+        ultimo = e;
+        // El servicio de Apple falla de a ratos: un segundo intento con la
+        // misma forma sale gratis antes de cambiar de estrategia.
+        if (intento === 1) await new Promise((listo) => setTimeout(listo, 1500));
+      }
+    }
   }
+  throw ultimo;
 }
 
 export function PushPrompt() {
@@ -171,7 +198,7 @@ export function PushPrompt() {
         setAviso('No se pudo activar. Avisale al jefe de la finca.');
         return;
       }
-      const sub = await suscribir(reg, urlBase64ToUint8Array(pub));
+      const sub = await suscribir(reg, pub, urlBase64ToUint8Array(pub));
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
