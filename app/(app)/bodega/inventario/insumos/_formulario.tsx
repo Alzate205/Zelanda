@@ -89,9 +89,12 @@ export function FormularioInsumo({
           min="0"
           step="0.001"
           required
+          // Si hay un mínimo configurado se propone; si no, el campo va vacío.
+          // Dejarlo en "0" hacía que escribir 4 quedara como "04".
           defaultValue={
-            valores?.stock_minimo ?? (stockMinimoDefault != null ? String(stockMinimoDefault) : '0')
+            valores?.stock_minimo ?? (stockMinimoDefault != null ? String(stockMinimoDefault) : '')
           }
+          placeholder="0"
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>

@@ -4,7 +4,7 @@
 // La versión se sube a mano en cada cambio de este archivo. Al activarse borra
 // las cachés de versiones viejas: es la vía para invalidar contenido que quedó
 // mal guardado en los celulares (por ejemplo, páginas de otra cuenta).
-const VERSION = 'b2-1';
+const VERSION = 'b2-2';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
@@ -13,6 +13,14 @@ const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
 // no depende de la versión del worker.
 const CACHE_SESION = 'zelanda-sesion';
 const URL_DUENO = 'https://zelanda.local/dueno';
+const URL_ROL = 'https://zelanda.local/rol';
+
+const HOME_POR_ROL = {
+  TRABAJADOR: '/trabajador',
+  BODEGA: '/bodega',
+  ALMACEN: '/almacen',
+  JEFE: '/jefe',
+};
 const HOSTS_BALDOSAS = [
   'mt0.google.com',
   'mt1.google.com',
@@ -138,12 +146,28 @@ async function borrarCachesDeUsuario() {
   );
 }
 
-async function registrarSesion(usuarioId) {
+async function registrarSesion(usuarioId, rol) {
   if (!usuarioId) return;
+  // El rol se guarda siempre: es lo que permite, sin señal, devolver la home
+  // de quien está adentro en vez de una pantalla muerta.
+  if (rol) {
+    const cache = await caches.open(CACHE_SESION);
+    await cache.put(URL_ROL, new Response(rol));
+  }
   const anterior = await leerDueno();
   if (anterior === usuarioId) return;
   if (anterior !== null) await borrarCachesDeUsuario();
   await guardarDueno(usuarioId);
+}
+
+async function leerRol() {
+  try {
+    const cache = await caches.open(CACHE_SESION);
+    const hit = await cache.match(URL_ROL);
+    return hit ? await hit.text() : null;
+  } catch {
+    return null;
+  }
 }
 
 async function olvidarSesion() {
@@ -151,6 +175,7 @@ async function olvidarSesion() {
   try {
     const cache = await caches.open(CACHE_SESION);
     await cache.delete(URL_DUENO);
+    await cache.delete(URL_ROL);
   } catch {
     /* la caché de sesión no existe: nada que olvidar */
   }
@@ -160,7 +185,7 @@ self.addEventListener('message', (event) => {
   const dato = event.data;
   if (!dato || typeof dato !== 'object') return;
   if (dato.tipo === 'sesion') {
-    event.waitUntil(registrarSesion(dato.usuarioId));
+    event.waitUntil(registrarSesion(dato.usuarioId, dato.rol));
     return;
   }
   if (dato.tipo === 'cerrar-sesion') {
@@ -237,7 +262,15 @@ self.addEventListener('fetch', (event) => {
 async function navegacionConFallback(req, url) {
   const cache = await caches.open(CACHE_SHELL);
   try {
-    const res = await fetch(req);
+    // Un reintento antes de rendirse: al abrir la app desde el icono, la radio
+    // del celular a veces todavía no está lista y el primer fetch falla aunque
+    // haya señal. Sin esto, abrir la app mostraba "sin señal" de la nada.
+    let res;
+    try {
+      res = await fetch(req);
+    } catch {
+      res = await fetch(req);
+    }
     // No cacheamos redirects: Safari rechaza responses cacheadas con .redirected=true.
     if (res.ok && !res.redirected) {
       cache.put(req, res.clone());
@@ -254,12 +287,25 @@ async function navegacionConFallback(req, url) {
     // Cache directo de la ruta pedida
     const hit = await cache.match(req, { ignoreVary: true });
     if (hit) return hit;
-    // NO se sirve la home de otro rol como respaldo. Esas páginas vienen
-    // renderizadas con el nombre y los datos de quien las pidió, así que
-    // devolverlas a otra persona la hacía aterrizar en una sesión que no es
-    // suya (un usuario de bodega abría la app y caía en /trabajador).
+
+    // Respaldo: la home DEL ROL QUE ESTÁ ADENTRO. Se puede porque las cachés se
+    // borran al cambiar de cuenta, así que lo guardado es de esta persona y de
+    // nadie más. Antes se devolvía la primera home que hubiera, sin mirar quién
+    // estaba adentro, y un usuario de bodega terminaba en la del trabajador.
+    const rol = await leerRol();
+    const home = HOME_POR_ROL[rol];
+    if (home) {
+      const inicio = await cache.match(home, { ignoreVary: true });
+      if (inicio) return inicio;
+    }
+
+    // No hay nada guardado. Suele ser la primera vez que se abre después de una
+    // actualización: el worker nuevo borra lo viejo y hace falta una carga con
+    // internet para volver a llenarlo.
     return new Response(
-      paginaSinSenal('Esta pantalla no quedó guardada en el celular y no hay señal para traerla.'),
+      paginaSinSenal(
+        'No hay nada guardado todavía en este celular. Conectate a internet una vez y vuelve a abrir la app.'
+      ),
       { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     );
   }

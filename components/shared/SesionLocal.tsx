@@ -28,7 +28,9 @@ export function SesionLocal({ usuarioId, rol }: { usuarioId: string; rol: string
     // `ready` puede no resolver nunca si el worker no llega a activarse; como
     // esto es aviso y no bloquea nada, se deja sin await y sin timeout.
     navigator.serviceWorker.ready
-      .then((reg) => reg.active?.postMessage({ tipo: 'sesion', usuarioId }))
+      // El rol viaja junto al usuario: sin señal es lo que le permite al worker
+      // devolver la home de quien está adentro en vez de una pantalla muerta.
+      .then((reg) => reg.active?.postMessage({ tipo: 'sesion', usuarioId, rol }))
       .catch(() => undefined);
   }, [usuarioId, rol]);
 
