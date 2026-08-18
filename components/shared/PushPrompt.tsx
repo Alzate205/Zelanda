@@ -44,8 +44,17 @@ function estaInstalada(): boolean {
  */
 function motivo(e: unknown): string {
   const texto = e instanceof Error ? e.message : String(e);
-  if (texto.includes('arranque de la app')) {
-    return 'La app no terminó de arrancar. Cerrala del todo, volvé a abrirla y probá de nuevo.';
+  if (texto.includes('arranque de la app') || texto.includes('no se pudo registrar')) {
+    // Pasó de verdad: la app quedó instalada desde un enlace de prueba de
+    // Vercel, que pide iniciar sesión y por eso responde el sw.js con una
+    // redirección. Un worker que redirige no se registra nunca, así que la
+    // parte offline y los avisos no arrancan. Mostrar la dirección es lo que
+    // permite darse cuenta sin tener que adivinar.
+    return (
+      `El motor de la app no arrancó en ${location.host}. ` +
+      'Si esa no es la dirección de siempre, la app quedó instalada desde un enlace ' +
+      'de prueba: borrala de la pantalla de inicio e instalala de nuevo desde la buena.'
+    );
   }
   if (texto.includes('registro en el servidor')) {
     return 'El permiso quedó dado pero no se pudo guardar en el servidor. Probá de nuevo con señal.';
@@ -63,6 +72,28 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
+}
+
+/**
+ * Devuelve el worker activo, registrándolo si hace falta.
+ *
+ * Esperar a `serviceWorker.ready` a secas no distingue entre "todavía está
+ * arrancando" y "nunca se va a registrar", y lo segundo pasa cuando el sw.js
+ * responde con una redirección. Registrar acá mismo, además, recupera el caso
+ * de que el registro de la carga inicial se haya caído por un corte de red.
+ */
+async function obtenerRegistro(): Promise<ServiceWorkerRegistration> {
+  const existente = await navigator.serviceWorker.getRegistration();
+  if (existente?.active) return existente;
+  if (!existente) {
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+    } catch (e) {
+      const detalle = e instanceof Error ? e.message : String(e);
+      throw new Error(`no se pudo registrar: ${detalle}`);
+    }
+  }
+  return conTope(navigator.serviceWorker.ready, 10000, 'arranque de la app');
 }
 
 export function PushPrompt() {
@@ -91,7 +122,7 @@ export function PushPrompt() {
         setMostrar(false);
         return;
       }
-      const reg = await conTope(navigator.serviceWorker.ready, 10000, 'arranque de la app');
+      const reg = await obtenerRegistro();
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) {
         console.warn('VAPID public key faltante');
