@@ -1,53 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { formatearMiles, normalizarEntradaNumerica, parsearMonto } from './formatos';
+import { parsearDecimal } from './formatos';
 
-describe('formatearMiles', () => {
-  it('agrupa de a tres con puntos', () => {
-    expect(formatearMiles('1234567')).toBe('1.234.567');
-    expect(formatearMiles('1000')).toBe('1.000');
-    expect(formatearMiles('999')).toBe('999');
+describe('parsearDecimal', () => {
+  it('acepta la coma que manda el teclado en español', () => {
+    // El caso real: medio kilo de miel llegaba como cero y el formulario
+    // respondía que la cantidad debía ser positiva.
+    expect(parsearDecimal('0,5')).toBe(0.5);
+    expect(parsearDecimal('12,75')).toBe(12.75);
   });
 
-  it('maneja negativos', () => {
-    expect(formatearMiles('-1234')).toBe('-1.234');
-    expect(formatearMiles('-')).toBe('-');
+  it('acepta el punto de siempre', () => {
+    expect(parsearDecimal('0.5')).toBe(0.5);
+    expect(parsearDecimal('0.001')).toBe(0.001);
   });
 
-  it('vacío o no numérico devuelve vacío', () => {
-    expect(formatearMiles('')).toBe('');
-    expect(formatearMiles('abc')).toBe('');
+  it('acepta enteros y espacios alrededor', () => {
+    expect(parsearDecimal('7')).toBe(7);
+    expect(parsearDecimal('  7,5  ')).toBe(7.5);
   });
 
-  it('ignora caracteres no numéricos al formatear', () => {
-    expect(formatearMiles('1.234.567')).toBe('1.234.567');
-    expect(formatearMiles('$ 1500000')).toBe('1.500.000');
-  });
-});
-
-describe('normalizarEntradaNumerica', () => {
-  it('deja solo dígitos', () => {
-    expect(normalizarEntradaNumerica('1.500.000')).toBe('1500000');
-    expect(normalizarEntradaNumerica('$ 50.000')).toBe('50000');
+  it('rechaza lo que no es un número', () => {
+    expect(parsearDecimal('')).toBeNaN();
+    expect(parsearDecimal('abc')).toBeNaN();
+    expect(parsearDecimal('1.2.3')).toBeNaN();
+    expect(parsearDecimal(',')).toBeNaN();
   });
 
-  it('respeta el negativo solo cuando se permite', () => {
-    expect(normalizarEntradaNumerica('-1234', true)).toBe('-1234');
-    expect(normalizarEntradaNumerica('-1234', false)).toBe('1234');
-  });
-});
-
-describe('parsearMonto', () => {
-  it('convierte un string con miles a número', () => {
-    expect(parsearMonto('1.500.000')).toBe(1_500_000);
-    expect(parsearMonto('50.000')).toBe(50_000);
-  });
-
-  it('ida y vuelta: formatear → parsear es estable', () => {
-    const original = 1_234_567;
-    expect(parsearMonto(formatearMiles(String(original)))).toBe(original);
-  });
-
-  it('vacío devuelve NaN', () => {
-    expect(Number.isNaN(parsearMonto(''))).toBe(true);
+  it('deja pasar el negativo para que lo rechace quien valida', () => {
+    expect(parsearDecimal('-3,5')).toBe(-3.5);
   });
 });

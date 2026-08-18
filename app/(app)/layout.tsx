@@ -8,12 +8,13 @@ import { SyncEngineInit } from '@/components/shared/SyncEngineInit';
 import { BannerOffline } from '@/components/shared/BannerOffline';
 import { SesionLocal } from '@/components/shared/SesionLocal';
 import { InstalarPWABanner } from '@/components/shared/InstalarPWABanner';
+import { BarraListoTeclado } from '@/components/shared/BarraListoTeclado';
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const usuario = await requerirUsuario();
 
   return (
-    <div className="flex min-h-screen flex-col bg-zelanda-beige-50">
+    <div className="alto-app flex flex-col bg-zelanda-beige-50">
       <HeaderApp usuario={usuario} />
       <main
         className="mx-auto w-full max-w-screen-md flex-1 px-4 py-6 scroll-smooth"
@@ -28,6 +29,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <SesionLocal usuarioId={usuario.id} rol={usuario.rol} />
       <BannerOffline rol={usuario.rol} />
       <InstalarPWABanner />
+      <BarraListoTeclado />
       {/* Temporal: panel de diagnóstico, se activa con ?diag=1 en la URL. */}
       <Suspense fallback={null}>
         <DiagnosticoDesborde />

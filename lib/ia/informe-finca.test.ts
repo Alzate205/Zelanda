@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { redactarInforme, type DatosInforme } from './informe-finca';
+import {
+  redactarInforme,
+  partesInforme,
+  unirInforme,
+  CLAVES_SECCION,
+  type DatosInforme,
+} from './informe-finca';
 
 /** Datos mínimos: todo vacío. Sirve para probar que ninguna sección revienta. */
 function datosVacios(): DatosInforme {
@@ -222,5 +228,28 @@ describe('redactarInforme', () => {
     const texto = redactarInforme(datosCompletos());
     expect(texto.toLowerCase()).not.toContain('cédula');
     expect(texto.toLowerCase()).not.toContain('teléfono');
+  });
+});
+
+describe('secciones elegibles', () => {
+  it('rearmar con todas da exactamente el mismo texto que el informe completo', () => {
+    const d = datosCompletos();
+    expect(unirInforme(partesInforme(d), CLAVES_SECCION)).toBe(redactarInforme(d));
+  });
+
+  it('deja fuera lo que no se eligió y conserva lo demás', () => {
+    const texto = redactarInforme(datosCompletos(), ['clima', 'fenologia']);
+    expect(texto).toContain('Clima');
+    expect(texto).toContain('Fenología');
+    expect(texto).not.toContain('## Finanzas');
+    expect(texto).not.toContain('## Inventario');
+  });
+
+  it('el contexto y el cierre van siempre, aunque no se elija ninguna sección', () => {
+    // Sin ellos el modelo no sabe qué finca es ni qué se espera de él.
+    const texto = redactarInforme(datosCompletos(), []);
+    expect(texto).toContain('Hacienda La Zelanda');
+    expect(texto).toContain('aguacate Hass');
+    expect(texto.length).toBeGreaterThan(200);
   });
 });

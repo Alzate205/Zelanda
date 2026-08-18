@@ -8,6 +8,10 @@ import { enviarCosecha } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Segmented } from '@/components/ui/Segmented';
 import { pesoCanastas } from '@/lib/comercio';
+import { parsearDecimal } from '@/lib/formatos';
+
+/** Un gramo: por debajo de eso no hay báscula en la finca que lo distinga. */
+const MINIMO_KG = 0.001;
 
 export function FormularioCosecha({
   personas,
@@ -36,10 +40,13 @@ export function FormularioCosecha({
   const [peso, setPeso] = useState('');
   const [notas, setNotas] = useState('');
 
-  const pesoCalculado =
-    metodo === 'CANASTA' && canastas && capacidad
-      ? pesoCanastas(Number(canastas), Number(capacidad))
-      : null;
+  // Mientras se escribe, el campo puede no ser todavía un número ("0," por
+  // ejemplo): en ese caso no se muestra total en vez de mostrar "NaN kg".
+  const pesoCalculado = (() => {
+    if (metodo !== 'CANASTA' || !canastas || !capacidad) return null;
+    const total = pesoCanastas(Number(canastas), parsearDecimal(capacidad));
+    return Number.isFinite(total) ? total : null;
+  })();
 
   const carenciaSel = loteId ? carencias.find((c) => c.lote_id === loteId) ?? null : null;
 
@@ -62,22 +69,22 @@ export function FormularioCosecha({
 
     if (metodo === 'CANASTA') {
       const c = Number(canastas);
-      const cap = Number(capacidad);
+      const cap = parsearDecimal(capacidad);
       if (!Number.isInteger(c) || c <= 0) {
         setError('Cantidad de canastas debe ser entero positivo.');
         return;
       }
-      if (!Number.isFinite(cap) || cap <= 0) {
-        setError('Capacidad de canasta debe ser positiva.');
+      if (!Number.isFinite(cap) || cap < MINIMO_KG) {
+        setError(`La capacidad de la canasta debe ser ${MINIMO_KG} kg o más.`);
         return;
       }
       cantidadCanastas = c;
       capacidadCanastaKg = cap;
       pesoKg = c * cap;
     } else {
-      const p = Number(peso);
-      if (!Number.isFinite(p) || p <= 0) {
-        setError('Peso debe ser positivo.');
+      const p = parsearDecimal(peso);
+      if (!Number.isFinite(p) || p < MINIMO_KG) {
+        setError(`El peso debe ser ${MINIMO_KG} kg o más.`);
         return;
       }
       pesoKg = p;
@@ -205,10 +212,9 @@ export function FormularioCosecha({
             </label>
             <input
               id="capacidad"
-              type="number"
+              type="text"
               inputMode="decimal"
-              min="0.01"
-              step="0.01"
+              placeholder="20,5"
               required
               value={capacidad}
               onChange={(e) => setCapacidad(e.target.value)}
@@ -231,10 +237,9 @@ export function FormularioCosecha({
           </label>
           <input
             id="peso"
-            type="number"
+            type="text"
             inputMode="decimal"
-            min="0.01"
-            step="0.01"
+            placeholder="0,5"
             required
             value={peso}
             onChange={(e) => setPeso(e.target.value)}

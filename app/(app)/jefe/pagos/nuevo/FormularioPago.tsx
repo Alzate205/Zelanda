@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { ChevronLeft, Check } from 'lucide-react';
 import { crearPago, type EstadoPago } from '../acciones';
 import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+import {
+  DIAS_POR_PERIODO,
+  ETIQUETA_PERIODO,
+  periodoCubierto,
+  type PeriodoPago,
+} from '@/lib/periodo-pago';
 
 const ESTADO_INICIAL: EstadoPago = { error: null };
 
@@ -14,26 +20,11 @@ const inputBase =
 const labelBase =
   'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-type PeriodoPago = 'MENSUAL' | 'QUINCENAL' | 'SEMANAL';
-
 type Persona = {
   id: string;
   nombre: string;
   salarioBase: number | null;
   periodoPago: PeriodoPago | null;
-};
-
-// Días que cubre cada periodicidad. Mismo criterio que diasEstandar() en lib/saldos-calculo.
-const DIAS_POR_PERIODO: Record<PeriodoPago, number> = {
-  MENSUAL: 30,
-  QUINCENAL: 15,
-  SEMANAL: 7,
-};
-
-const ETIQUETA_PERIODO: Record<PeriodoPago, string> = {
-  MENSUAL: 'Mensual',
-  QUINCENAL: 'Quincenal',
-  SEMANAL: 'Semanal',
 };
 
 /**
@@ -88,7 +79,7 @@ export function FormularioPago({
 
   const [estado, accion, pendiente] = useActionState(crearPago, ESTADO_INICIAL);
   const [tipo, setTipo] = useState<Tipo>(tipoInicial);
-  const [conPeriodo, setConPeriodo] = useState(false);
+  const [conPeriodo, setConPeriodo] = useState(tipoInicial === 'SALARIO');
   const [personaId, setPersonaId] = useState<string>(personaIdInicial ?? '');
   const [periodo, setPeriodo] = useState<PeriodoPago>(periodoInicial);
   const [monto, setMonto] = useState(
@@ -97,6 +88,10 @@ export function FormularioPago({
   const [servicioId, setServicioId] = useState<string>(servicioIdInicial ?? '');
 
   const hoy = new Date().toISOString().slice(0, 10);
+  const [fecha, setFecha] = useState(hoy);
+  const rangoInicial = tipoInicial === 'SALARIO' ? periodoCubierto(hoy, periodoInicial) : null;
+  const [cubreDesde, setCubreDesde] = useState(rangoInicial?.desde ?? '');
+  const [cubreHasta, setCubreHasta] = useState(rangoInicial?.hasta ?? '');
   const esAjuste = tipo === 'AJUSTE';
   const esServicio = tipo === 'SERVICIO';
   const esSalario = tipo === 'SALARIO';
@@ -120,6 +115,20 @@ export function FormularioPago({
       return;
     }
     setMonto(sugerenciaSalario(p, per));
+  }
+
+  /**
+   * Escribe el periodo que el pago cubre. Se guarda en cubre_desde/cubre_hasta,
+   * que ya existían: de ahí sale después la etiqueta de la lista de pagos, sin
+   * necesidad de entrar al detalle. El jefe puede corregir las fechas a mano.
+   */
+  function autocompletarPeriodo(per: PeriodoPago, tipoNuevo: Tipo, dia: string) {
+    if (tipoNuevo !== 'SALARIO') return;
+    const rango = periodoCubierto(dia, per);
+    if (!rango) return;
+    setCubreDesde(rango.desde);
+    setCubreHasta(rango.hasta);
+    setConPeriodo(true);
   }
 
   const serviciosDeLaPersona = personaId
@@ -164,6 +173,7 @@ export function FormularioPago({
               setServicioId('');
               setPeriodo(per);
               autocompletarMonto(nueva, per, tipo);
+              autocompletarPeriodo(per, tipo, fecha);
             }}
           >
             <option value="">Selecciona persona…</option>
@@ -231,6 +241,7 @@ export function FormularioPago({
                   onChange={() => {
                     setTipo(t.id);
                     autocompletarMonto(persona, periodo, t.id);
+                    autocompletarPeriodo(periodo, t.id, fecha);
                   }}
                   className="sr-only"
                 />
@@ -252,6 +263,7 @@ export function FormularioPago({
                   onClick={() => {
                     setPeriodo(p);
                     autocompletarMonto(persona, p, tipo);
+                    autocompletarPeriodo(p, tipo, fecha);
                   }}
                   className={`min-h-touch flex-1 rounded-[10px] border px-3 text-[13px] font-semibold transition ${
                     periodo === p
@@ -308,7 +320,11 @@ export function FormularioPago({
               name="fecha"
               type="date"
               required
-              defaultValue={hoy}
+              value={fecha}
+              onChange={(e) => {
+                setFecha(e.target.value);
+                autocompletarPeriodo(periodo, tipo, e.target.value);
+              }}
               className={inputBase}
             />
           </div>
@@ -349,13 +365,27 @@ export function FormularioPago({
                 <label htmlFor="cubre_desde" className={labelBase}>
                   Cubre desde
                 </label>
-                <input id="cubre_desde" name="cubre_desde" type="date" className={inputBase} />
+                <input
+                  id="cubre_desde"
+                  name="cubre_desde"
+                  type="date"
+                  value={cubreDesde}
+                  onChange={(e) => setCubreDesde(e.target.value)}
+                  className={inputBase}
+                />
               </div>
               <div>
                 <label htmlFor="cubre_hasta" className={labelBase}>
                   Cubre hasta
                 </label>
-                <input id="cubre_hasta" name="cubre_hasta" type="date" className={inputBase} />
+                <input
+                  id="cubre_hasta"
+                  name="cubre_hasta"
+                  type="date"
+                  value={cubreHasta}
+                  onChange={(e) => setCubreHasta(e.target.value)}
+                  className={inputBase}
+                />
               </div>
             </div>
           ) : null}

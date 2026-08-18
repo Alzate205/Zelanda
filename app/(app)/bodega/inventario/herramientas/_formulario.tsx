@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import {
-  crearHerramienta,
-  actualizarHerramienta,
-  type EstadoEdicion,
-} from "../acciones";
+import { useActionState } from 'react';
+import { crearHerramienta, actualizarHerramienta, type EstadoEdicion } from '../acciones';
 
 type Valores = {
   id?: string;
   nombre: string;
-  categoria: "CULTIVO" | "COSECHA" | "APICULTURA";
+  categoria: 'CULTIVO' | 'COSECHA' | 'APICULTURA';
   total: number;
 };
 
@@ -20,10 +16,10 @@ export function FormularioHerramienta({
   modo,
   valores,
 }: {
-  modo: "crear" | "editar";
+  modo: 'crear' | 'editar';
   valores?: Valores;
 }) {
-  const accion = modo === "crear" ? crearHerramienta : actualizarHerramienta;
+  const accion = modo === 'crear' ? crearHerramienta : actualizarHerramienta;
   const [estado, formAction, pending] = useActionState(accion, ESTADO_INICIAL);
 
   return (
@@ -38,7 +34,7 @@ export function FormularioHerramienta({
           id="nombre"
           name="nombre"
           required
-          defaultValue={valores?.nombre ?? ""}
+          defaultValue={valores?.nombre ?? ''}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
@@ -51,7 +47,7 @@ export function FormularioHerramienta({
           id="categoria"
           name="categoria"
           required
-          defaultValue={valores?.categoria ?? "CULTIVO"}
+          defaultValue={valores?.categoria ?? 'CULTIVO'}
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         >
           <option value="CULTIVO">Cultivo</option>
@@ -71,7 +67,10 @@ export function FormularioHerramienta({
           min="0"
           step="1"
           required
-          defaultValue={valores?.total ?? 0}
+          // Al crear va vacío, no en 0: el 0 quedaba escrito y escribir 4
+          // dejaba "04". Al editar sí se muestra lo que hay.
+          defaultValue={valores?.total ?? ''}
+          placeholder="0"
           className="mt-1 block w-full min-h-touch rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400"
         />
       </div>
@@ -87,7 +86,7 @@ export function FormularioHerramienta({
         disabled={pending}
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pending ? "Guardando..." : modo === "crear" ? "Crear" : "Guardar"}
+        {pending ? 'Guardando...' : modo === 'crear' ? 'Crear' : 'Guardar'}
       </button>
     </form>
   );

@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import { CloudOff } from 'lucide-react';
 import { enviarSalida } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+import { formatearMiles, normalizarEntradaNumerica, parsearDecimal } from '@/lib/formatos';
 
 type Tipo = 'VENTA' | 'CONSUMO' | 'PERDIDA' | 'OTRO';
 type Cliente = { id: string; nombre: string };
+
+/** Un gramo: por debajo de eso no hay báscula en la finca que lo distinga. */
+const MINIMO_KG = 0.001;
 
 export function FormularioSalida({
   stockMax,
@@ -35,9 +38,9 @@ export function FormularioSalida({
     e.preventDefault();
     setError(null);
 
-    const c = Number(cantidad);
-    if (!Number.isFinite(c) || c <= 0) {
-      setError('Cantidad debe ser positiva.');
+    const c = parsearDecimal(cantidad);
+    if (!Number.isFinite(c) || c < MINIMO_KG) {
+      setError(`La cantidad debe ser ${MINIMO_KG} kg o más.`);
       return;
     }
     if (c > stockMax) {
@@ -124,11 +127,10 @@ export function FormularioSalida({
         </label>
         <input
           id="cantidad"
-          type="number"
+          // Con `number`, la coma del teclado en español deja el campo vacío.
+          type="text"
           inputMode="decimal"
-          min="0.01"
-          max={stockMax}
-          step="0.01"
+          placeholder="0,5"
           required
           value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
