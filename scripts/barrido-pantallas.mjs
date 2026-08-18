@@ -2,7 +2,7 @@
 // que se han estado escapando: barra que se desliza, documento que scrollea,
 // desborde horizontal, franja entre header y contenido, y errores de consola.
 import { chromium } from 'playwright';
-import { E2E_JEFE, E2E_TRABAJADOR } from './tests/e2e/credenciales.mjs';
+import { E2E_JEFE, E2E_TRABAJADOR } from '../tests/e2e/credenciales.mjs';
 
 const BASE = process.env.BASE ?? 'http://localhost:3000';
 const fallos = [];
@@ -53,7 +53,9 @@ async function revisar(cred, pantallas) {
   await p.fill('input[name="identificador"]', cred.email);
   await p.fill('input[name="password"]', cred.password);
   await p.click('button:has-text("Entrar")');
-  await p.waitForURL(/\/(jefe|trabajador)/);
+  // 'commit' y no 'load': la home del jefe trae el mapa y esperar su carga
+  // completa se pasa de cualquier tope razonable, sobre todo en desarrollo.
+  await p.waitForURL(/\/(jefe|trabajador)/, { waitUntil: 'commit', timeout: 180000 });
 
   for (const [ruta, nombre] of pantallas) {
     errores.length = 0;
