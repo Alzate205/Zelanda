@@ -2,18 +2,28 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { recolectarDatosFinca } from '@/lib/ia/recolectar-informe';
-import { redactarInforme } from '@/lib/ia/informe-finca';
+import { partesInforme } from '@/lib/ia/informe-finca';
 import { Eyebrow } from '@/components/ui/Eyebrow';
-import { BotonCopiarInforme } from '@/components/jefe/BotonCopiarInforme';
+import { ArmadorInforme } from '@/components/jefe/ArmadorInforme';
 
 export const metadata = { title: 'Preguntarle a la IA' };
+
+// Sin caché: el botón de actualizar tiene que traer la finca como está ahora,
+// no una versión guardada de hace un rato.
+export const dynamic = 'force-dynamic';
 
 export default async function PaginaInformeIA() {
   await requerirUsuario('JEFE');
 
   const datos = await recolectarDatosFinca();
-  const informe = redactarInforme(datos);
-  const miles = Math.round(informe.length / 1000);
+  const partes = partesInforme(datos);
+  const generadoEn = new Date().toLocaleString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Bogota',
+  });
 
   return (
     <div className="space-y-5">
@@ -29,28 +39,18 @@ export default async function PaginaInformeIA() {
         <Eyebrow>Jefe · Informe</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Preguntarle a la IA</h1>
         <p className="mt-1.5 text-sm text-zelanda-verde-700">
-          Copia este informe y pégalo en tu conversación de Claude. Trae el estado completo de la
-          finca, así puedes preguntar lo que quieras sin tener que explicarle nada.
+          Elegí qué llevar, copialo y pegalo en tu conversación de Claude. Va el estado de la finca,
+          así podés preguntar lo que quieras sin explicarle nada.
         </p>
       </header>
 
       <ol className="space-y-1.5 rounded-2xl border border-zelanda-beige-200 bg-white p-4 text-sm text-zelanda-verde-800 shadow-suave">
-        <li>1. Toca “Copiar informe”.</li>
-        <li>2. Abre tu proyecto de Claude y pega.</li>
-        <li>3. Pregunta lo que necesites sobre la finca.</li>
+        <li>1. Marcá lo que quieras incluir.</li>
+        <li>2. Tocá “Copiar informe”.</li>
+        <li>3. Abrí tu proyecto de Claude, pegá y preguntá.</li>
       </ol>
 
-      <BotonCopiarInforme texto={informe} />
-
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="font-serif text-base text-zelanda-verde-900">Lo que se va a copiar</h2>
-          <span className="text-xs text-zelanda-verde-700">~{miles} mil caracteres</span>
-        </div>
-        <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-zelanda-beige-200 bg-white p-4 text-[12.5px] leading-relaxed text-zelanda-verde-900 shadow-suave">
-          {informe}
-        </pre>
-      </section>
+      <ArmadorInforme partes={partes} generadoEn={generadoEn} />
     </div>
   );
 }

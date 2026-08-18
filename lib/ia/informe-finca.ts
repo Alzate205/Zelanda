@@ -191,14 +191,14 @@ function encabezado(d: DatosInforme): string[] {
 
 function bloqueAlertas(d: DatosInforme): string[] {
   if (d.alertas.length === 0) {
-    return seccion('1. Alertas', ['Sin alertas activas.']);
+    return seccion('Alertas', ['Sin alertas activas.']);
   }
   const lineas = d.alertas.map(
     (a) =>
       `- **[${SEVERIDAD_ETIQUETA[a.severidad]}] ${a.titulo}** — ${a.evidencia} ` +
       `Acción sugerida por el sistema: ${a.accion}`
   );
-  return seccion('1. Alertas', lineas);
+  return seccion('Alertas', lineas);
 }
 
 function bloqueTareas(d: DatosInforme): string[] {
@@ -231,7 +231,7 @@ function bloqueTareas(d: DatosInforme): string[] {
           (t) => `- ${t.lote_nombre} · ${t.tipo_nombre} — en ${t.dias_para_proxima ?? '?'} días`
         ))
   );
-  return seccion('2. Tareas', cuerpo);
+  return seccion('Tareas', cuerpo);
 }
 
 function bloqueProduccion(d: DatosInforme): string[] {
@@ -266,7 +266,7 @@ function bloqueProduccion(d: DatosInforme): string[] {
       ? ['Sin histórico cargado.']
       : d.cosecha_por_anio.map((a) => `- ${a.anio}: ${num(a.kg)} kg`))
   );
-  return seccion('3. Producción', cuerpo);
+  return seccion('Producción', cuerpo);
 }
 
 function bloqueSanidad(d: DatosInforme): string[] {
@@ -288,12 +288,12 @@ function bloqueSanidad(d: DatosInforme): string[] {
       ? ['Ninguno: no hay lotes con restricción para cosechar.']
       : d.carencias.map((c) => `- ${c.insumo} — no cosechar hasta ${c.hasta}`))
   );
-  return seccion('4. Sanidad', cuerpo);
+  return seccion('Sanidad', cuerpo);
 }
 
 function bloqueClima(d: DatosInforme): string[] {
   if (!d.clima) {
-    return seccion('5. Clima', ['No se pudo consultar el pronóstico.']);
+    return seccion('Clima', ['No se pudo consultar el pronóstico.']);
   }
   const cuerpo: string[] = [
     `Lluvia acumulada últimos 7 días: ${num(d.clima.lluvia_7dias_mm, 1)} mm`,
@@ -311,12 +311,12 @@ function bloqueClima(d: DatosInforme): string[] {
     cuerpo.push('', '**Lecturas agronómicas del sistema:**');
     cuerpo.push(...d.clima.notas.map((n) => `- ${n}`));
   }
-  return seccion('5. Clima (próximos días)', cuerpo);
+  return seccion('Clima (próximos días)', cuerpo);
 }
 
 function bloqueFenologia(d: DatosInforme): string[] {
   if (!d.fenologia) {
-    return seccion('6. Fenología', ['Sin fase determinada.']);
+    return seccion('Fenología', ['Sin fase determinada.']);
   }
   const cuerpo = [
     `Fase principal del mes: **${d.fenologia.principal}**` +
@@ -326,7 +326,7 @@ function bloqueFenologia(d: DatosInforme): string[] {
     cuerpo.push('', 'Labores típicas de esta fase:');
     cuerpo.push(...d.fenologia.recomendaciones.map((r) => `- ${r}`));
   }
-  return seccion('6. Fenología', cuerpo);
+  return seccion('Fenología', cuerpo);
 }
 
 function bloqueInventario(d: DatosInforme): string[] {
@@ -346,7 +346,7 @@ function bloqueInventario(d: DatosInforme): string[] {
             )} ${i.unidad})`
         ))
   );
-  return seccion('7. Inventario', cuerpo);
+  return seccion('Inventario', cuerpo);
 }
 
 function bloqueFinanzas(d: DatosInforme): string[] {
@@ -404,7 +404,7 @@ function bloqueFinanzas(d: DatosInforme): string[] {
       );
     });
   }
-  return seccion('8. Finanzas', cuerpo);
+  return seccion('Finanzas', cuerpo);
 }
 
 function cierre(): string[] {
@@ -424,17 +424,118 @@ function cierre(): string[] {
   ];
 }
 
-export function redactarInforme(d: DatosInforme): string {
-  return [
-    ...encabezado(d),
-    ...bloqueAlertas(d),
-    ...bloqueTareas(d),
-    ...bloqueProduccion(d),
-    ...bloqueSanidad(d),
-    ...bloqueClima(d),
-    ...bloqueFenologia(d),
-    ...bloqueInventario(d),
-    ...bloqueFinanzas(d),
-    ...cierre(),
-  ].join('\n');
+/** Las partes que el jefe puede incluir o dejar fuera del informe. */
+export type ClaveSeccion =
+  | 'alertas'
+  | 'tareas'
+  | 'produccion'
+  | 'sanidad'
+  | 'clima'
+  | 'fenologia'
+  | 'inventario'
+  | 'finanzas';
+
+/**
+ * Catálogo de secciones, en el orden en que se leen.
+ *
+ * El encabezado y el cierre no están acá porque no se pueden quitar: el primero
+ * le dice al modelo qué es esta finca y qué se espera de él, y el segundo trae
+ * las preguntas para arrancar. Sin ellos el informe deja de tener sentido.
+ */
+export const SECCIONES: {
+  clave: ClaveSeccion;
+  titulo: string;
+  descripcion: string;
+  construir: (d: DatosInforme) => string[];
+}[] = [
+  {
+    clave: 'alertas',
+    titulo: 'Alertas',
+    descripcion: 'Lo que el sistema marca como urgente, con su evidencia.',
+    construir: bloqueAlertas,
+  },
+  {
+    clave: 'tareas',
+    titulo: 'Tareas',
+    descripcion: 'Asignaciones al día, próximas y vencidas.',
+    construir: bloqueTareas,
+  },
+  {
+    clave: 'produccion',
+    titulo: 'Producción',
+    descripcion: 'Cosecha por lote y por año, con kilos por hectárea y por árbol.',
+    construir: bloqueProduccion,
+  },
+  {
+    clave: 'sanidad',
+    titulo: 'Sanidad',
+    descripcion: 'Novedades reportadas: plagas, enfermedades y daños.',
+    construir: bloqueSanidad,
+  },
+  {
+    clave: 'clima',
+    titulo: 'Clima',
+    descripcion: 'Pronóstico de los próximos días.',
+    construir: bloqueClima,
+  },
+  {
+    clave: 'fenologia',
+    titulo: 'Fenología',
+    descripcion: 'En qué fase va el cultivo este mes.',
+    construir: bloqueFenologia,
+  },
+  {
+    clave: 'inventario',
+    titulo: 'Inventario',
+    descripcion: 'Herramientas e insumos, con lo que está por debajo del mínimo.',
+    construir: bloqueInventario,
+  },
+  {
+    clave: 'finanzas',
+    titulo: 'Finanzas',
+    descripcion: 'Ingresos, costos y margen de los últimos meses. Sin nombres de personas.',
+    construir: bloqueFinanzas,
+  },
+];
+
+export const CLAVES_SECCION: ClaveSeccion[] = SECCIONES.map((s) => s.clave);
+
+/**
+ * Arma el informe. Sin `claves` van todas las secciones, que es lo que se
+ * quiere la mayoría de las veces; con `claves` solo esas, para poder acortar el
+ * texto cuando la pregunta es sobre un tema concreto.
+ */
+export function redactarInforme(d: DatosInforme, claves?: ClaveSeccion[]): string {
+  const elegidas = claves ? SECCIONES.filter((s) => claves.includes(s.clave)) : SECCIONES;
+  return [...encabezado(d), ...elegidas.flatMap((s) => s.construir(d)), ...cierre()].join('\n');
+}
+
+export type PartesInforme = {
+  encabezado: string;
+  secciones: { clave: ClaveSeccion; titulo: string; descripcion: string; texto: string }[];
+  cierre: string;
+};
+
+/**
+ * El informe partido en piezas, para que la pantalla pueda mostrar cuánto pesa
+ * cada una y rearmar el texto al vuelo cuando el jefe marca o desmarca algo,
+ * sin volver a pedirle nada al servidor.
+ */
+export function partesInforme(d: DatosInforme): PartesInforme {
+  return {
+    encabezado: encabezado(d).join('\n'),
+    secciones: SECCIONES.map((s) => ({
+      clave: s.clave,
+      titulo: s.titulo,
+      descripcion: s.descripcion,
+      texto: s.construir(d).join('\n'),
+    })),
+    cierre: cierre().join('\n'),
+  };
+}
+
+/** Rearma el informe con las secciones elegidas. Espejo de `redactarInforme`. */
+export function unirInforme(partes: PartesInforme, claves: ClaveSeccion[]): string {
+  const elegidas = partes.secciones.filter((s) => claves.includes(s.clave));
+  return [partes.encabezado, ...elegidas.map((s) => s.texto), partes.cierre].join('\n');
 }
