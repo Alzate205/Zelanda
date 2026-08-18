@@ -62,7 +62,8 @@ function motivo(e: unknown): string {
   if (esIPhone() && !estaInstalada()) {
     return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
   }
-  return `El celular rechazó la suscripción. Mostrale esto al jefe: ${texto}`;
+  const nombre = e instanceof Error && e.name && e.name !== 'Error' ? `${e.name}: ` : '';
+  return `El celular rechazó la suscripción en ${location.host}. Mostrale esto al jefe: ${nombre}${texto}`;
 }
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
@@ -94,6 +95,47 @@ async function obtenerRegistro(): Promise<ServiceWorkerRegistration> {
     }
   }
   return conTope(navigator.serviceWorker.ready, 10000, 'arranque de la app');
+}
+
+function mismaClave(sub: PushSubscription, clave: Uint8Array): boolean {
+  const actual = sub.options?.applicationServerKey;
+  if (!actual) return false;
+  const bytes = new Uint8Array(actual as ArrayBuffer);
+  return bytes.length === clave.length && bytes.every((b, i) => b === clave[i]);
+}
+
+/**
+ * Consigue la suscripción push, reusando la que ya haya si sirve.
+ *
+ * Antes se daba de baja la vieja y se creaba otra siempre. En iPhone eso es
+ * justo lo que falla: dar de baja y volver a suscribir enseguida hace que el
+ * servicio de Apple conteste "internal service error". Solo se da de baja si
+ * la clave cambió, que es el único caso en que la vieja de verdad no sirve.
+ */
+async function suscribir(
+  reg: ServiceWorkerRegistration,
+  clave: Uint8Array
+): Promise<PushSubscription> {
+  const vieja = await reg.pushManager.getSubscription();
+  if (vieja) {
+    if (mismaClave(vieja, clave)) return vieja;
+    try {
+      await vieja.unsubscribe();
+    } catch {
+      /* si no deja darla de baja, igual intentamos suscribir */
+    }
+  }
+  const opciones: PushSubscriptionOptionsInit = {
+    userVisibleOnly: true,
+    applicationServerKey: clave as BufferSource,
+  };
+  try {
+    return await conTope(reg.pushManager.subscribe(opciones), 15000, 'suscripción');
+  } catch {
+    // El servicio de Apple falla de a ratos; un segundo intento suele bastar.
+    await new Promise((listo) => setTimeout(listo, 1500));
+    return conTope(reg.pushManager.subscribe(opciones), 15000, 'suscripción');
+  }
 }
 
 export function PushPrompt() {
@@ -129,25 +171,7 @@ export function PushPrompt() {
         setAviso('No se pudo activar. Avisale al jefe de la finca.');
         return;
       }
-      // Una suscripción vieja (de una instalación anterior) puede dejar
-      // subscribe() colgado para siempre: se descarta primero, y se acota
-      // todo con un timeout para que el botón nunca quede en "Activando...".
-      const vieja = await reg.pushManager.getSubscription();
-      if (vieja) {
-        try {
-          await vieja.unsubscribe();
-        } catch {
-          /* noop */
-        }
-      }
-      const sub = await conTope(
-        reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
-        }),
-        15000,
-        'suscripción'
-      );
+      const sub = await suscribir(reg, urlBase64ToUint8Array(pub));
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
