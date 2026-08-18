@@ -146,7 +146,7 @@ export default async function DetalleApiario({ params }: { params: Promise<{ id:
       : 'neutro';
 
   return (
-    <div className="-mx-4 -mt-4 space-y-5">
+    <div className="-mx-4 -mt-6 space-y-5">
       <div
         className="px-4 pb-4 pt-3 text-zelanda-beige-50"
         style={{

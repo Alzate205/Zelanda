@@ -13,14 +13,18 @@ import { parsearDecimal } from '@/lib/formatos';
 /** Un gramo: por debajo de eso no hay báscula en la finca que lo distinga. */
 const MINIMO_KG = 0.001;
 
+type Tarea = { id: string; lote_id: string; persona_id: string; etiqueta: string };
+
 export function FormularioCosecha({
   personas,
   lotes,
+  tareas = [],
   compacto = false,
   canastaPorDefecto = 0,
   carencias = [],
 }: {
   personas: { id: string; nombre: string }[];
+  tareas?: Tarea[];
   lotes: { id: string; nombre: string }[];
   compacto?: boolean;
   canastaPorDefecto?: number;
@@ -39,6 +43,13 @@ export function FormularioCosecha({
   );
   const [peso, setPeso] = useState('');
   const [notas, setNotas] = useState('');
+  const [asignacionId, setAsignacionId] = useState('');
+
+  // Solo tienen sentido las tareas de ese lote y esa persona: ofrecer todas
+  // invita a atar los kilos a una tarea que no fue.
+  const tareasDelCaso = tareas.filter(
+    (t) => (!loteId || t.lote_id === loteId) && (!personaId || t.persona_id === personaId)
+  );
 
   // Mientras se escribe, el campo puede no ser todavía un número ("0," por
   // ejemplo): en ese caso no se muestra total en vez de mostrar "NaN kg".
@@ -95,6 +106,7 @@ export function FormularioCosecha({
         persona_id: personaId,
         lote_id: loteId,
         metodo,
+        asignacion_id: asignacionId || null,
         cantidad_canastas: cantidadCanastas,
         capacidad_canasta_kg: capacidadCanastaKg,
         peso_kg: pesoKg,
@@ -157,6 +169,29 @@ export function FormularioCosecha({
             ))}
           </select>
         </div>
+        {tareasDelCaso.length > 0 ? (
+          <div className="col-span-2">
+            <label htmlFor="asignacion" className={labelClase}>
+              Tarea (opcional)
+            </label>
+            <select
+              id="asignacion"
+              value={asignacionId}
+              onChange={(e) => setAsignacionId(e.target.value)}
+              className={inputClase}
+            >
+              <option value="">Sin tarea</option>
+              {tareasDelCaso.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.etiqueta}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
+              Si la eliges, el jefe ve estos kilos dentro de esa tarea.
+            </p>
+          </div>
+        ) : null}
         <div>
           <label htmlFor="recolector" className={labelClase}>
             Recolector

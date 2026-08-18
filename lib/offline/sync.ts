@@ -112,6 +112,7 @@ function payloadCosecha(i: ItemColaCosecha) {
     capacidad_canasta_kg: i.capacidad_canasta_kg,
     peso_kg: i.peso_kg,
     notas: i.notas,
+    asignacion_id: i.asignacion_id ?? null,
   };
 }
 

@@ -114,7 +114,7 @@ export default async function PaginaReporteLote({ params }: { params: Promise<{ 
   };
 
   return (
-    <div className="-mx-4 -mt-4 space-y-5">
+    <div className="-mx-4 -mt-6 space-y-5">
       <div className="bg-gradient-to-b from-zelanda-verde-800 to-zelanda-verde-700 px-4 pb-4 pt-3 text-zelanda-beige-50">
         <div className="flex items-center gap-2">
           <Link

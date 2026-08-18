@@ -24,6 +24,21 @@ export default async function PaginaNuevaCosecha() {
     carenciasActivas(),
   ]);
 
+  // Tareas de cultivo abiertas: es lo que permite atar los kilos a la tarea
+  // que los produjo, y que el jefe los vea en el detalle de esa tarea.
+  const tareasAbiertas = await prisma.asignaciones.findMany({
+    where: { estado: { in: ['PENDIENTE', 'EN_CURSO'] }, lote_id: { not: null } },
+    orderBy: { fecha_inicio: 'desc' },
+    take: 50,
+    select: {
+      id: true,
+      lote_id: true,
+      persona_id: true,
+      tipos_tarea: { select: { nombre: true } },
+      persona: { select: { nombre_completo: true } },
+    },
+  });
+
   return (
     <div className="space-y-6">
       <header>
@@ -36,6 +51,12 @@ export default async function PaginaNuevaCosecha() {
           nombre: p.nombre_completo,
         }))}
         lotes={lotes.map((l) => ({ id: l.id.toString(), nombre: l.nombre }))}
+        tareas={tareasAbiertas.map((t) => ({
+          id: t.id.toString(),
+          lote_id: t.lote_id!.toString(),
+          persona_id: t.persona_id.toString(),
+          etiqueta: `${t.tipos_tarea.nombre} · ${t.persona.nombre_completo}`,
+        }))}
         canastaPorDefecto={Number(config.canasta_kg_default)}
         carencias={carencias}
       />
