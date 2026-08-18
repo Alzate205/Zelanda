@@ -16,6 +16,30 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * El documento no se mueve. Nunca.
+ *
+ * Con solo poner el marco de la app sin scroll no alcanzaba: el `body` seguía
+ * siendo arrastrable y en iPhone el rebote elástico movía TODA la pantalla,
+ * header y barra de abajo incluidos. Se veía el header cortado arriba y fondo
+ * vacío debajo de la barra.
+ *
+ * `position: fixed` en el body es lo único que corta ese rebote en iOS;
+ * `overflow: hidden` solo no basta. El scroll de verdad vive adentro, en el
+ * contenido, que es donde tiene sentido.
+ */
+html {
+  height: 100%;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: theme('fontFamily.sans');
   -webkit-font-smoothing: antialiased;

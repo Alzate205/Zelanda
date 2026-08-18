@@ -83,6 +83,10 @@ async function revisar(cred, pantallas) {
         // Hueco entre el borde de abajo del header y el inicio del contenido.
         hueco: h && main ? Math.round(r(main).top - h.bottom) : null,
         titulo: (document.querySelector('h1')?.textContent ?? '').slice(0, 40),
+        // Lo que se escapó antes: el marco interno no scrolleaba, pero el
+        // documento sí, y en iPhone el rebote arrastraba toda la pantalla.
+        bodyScrolleable: document.body.scrollHeight > window.innerHeight + 1,
+        bodyOverflow: getComputedStyle(document.body).overflow,
       };
     });
 
@@ -106,6 +110,10 @@ async function revisar(cred, pantallas) {
     if (m.docAlto > m.vista + 1) problemas.push(`documento más alto que la pantalla (${m.docAlto}>${m.vista})`);
     if (m.anchoDoc > m.anchoVista + 1) problemas.push(`desborde horizontal (${m.anchoDoc}>${m.anchoVista})`);
     if (m.hueco !== null && m.hueco > 2) problemas.push(`hueco de ${m.hueco}px bajo el header`);
+    if (m.bodyScrolleable) problemas.push('el body puede scrollear');
+    if (!m.bodyOverflow.includes('hidden')) {
+      problemas.push(`el body no está anclado (overflow: ${m.bodyOverflow})`);
+    }
     if (errores.length) problemas.push(`consola: ${errores[0]}`);
 
     if (problemas.length) {
