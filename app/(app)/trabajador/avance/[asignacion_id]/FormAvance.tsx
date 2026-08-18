@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, CloudOff, Check, ListPlus } from 'lucide-react';
 import { enviarAvance } from '@/lib/offline/api-cliente';
+import { parsearDecimal } from '@/lib/formatos';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { SubirFoto } from '@/components/shared/SubirFoto';
 import type { EstadoApiario } from '@/lib/offline/tipos';
@@ -33,6 +34,9 @@ type Asignacion = {
   apiarioNombre: string | null;
   totalColmenas: number | null;
 };
+
+/** Un gramo: por debajo de eso no hay báscula en la finca que lo distinga. */
+const MINIMO_KG = 0.001;
 
 /** Pasos de la pantalla. En cultivo se arranca siempre en 'inicio'. */
 type Paso = 'inicio' | 'confirmar' | 'tramo' | 'sueltos';
@@ -112,9 +116,9 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
     const observaciones = String(formData.get('observaciones') ?? '').trim() || null;
 
     if (esCosechaMiel) {
-      const kg = Number(String(formData.get('kg') ?? '').trim());
-      if (!Number.isFinite(kg) || kg <= 0) {
-        setError('Los kilos cosechados deben ser positivos.');
+      const kg = parsearDecimal(String(formData.get('kg') ?? ''));
+      if (!Number.isFinite(kg) || kg < MINIMO_KG) {
+        setError(`Los kilos cosechados deben ser ${MINIMO_KG} o más.`);
         return;
       }
       startTransition(async () => {
@@ -402,10 +406,12 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
             <input
               id="kg"
               name="kg"
-              type="number"
+              // `text` y no `number`: con `number`, el teclado en español manda
+              // la coma, el navegador da el valor por inválido y entrega el
+              // campo vacío. Medio kilo llegaba como cero.
+              type="text"
               inputMode="decimal"
-              min="0.01"
-              step="0.01"
+              placeholder="0,5"
               required
               className={inputBase}
             />

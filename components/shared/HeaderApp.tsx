@@ -15,10 +15,18 @@ export function HeaderApp({ usuario }: { usuario: UsuarioActual }) {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2.5 px-4 py-3">
-          <BrandMark tamano={34} />
-          <p className="min-w-0 flex-1 truncate font-serif text-[17px] leading-tight">
-            {usuario.nombre_completo}
-          </p>
+          {/* El logo y el nombre son la salida de vuelta a las tareas: adentro
+              de un registro no hay barra de navegación donde apoyarse. */}
+          <Link
+            href="/trabajador"
+            aria-label="Volver a mis tareas"
+            className="-mx-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1 transition hover:bg-white/10"
+          >
+            <BrandMark tamano={34} />
+            <span className="min-w-0 flex-1 truncate font-serif text-[17px] leading-tight">
+              {usuario.nombre_completo}
+            </span>
+          </Link>
           <BotonCerrarSesion />
         </div>
       </header>

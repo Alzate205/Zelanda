@@ -53,16 +53,27 @@ nav {
  * Tamaño mínimo de letra en campos, solo en pantallas táctiles.
  *
  * Safari de iOS amplía la página al enfocar un campo cuya letra mide menos de
- * 16px. Los formularios usan 15px por diseño, así que en el iPhone cada toque
- * en un campo dejaba la página ampliada y corrida, y al cerrar el teclado no
- * volvía sola a su sitio. El `!important` es a propósito: hay que ganarle a la
- * utilidad `text-[15px]` de Tailwind, que tiene más especificidad que `input`.
+ * 16px, y al cerrar el teclado la deja ampliada y corrida.
+ *
+ * Se listan las medidas chicas una por una en vez de poner un tamaño fijo a
+ * todos los campos: las pantallas del trabajador usan letra grande a propósito
+ * —se manejan de pie y con guantes— y un `font-size` general se las encogía.
+ * Combinar elemento y clase le gana en especificidad a la utilidad de Tailwind
+ * sin necesidad de `!important`.
  */
 @media (pointer: coarse) {
-  input:not([type='checkbox']):not([type='radio']),
-  select,
-  textarea {
-    font-size: 16px !important;
+  :is(input, select, textarea):is(
+      .text-xs,
+      .text-sm,
+      .text-\[10px\],
+      .text-\[11px\],
+      .text-\[12px\],
+      .text-\[12\.5px\],
+      .text-\[13px\],
+      .text-\[14px\],
+      .text-\[15px\]
+    ) {
+    font-size: 16px;
   }
 }
 
@@ -100,6 +111,19 @@ input[type='date']::-webkit-date-and-time-value {
   /* Respeta el home-indicator / gesture bar en celulares (notch inferior) */
   .safe-bottom {
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  /*
+   * Alto de la app en celular.
+   *
+   * `100vh` mide la pantalla como si las barras del navegador estuvieran
+   * ocultas, así que siempre sobra un poco de alto y la página se deja
+   * deslizar aunque el contenido quepa. `100dvh` sigue el alto que de verdad
+   * se ve. Van las dos: donde no se entienda `dvh` queda la de arriba.
+   */
+  .alto-app {
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

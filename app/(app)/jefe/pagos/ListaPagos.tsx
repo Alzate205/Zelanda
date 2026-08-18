@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Plus, DollarSign, Search, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { ConfirmarBorrado } from '@/components/ui/ConfirmarBorrado';
+import { etiquetaPeriodoCubierto } from '@/lib/periodo-pago';
 import { borrarPago } from './acciones';
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -134,7 +135,9 @@ export function ListaPagos({ pagos, totalMes }: Props) {
                       {fmtFecha(p.fecha)}
                       {p.metodo_pago ? ` · ${p.metodo_pago}` : ''}
                       {p.cubre_desde && p.cubre_hasta
-                        ? ` · cubre ${fmtFecha(p.cubre_desde)} → ${fmtFecha(p.cubre_hasta)}`
+                        ? ` · ${
+                            etiquetaPeriodoCubierto(p.cubre_desde, p.cubre_hasta) ?? 'cubre'
+                          } ${fmtFecha(p.cubre_desde)} → ${fmtFecha(p.cubre_hasta)}`
                         : ''}
                     </p>
                   </div>
