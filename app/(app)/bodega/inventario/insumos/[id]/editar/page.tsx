@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { FormularioInsumo } from '../../_formulario';
+import { ToggleActivoInsumo } from '../../../toggles';
 
 export const metadata = { title: 'Editar insumo' };
 
@@ -38,6 +39,15 @@ export default async function PaginaEditarInsumo({ params }: { params: Promise<{
             i.periodo_reingreso_horas != null ? String(i.periodo_reingreso_horas) : null,
         }}
       />
+
+      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
+        <h2 className="font-serif text-lg text-zelanda-verde-900">
+          {i.activo ? '¿Te equivocaste al crearlo?' : 'Insumo dado de baja'}
+        </h2>
+        <div className="mt-3">
+          <ToggleActivoInsumo id={i.id.toString()} activo={i.activo} />
+        </div>
+      </section>
     </div>
   );
 }

@@ -97,12 +97,22 @@ export async function actualizarHerramienta(
   redirect('/bodega/inventario');
 }
 
-export async function cambiarEstadoHerramienta(formData: FormData) {
+/**
+ * Da de baja una herramienta, o la vuelve a activar.
+ *
+ * No se borra de verdad: los despachos ya hechos la referencian y borrarla
+ * dejaría huecos en el historial. Dada de baja desaparece de las listas donde
+ * se elige qué despachar, que es lo que se busca al querer "eliminarla".
+ */
+export async function cambiarEstadoHerramienta(
+  _prev: { error: string | null },
+  formData: FormData
+): Promise<{ error: string | null }> {
   await requerirUsuario('BODEGA');
 
   const idRaw = String(formData.get('id') ?? '');
   const activar = formData.get('activar') === 'true';
-  if (!/^\d+$/.test(idRaw)) return;
+  if (!/^\d+$/.test(idRaw)) return { error: 'Herramienta no encontrada.' };
   const id = BigInt(idRaw);
 
   if (!activar) {
@@ -114,8 +124,10 @@ export async function cambiarEstadoHerramienta(formData: FormData) {
       select: { id: true },
     });
     if (enUso) {
-      // Silenciosamente no la desactivamos. La UI ya muestra el estado.
-      return;
+      // Antes se devolvía sin decir nada y el botón parecía no funcionar.
+      return {
+        error: 'No se puede dar de baja: está en un despacho abierto. Cerralo primero.',
+      };
     }
   }
 
@@ -124,6 +136,7 @@ export async function cambiarEstadoHerramienta(formData: FormData) {
     data: { activo: activar },
   });
   revalidatePath('/bodega/inventario');
+  redirect('/bodega/inventario');
 }
 
 // ============= INSUMOS =============
@@ -274,12 +287,16 @@ export async function actualizarInsumo(
   redirect('/bodega/inventario');
 }
 
-export async function cambiarEstadoInsumo(formData: FormData) {
+/** Mismo criterio que en herramientas: se da de baja, no se borra. */
+export async function cambiarEstadoInsumo(
+  _prev: { error: string | null },
+  formData: FormData
+): Promise<{ error: string | null }> {
   await requerirUsuario('BODEGA');
 
   const idRaw = String(formData.get('id') ?? '');
   const activar = formData.get('activar') === 'true';
-  if (!/^\d+$/.test(idRaw)) return;
+  if (!/^\d+$/.test(idRaw)) return { error: 'Insumo no encontrado.' };
   const id = BigInt(idRaw);
 
   if (!activar) {
@@ -290,7 +307,11 @@ export async function cambiarEstadoInsumo(formData: FormData) {
       },
       select: { id: true },
     });
-    if (enUso) return;
+    if (enUso) {
+      return {
+        error: 'No se puede dar de baja: está en un despacho abierto. Cerralo primero.',
+      };
+    }
   }
 
   await prisma.insumos.update({
@@ -298,6 +319,7 @@ export async function cambiarEstadoInsumo(formData: FormData) {
     data: { activo: activar },
   });
   revalidatePath('/bodega/inventario');
+  redirect('/bodega/inventario');
 }
 
 // ============= INGRESO DE STOCK =============
