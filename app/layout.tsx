@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  other: {
+    // Next 15 emite `mobile-web-app-capable`, el nombre estandarizado, pero no
+    // el prefijado de Apple. Sin este, al agregar a la pantalla de inicio iOS
+    // guarda un marcador en vez de una app: se abre con la barra de Safari y,
+    // como los avisos push exigen una app instalada de verdad, Apple los
+    // rechaza con "internal service error".
+    'apple-mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {

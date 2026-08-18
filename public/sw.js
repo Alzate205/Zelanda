@@ -4,7 +4,7 @@
 // La versión se sube a mano en cada cambio de este archivo. Al activarse borra
 // las cachés de versiones viejas: es la vía para invalidar contenido que quedó
 // mal guardado en los celulares (por ejemplo, páginas de otra cuenta).
-const VERSION = 'b2-2';
+const VERSION = 'b2-3';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
@@ -51,6 +51,10 @@ const LAUNCHER_HTML = `<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#3D5C42">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="La Zelanda">
 <title>La Zelanda</title>
 <style>${ESTILO_PAGINA}</style>
 </head><body>
@@ -73,6 +77,10 @@ function paginaSinSenal(mensaje) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#3D5C42">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="La Zelanda">
 <title>Sin señal · La Zelanda</title>
 <style>${ESTILO_PAGINA}</style>
 </head><body>
