@@ -14,10 +14,12 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   const usuario = await requerirUsuario();
 
   return (
-    <div className="alto-app flex flex-col bg-zelanda-beige-50">
+    <div className="marco-app flex flex-col bg-zelanda-beige-50">
       <HeaderApp usuario={usuario} />
+      {/* `min-h-0` es lo que deja que un hijo de flex se encoja y scrollee: sin
+          eso el contenido empuja el marco y la barra de abajo vuelve a irse. */}
       <main
-        className="mx-auto w-full max-w-screen-md flex-1 px-4 py-6 scroll-smooth"
+        className="mx-auto w-full min-h-0 max-w-screen-md flex-1 overflow-y-auto px-4 py-6 scroll-smooth"
         style={{ scrollPaddingTop: '120px' }}
       >
         {children}
