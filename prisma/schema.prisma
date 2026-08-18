@@ -572,6 +572,7 @@ model asignaciones {
   lotes                  lotes?             @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                personas           @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cosechas                  cosechas[]
   cosechas_miel          cosechas_miel[]
   despachos              despachos[]
   registros_avance       registros_avance[]
@@ -596,12 +597,15 @@ model cosechas {
   fecha                   DateTime        @default(now()) @db.Timestamptz(6)
   notas                   String?
   id_local                String?         @unique @db.Uuid
+  asignacion_id           BigInt?
   lotes                   lotes           @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                 personas        @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuarios                usuarios        @relation(fields: [recibido_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asignacion              asignaciones?   @relation(fields: [asignacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fecha], map: "idx_cosechas_fecha")
   @@index([lote_id, fecha], map: "idx_cosechas_lote_fecha")
+  @@index([asignacion_id], map: "idx_cosechas_asignacion")
   @@schema("public")
 }
 

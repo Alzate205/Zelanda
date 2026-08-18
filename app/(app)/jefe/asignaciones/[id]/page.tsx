@@ -72,6 +72,10 @@ export default async function DetalleAsignacion({ params }: { params: Promise<{ 
         orderBy: { fecha: 'desc' },
         include: { persona: { select: { nombre_completo: true } } },
       },
+      cosechas: {
+        orderBy: { fecha: 'desc' },
+        include: { persona: { select: { nombre_completo: true } } },
+      },
     },
   });
 
@@ -103,7 +107,7 @@ export default async function DetalleAsignacion({ params }: { params: Promise<{ 
   const pct = destino.total && destino.total > 0 ? a.arboles_completados / destino.total : 0;
 
   return (
-    <div className="-mx-4 -mt-4 space-y-5">
+    <div className="-mx-4 -mt-6 space-y-5">
       <div className="bg-gradient-to-b from-zelanda-verde-800 to-zelanda-verde-700 px-4 pb-4 pt-3 text-zelanda-beige-50">
         <div className="flex items-center gap-2">
           <Link
@@ -249,6 +253,47 @@ export default async function DetalleAsignacion({ params }: { params: Promise<{ 
             </ul>
           )}
         </section>
+
+        {a.cosechas.length > 0 ? (
+          <section>
+            <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+              Cosecha recibida{' '}
+              <span className="text-[11px] normal-case tracking-normal text-zelanda-verde-700/80">
+                (
+                {a.cosechas
+                  .reduce((total, c) => total + Number(c.peso_kg), 0)
+                  .toLocaleString('es-CO', { maximumFractionDigits: 2 })}{' '}
+                kg en total)
+              </span>
+            </p>
+            <ul className="space-y-2">
+              {a.cosechas.map((c) => (
+                <li
+                  key={String(c.id)}
+                  className="rounded-xl border border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
+                      {Number(c.peso_kg).toLocaleString('es-CO', { maximumFractionDigits: 2 })} kg
+                    </p>
+                    <span className="whitespace-nowrap text-[11px] text-zelanda-verde-700">
+                      {formatearFechaHora(c.fecha)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+                    Por {c.persona.nombre_completo}
+                    {c.metodo_medicion === 'CANASTA' && c.cantidad_canastas
+                      ? ` · ${c.cantidad_canastas} canastas`
+                      : ' · a báscula'}
+                  </p>
+                  {c.notas ? (
+                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">{c.notas}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {a.cosechas_miel.length > 0 ? (
           <section>

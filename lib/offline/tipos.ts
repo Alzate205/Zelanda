@@ -266,6 +266,7 @@ export type ItemColaDespachoCerrar = {
 };
 
 export type ItemColaCosecha = {
+  asignacion_id?: string | null;
   id_local: string;
   persona_id: string;
   lote_id: string;

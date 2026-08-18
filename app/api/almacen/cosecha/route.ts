@@ -18,6 +18,8 @@ type Body = {
   capacidad_canasta_kg: number | null;
   peso_kg: number;
   notas: string | null;
+  /** Tarea que produjo la cosecha. Opcional: puede registrarse suelta. */
+  asignacion_id?: string | null;
 };
 
 function esUuid(s: unknown): s is string {
@@ -108,6 +110,10 @@ export async function POST(req: Request) {
         capacidad_canasta_kg: capacidadCanastaKg,
         peso_kg: pesoKg,
         notas: body.notas?.trim() || null,
+        asignacion_id:
+          body.asignacion_id && /^\d+$/.test(body.asignacion_id)
+            ? BigInt(body.asignacion_id)
+            : null,
       },
     });
     revalidarSnapshotAlmacen();
