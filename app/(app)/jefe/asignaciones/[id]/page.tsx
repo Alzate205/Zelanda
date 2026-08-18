@@ -12,8 +12,16 @@ import { formatearFechaCorta } from '@/lib/utils';
 import { ETIQUETA_ESTADO_ASIGNACION } from '@/lib/constantes';
 import { cancelarAsignacion, reabrirAsignacion } from '../acciones';
 import { BotonSubmit } from './_botones';
+import Image from 'next/image';
+import { urlFotoFirmada } from '@/lib/supabase/storage';
 
 export const metadata: Metadata = { title: 'Asignación' };
+
+const ETIQUETA_ESTADO_APIARIO: Record<string, string> = {
+  BIEN: 'Bien',
+  CON_PROBLEMAS: 'Con problemas',
+  CRITICO: 'Crítico',
+};
 
 function badgeEstado(estado: 'PENDIENTE' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA'): EstadoBadge {
   if (estado === 'COMPLETADA') return 'aldia';
@@ -58,10 +66,24 @@ export default async function DetalleAsignacion({ params }: { params: Promise<{ 
         orderBy: { fecha_registro: 'desc' },
         include: { persona: { select: { nombre_completo: true } } },
       },
+      // La miel vive en su propia tabla pero queda atada a la tarea: sin esto
+      // el jefe no veía los kilos que sacó el trabajador.
+      cosechas_miel: {
+        orderBy: { fecha: 'desc' },
+        include: { persona: { select: { nombre_completo: true } } },
+      },
     },
   });
 
   if (!a) notFound();
+
+  // Las fotos viven en almacenamiento privado: hay que firmar cada URL.
+  const fotos = new Map<string, string>();
+  for (const r of a.registros_avance) {
+    if (!r.foto_path) continue;
+    const url = await urlFotoFirmada(r.foto_path).catch(() => null);
+    if (url) fotos.set(String(r.id), url);
+  }
 
   let apiarioNombre: string | null = null;
   if (a.apiario_id) {
@@ -192,14 +214,79 @@ export default async function DetalleAsignacion({ params }: { params: Promise<{ 
                   <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
                     Por {r.persona.nombre_completo}
                   </p>
+                  {r.tipo_registro === 'SUELTOS' && r.arboles_lista.length > 0 ? (
+                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">
+                      Árboles: {r.arboles_lista.join(', ')}
+                    </p>
+                  ) : null}
+                  {r.estado_apiario ? (
+                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">
+                      Estado del apiario:{' '}
+                      <strong>
+                        {ETIQUETA_ESTADO_APIARIO[r.estado_apiario] ?? r.estado_apiario}
+                      </strong>
+                    </p>
+                  ) : null}
                   {r.observaciones ? (
                     <p className="mt-1 text-[12.5px] text-zelanda-verde-800">{r.observaciones}</p>
+                  ) : null}
+                  {fotos.get(String(r.id)) ? (
+                    <Image
+                      src={fotos.get(String(r.id)) as string}
+                      alt={`Foto del registro del ${formatearFechaHora(r.fecha_registro)}`}
+                      width={800}
+                      height={600}
+                      className="mt-2 h-auto w-full rounded-lg object-cover"
+                      unoptimized
+                    />
+                  ) : r.foto_path ? (
+                    <p className="mt-1 text-[11.5px] text-zelanda-verde-700/70">
+                      Hay una foto pero no se pudo cargar.
+                    </p>
                   ) : null}
                 </li>
               ))}
             </ul>
           )}
         </section>
+
+        {a.cosechas_miel.length > 0 ? (
+          <section>
+            <p className="mb-2 text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
+              Miel cosechada{' '}
+              <span className="text-[11px] normal-case tracking-normal text-zelanda-verde-700/80">
+                (
+                {a.cosechas_miel
+                  .reduce((total, c) => total + Number(c.kg), 0)
+                  .toLocaleString('es-CO', { maximumFractionDigits: 3 })}{' '}
+                kg en total)
+              </span>
+            </p>
+            <ul className="space-y-2">
+              {a.cosechas_miel.map((c) => (
+                <li
+                  key={String(c.id)}
+                  className="rounded-xl border border-zelanda-beige-200 bg-white px-3 py-2.5 shadow-suave"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="m-0 font-serif text-[15px] text-zelanda-verde-900">
+                      {Number(c.kg).toLocaleString('es-CO', { maximumFractionDigits: 3 })} kg
+                    </p>
+                    <span className="whitespace-nowrap text-[11px] text-zelanda-verde-700">
+                      {formatearFechaHora(c.fecha)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
+                    Por {c.persona.nombre_completo}
+                  </p>
+                  {c.notas ? (
+                    <p className="mt-1 text-[12.5px] text-zelanda-verde-800">{c.notas}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <div className="flex gap-2 pb-2">
           {abierta ? (
