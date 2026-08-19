@@ -64,14 +64,42 @@ function motivo(e: unknown): string {
   }
   if (e instanceof Error && e.name === 'AbortError') {
     return (
-      'El servicio de avisos de Apple rechazó el registro. Revisá en el celular: ' +
-      'que el Modo de bajo consumo esté apagado, que haya internet estable, y en ' +
-      'Ajustes → Notificaciones que La Zelanda tenga los avisos permitidos. ' +
-      'Después probá de nuevo.'
+      'El servicio de avisos de Apple rechazó el registro. Revisá que el Modo de ' +
+      'bajo consumo esté apagado y que haya internet estable, y probá de nuevo. ' +
+      'Si La Zelanda no aparece en Ajustes → Notificaciones, es que iOS nunca ' +
+      'llegó a registrarla.'
     );
   }
   const nombre = e instanceof Error && e.name && e.name !== 'Error' ? `${e.name}: ` : '';
   return `El celular rechazó la suscripción en ${location.host}. Mostrale esto al jefe: ${nombre}${texto}`;
+}
+
+/**
+ * Retrato del estado del celular en el momento del fallo.
+ *
+ * Con "Apple rechazó el registro" a secas no se puede avanzar: hay que saber
+ * si el permiso quedó dado, si la app corre instalada, qué alcance tiene el
+ * worker y si había una suscripción previa. Va en el propio aviso para que se
+ * pueda leer y mandar sin abrir herramientas de desarrollo, que en un iPhone
+ * no están a mano.
+ */
+async function retrato(): Promise<string> {
+  const partes: string[] = [];
+  try {
+    partes.push(`permiso ${Notification.permission}`);
+  } catch {
+    partes.push('permiso ?');
+  }
+  partes.push(estaInstalada() ? 'instalada sí' : 'instalada NO');
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    partes.push(reg ? `worker ${reg.scope.replace(location.origin, '') || '/'}` : 'worker NO');
+    const previa = await reg?.pushManager.getSubscription();
+    partes.push(previa ? 'suscripción previa sí' : 'suscripción previa no');
+  } catch {
+    partes.push('worker ?');
+  }
+  return partes.join(' · ');
 }
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
@@ -170,6 +198,7 @@ export function PushPrompt() {
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [faltaInstalar, setFaltaInstalar] = useState(false);
+  const [detalle, setDetalle] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -185,6 +214,7 @@ export function PushPrompt() {
   const activar = async () => {
     setEnviando(true);
     setAviso(null);
+    setDetalle(null);
     try {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
@@ -212,6 +242,7 @@ export function PushPrompt() {
       // Antes decía "probá con mejor señal" pasara lo que pasara, y eso mandaba
       // a buscar el problema donde no estaba. Ahora nombra el paso que falló.
       setAviso(motivo(e));
+      setDetalle(await retrato().catch(() => null));
     } finally {
       setEnviando(false);
     }
@@ -241,6 +272,11 @@ export function PushPrompt() {
             {aviso ? (
               <p role="status" className="mt-2 text-xs text-estado-vencida">
                 {aviso}
+              </p>
+            ) : null}
+            {detalle ? (
+              <p className="mt-1 select-all text-[11px] leading-snug text-zelanda-verde-700/70">
+                {detalle}
               </p>
             ) : null}
             <div className="mt-3 flex gap-2">
