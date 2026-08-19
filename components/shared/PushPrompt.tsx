@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { suscribirPush } from '../../app/(app)/_acciones/push';
 import {
-  activarPush,
   conTope,
   esIPhone,
   estaInstalada,
   motivo,
   obtenerRegistro,
+  pasoPendiente,
+  pedirPermiso,
   retrato,
   soportaPush,
+  suscribirAhora,
 } from '../../lib/push/cliente';
 
 const POSPONER_KEY = 'push-postponed-until';
@@ -23,27 +25,57 @@ export function PushPrompt() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [faltaInstalar, setFaltaInstalar] = useState(false);
   const [detalle, setDetalle] = useState<string | null>(null);
-  // El worker se deja listo desde el montaje, no al tocar el botón: en iPhone
-  // hay que llegar a subscribe() sin esperas de por medio o el gesto vence.
-  const registro = useRef<Promise<ServiceWorkerRegistration> | null>(null);
+  // Cuando el permiso ya está dado y solo falta suscribir, el botón cambia de
+  // texto: sin eso, el segundo toque que hace falta en iPhone parece que fuera
+  // repetir el mismo paso que ya se hizo.
+  const [faltaSegundoToque, setFaltaSegundoToque] = useState(false);
+  // El worker y la suscripción previa se dejan listos desde el montaje, no al
+  // tocar el botón: en iPhone hay que llegar a subscribe() sin ningún await de
+  // por medio o se pierde la activación del toque.
+  const registro = useRef<ServiceWorkerRegistration | null>(null);
+  const suscripcionPrevia = useRef<PushSubscription | null | undefined>(undefined);
 
   useEffect(() => {
     if (!soportaPush()) return;
     if (Notification.permission !== 'default') return;
     const pospuesto = localStorage.getItem(POSPONER_KEY);
     if (pospuesto && Number(pospuesto) > Date.now()) return;
-    registro.current = obtenerRegistro();
-    // Sin esto, un worker que no arranca deja un rechazo sin dueño en la
-    // consola; el fallo se cuenta igual cuando se toca "Activar".
-    registro.current.catch(() => undefined);
+    obtenerRegistro()
+      .then(async (reg) => {
+        registro.current = reg;
+        suscripcionPrevia.current = await reg.pushManager.getSubscription();
+      })
+      // Si el worker no arranca, el fallo se cuenta igual al tocar "Activar";
+      // acá solo se evita dejar un rechazo sin dueño en la consola.
+      .catch(() => undefined);
     setFaltaInstalar(esIPhone() && !estaInstalada());
     setMostrar(true);
   }, []);
 
   const activar = async () => {
-    setEnviando(true);
     setAviso(null);
     setDetalle(null);
+
+    // Primer toque: solo el permiso. Nada encadenado detrás — el diálogo del
+    // permiso cierra la ventana de activación del toque, y si se intentara
+    // suscribir acá mismo, en iPhone la promesa quedaría colgada.
+    if (pasoPendiente() === 'pedir-permiso') {
+      setEnviando(true);
+      try {
+        const perm = await pedirPermiso();
+        if (perm !== 'granted') {
+          setMostrar(false);
+          return;
+        }
+        setFaltaSegundoToque(true);
+      } finally {
+        setEnviando(false);
+      }
+      return;
+    }
+
+    // Segundo toque: suscribir, con el toque entero para él.
+    setEnviando(true);
     try {
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) {
@@ -51,12 +83,8 @@ export function PushPrompt() {
         setAviso('No se pudo activar. Avisale al jefe de la finca.');
         return;
       }
-      const reg = await (registro.current ?? obtenerRegistro());
-      const sub = await activarPush(reg, pub);
-      if (!sub) {
-        setMostrar(false);
-        return;
-      }
+      const reg = registro.current ?? (await obtenerRegistro());
+      const sub = await suscribirAhora(reg, pub, suscripcionPrevia.current);
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
@@ -67,8 +95,6 @@ export function PushPrompt() {
       setMostrar(false);
     } catch (e) {
       console.warn('Suscripción push falló', e);
-      // Antes decía "probá con mejor señal" pasara lo que pasara, y eso mandaba
-      // a buscar el problema donde no estaba. Ahora nombra el paso que falló.
       setAviso(motivo(e));
       setDetalle(await retrato().catch(() => null));
     } finally {
@@ -95,6 +121,8 @@ export function PushPrompt() {
             <p className="mt-1 text-xs text-zelanda-verde-700/80">
               {faltaInstalar
                 ? 'En iPhone hace falta instalar la app primero: tocá Compartir y luego “Agregar a inicio”. Después abrila desde el icono y activá los avisos ahí.'
+                : faltaSegundoToque
+                ? 'Permiso concedido. Tocá una vez más para terminar de activarlos.'
                 : 'Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.'}
             </p>
             {aviso ? (
@@ -120,7 +148,7 @@ export function PushPrompt() {
                   disabled={enviando}
                   className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-2 text-sm text-white disabled:opacity-60"
                 >
-                  {enviando ? 'Activando...' : 'Activar'}
+                  {enviando ? 'Activando...' : faltaSegundoToque ? 'Terminar' : 'Activar'}
                 </button>
               )}
               <button
