@@ -461,7 +461,12 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
     },
   }));
 
-  return <div ref={contRef} className="h-full w-full" />;
+  // Los controles propios de MapLibre (zoom, brújula, ubicación) se anclan al
+  // borde de abajo a la derecha, que es justo donde vive la barra de
+  // indicadores: quedaban tapados por ella. Se los sube por encima.
+  return (
+    <div ref={contRef} className="h-full w-full [&_.maplibregl-ctrl-bottom-right]:mb-[4.5rem]" />
+  );
 });
 
 export default Mapa3D;
@@ -498,9 +503,13 @@ function crearMarcadores(
   for (const l of lotes) {
     const el = document.createElement('button');
     el.type = 'button';
+    // Mismo criterio que los puntos de referencia: contorno ceñido en vez de
+    // una sombra difusa, que sobre terreno claro no separaba la letra del fondo.
     el.style.cssText =
       'background:none;border:0;padding:0;cursor:pointer;font-family:Georgia,serif;' +
-      'color:#fff;text-shadow:0 0 4px rgba(0,0,0,.85);font-size:12.5px;line-height:1.15;text-align:center;';
+      'color:#fff;text-shadow:0 0 2px rgba(0,0,0,.95),0 1px 3px rgba(0,0,0,.9),' +
+      '1px 0 2px rgba(0,0,0,.75),-1px 0 2px rgba(0,0,0,.75);' +
+      'font-size:13px;line-height:1.15;text-align:center;';
     const detalle = '';
     el.innerHTML =
       `<strong>${l.nombre}</strong>` +
@@ -537,11 +546,20 @@ function marcadorPunto(nombre: string, colorPunto: string): HTMLDivElement {
   el.style.cssText =
     'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;' +
     'transform:translateY(-5px);';
+  // Se subió un par de tonos sin ponerle fondo ni caja: el nombre queda flotando
+  // sobre la foto, como estaba, pero se lee. Lo que lo hacía desaparecer no era
+  // el color —ya era blanco puro— sino la sombra: una sola, difusa y corrida
+  // hacia abajo, que sobre terreno claro no separaba la letra del fondo. Ahora
+  // lleva un contorno oscuro ceñido en las cuatro direcciones, que es como se
+  // rotulan los mapas sobre imágenes satelitales, y medio punto más de tamaño.
+  const contorno =
+    '0 0 2px rgba(0,0,0,.95),0 1px 2px rgba(0,0,0,.9),' +
+    '1px 0 2px rgba(0,0,0,.75),-1px 0 2px rgba(0,0,0,.75)';
   el.innerHTML =
-    `<span style="width:9px;height:9px;border-radius:50%;background:${colorPunto};` +
-    `border:2px solid #2e4633;box-shadow:0 1px 3px rgba(0,0,0,.55)"></span>` +
-    `<span style="font-family:system-ui;font-size:9.5px;font-weight:600;letter-spacing:.06em;` +
-    `text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap">` +
+    `<span style="width:10px;height:10px;border-radius:50%;background:${colorPunto};` +
+    `border:2px solid #24382a;box-shadow:0 1px 4px rgba(0,0,0,.7)"></span>` +
+    `<span style="font-family:system-ui;font-size:10.5px;font-weight:700;letter-spacing:.06em;` +
+    `text-transform:uppercase;color:#fff;text-shadow:${contorno};white-space:nowrap">` +
     `${nombre}</span>`;
   return el;
 }
