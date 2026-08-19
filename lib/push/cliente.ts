@@ -178,17 +178,16 @@ export function motivo(e: unknown): string {
   if (esIPhone() && !estaInstalada()) {
     return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
   }
-  // Diagnóstico confirmado en un iPhone real: permiso "granted", app instalada,
-  // worker activo, red disponible... y en Ajustes → Notificaciones del teléfono
-  // La Zelanda no figuraba. O sea que iOS decía que el permiso estaba dado pero
-  // no tenía ningún registro detrás: quedó huérfano al borrar y reinstalar la
-  // app, porque los datos del sitio sobrevivieron a la desinstalación.
+  // Caso observado en un iPhone real (iOS 18.7, Safari) y no resuelto: permiso
+  // concedido —incluso recién concedido, con el cartel de iOS y todo—, app
+  // instalada, worker activo, red disponible, y `subscribe()` que no contesta
+  // nunca. En Ajustes → Notificaciones del teléfono la app no figuraba.
   //
-  // Con el permiso ya en "granted", iOS nunca vuelve a preguntar, así que nunca
-  // se rehace el registro y `subscribe()` se queda esperando a algo que no
-  // existe. No se arregla desde el código: hay que borrar los datos del sitio
-  // para que iOS pregunte de nuevo desde cero. Mandar a "probá con mejor señal"
-  // en este caso es mandar a perder el tiempo.
+  // Se probó de todo del lado del código y nada cambió el resultado, así que
+  // apunta a que iOS no completa el registro con el servicio de Apple. Lo único
+  // honesto que se puede hacer acá es no mandar a buscar el problema donde no
+  // está: "probá con mejor señal" con señal perfecta es una pista falsa que hace
+  // perder el tiempo. Se dice lo que se sabe y lo que se puede intentar.
   if (
     e instanceof ErrorTope &&
     e.que.includes('servicio de avisos') &&
@@ -198,13 +197,14 @@ export function motivo(e: unknown): string {
     Notification.permission === 'granted'
   ) {
     return (
-      'iOS dice que el permiso está dado, pero no tiene registrada la app para avisos. ' +
-      'Suele pasar después de borrar y reinstalar la app. Para arreglarlo hay que ' +
-      'empezar de cero: 1) borrá La Zelanda de la pantalla de inicio; ' +
-      '2) entrá a Ajustes → Safari → Avanzado → Datos de sitios web y borrá ' +
-      `${location.host}; 3) reiniciá el iPhone; 4) abrí ${location.host} en Safari, ` +
-      'tocá Compartir → Agregar a inicio, y activá los avisos desde el icono. ' +
-      'Si al activar no aparece el cartel de permiso de iOS, avisá: quedó algo del registro viejo.'
+      'iOS aceptó el permiso pero no está completando el registro de avisos, y no es ' +
+      'la señal: la app tiene internet. Podés intentar, en este orden: apagar el Modo ' +
+      'de bajo consumo; reiniciar el iPhone; y si sigue igual, borrar La Zelanda de la ' +
+      'pantalla de inicio, borrar los datos del sitio en Ajustes → Safari → Avanzado → ' +
+      'Datos de sitios web, reiniciar y volver a instalarla. Si después de todo eso ' +
+      'La Zelanda no aparece en Ajustes → Notificaciones, es un problema del teléfono ' +
+      'con el servicio de Apple y hay que reportarlo: mientras tanto, los avisos de ese ' +
+      'celular no van a funcionar y conviene revisar la app a mano.'
     );
   }
   // Un silencio no es un rechazo. Decir "el celular rechazó la suscripción"
