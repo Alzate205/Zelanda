@@ -33,6 +33,10 @@ const VISTA_FINCA = {
   bearing: 150,
 };
 
+// Cuánto se le da al mapa para arrancar antes de dar el 3D por perdido. En el
+// campo, con datos móviles, las primeras baldosas pueden tardar bastante.
+const ESPERA_CARGA_MAPA = 20000;
+
 // Última posición de cámara del usuario, para no re-encuadrar la finca
 // cada vez que vuelve al centro de control. v2: la v1 podía apuntar a la
 // ubicación del seed de prueba, lejos de la finca real.
@@ -175,6 +179,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
   const mapRef = useRef<maplibregl.Map | null>(null);
   const marcadoresRef = useRef<maplibregl.Marker[]>([]);
   const cargadoRef = useRef(false);
+  const plazoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Refs para no re-montar el mapa cuando cambian datos/callbacks
   const lotesRef = useRef(lotes);
   const onSeleccionRef = useRef(onSeleccionLote);
@@ -216,14 +221,40 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       // Versión de maplibre sin setPixelRatio: se sigue con la densidad nativa.
     }
 
-    map.on('error', () => {
-      // Errores de baldosas individuales son normales offline; solo caemos
-      // si el mapa nunca llegó a cargar.
+    // Antes, cualquier error anterior a la carga tumbaba el 3D: una sola
+    // baldosa de satélite o de relieve que no llegara —cosa normal con datos
+    // móviles en el campo— y el mapa se cambiaba por el 2D para toda la
+    // sesión, sin reintento. Perder el 3D por una baldosa es un mal negocio:
+    // esas fallan solas y el mapa se arma igual.
+    //
+    // Ahora se le da tiempo real de cargar y solo se cae si al vencer el plazo
+    // sigue sin arrancar, o si el navegador se lleva el contexto WebGL, que sí
+    // es fatal y no tiene vuelta.
+    const plazoCarga = setTimeout(() => {
       if (!cargadoRef.current) onError();
+    }, ESPERA_CARGA_MAPA);
+    plazoRef.current = plazoCarga;
+
+    map.on('error', (e) => {
+      // Se registran pero no se castigan: sirven para entender qué falla sin
+      // decidir por el usuario que no puede tener mapa 3D.
+      console.warn('Mapa 3D: error no fatal', e?.error ?? e);
     });
+
+    map.getCanvas().addEventListener(
+      'webglcontextlost',
+      (e) => {
+        // El navegador se quedó sin recursos y se llevó el contexto. Esto sí es
+        // terminal para esta instancia del mapa.
+        e.preventDefault();
+        onError();
+      },
+      { once: true }
+    );
 
     map.on('load', () => {
       cargadoRef.current = true;
+      clearTimeout(plazoCarga);
       map.setTerrain({ source: 'terreno', exaggeration: 1.3 });
 
       map.addSource('lotes', { type: 'geojson', data: featuresDeLotes(lotesRef.current) });
@@ -333,6 +364,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
     });
 
     return () => {
+      if (plazoRef.current) clearTimeout(plazoRef.current);
       for (const m of marcadoresRef.current) m.remove();
       marcadoresRef.current = [];
       map.remove();

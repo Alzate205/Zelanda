@@ -33,13 +33,41 @@ const PanelCentral = dynamic(() => import('./PanelCentral').then((m) => m.PanelC
 /** Recuerda si el jefe dejó los lotes apagados, igual que se recuerda la cámara. */
 const CLAVE_LOTES_VISIBLES = 'zelanda_mapa_lotes_visibles';
 
+// El resultado no cambia durante la vida de la página, y volver a preguntarlo
+// costaba caro (ver abajo). Se pregunta una vez y se recuerda.
+let soportaWebGLCache: boolean | null = null;
+
+/**
+ * ¿Este dispositivo puede con el mapa 3D?
+ *
+ * El bug: la versión anterior creaba un canvas, le pedía un contexto WebGL para
+ * ver si contestaba... y lo dejaba vivo. iOS limita cuántos contextos WebGL
+ * pueden existir a la vez —son pocos, y menos todavía con poca memoria— y al
+ * llegar al tope `getContext` empieza a devolver null.
+ *
+ * O sea que cada visita al centro de control se quedaba con un contexto para
+ * siempre, y después de unas cuantas idas y vueltas la prueba empezaba a fallar
+ * y el iPhone caía al mapa 2D de forma permanente. No tenía que ver con cuántos
+ * lotes hubiera: tenía que ver con cuántas veces se había entrado. Por eso
+ * "antes se veía en 3D y ahora no", y por eso volvía si se cerraba la pestaña.
+ *
+ * Ahora el contexto de prueba se devuelve apenas se usa.
+ */
 function soportaWebGL(): boolean {
+  if (soportaWebGLCache !== null) return soportaWebGLCache;
   try {
     const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
+    const ctx = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+    if (ctx) {
+      // Devolver el contexto es lo único que impide que la prueba se convierta
+      // en la causa del problema que intenta detectar.
+      (ctx.getExtension('WEBGL_lose_context') as { loseContext(): void } | null)?.loseContext();
+    }
+    soportaWebGLCache = Boolean(ctx);
   } catch {
-    return false;
+    soportaWebGLCache = false;
   }
+  return soportaWebGLCache;
 }
 
 // Leyenda del NDVI: mismos colores que el evalscript de lib/jefe/ndvi.ts.
@@ -333,15 +361,29 @@ export function CentroControl({
         // este mapa cuando iOS se queda sin memoria para WebGL, el efecto era
         // que la pantalla aparecía sin saludo y sin indicadores: no faltaban,
         // estaban debajo del mapa.
-        <div className="isolate h-full w-full p-3">
-          <MapaFincaFallback
-            lotesPoligonos={geo.lotesParaMapa}
-            apiariosPuntos={geo.apiariosParaMapa}
-            instalacionesPuntos={geo.instParaMapa}
-            bordeFinca={geo.bordeFinca}
-            altura="100%"
-          />
-        </div>
+        <>
+          <div className="isolate h-full w-full p-3">
+            <MapaFincaFallback
+              lotesPoligonos={geo.lotesParaMapa}
+              apiariosPuntos={geo.apiariosParaMapa}
+              instalacionesPuntos={geo.instParaMapa}
+              bordeFinca={geo.bordeFinca}
+              altura="100%"
+            />
+          </div>
+          {/* Fuera del contenedor aislado a propósito: adentro quedaría por
+              debajo de los paneles de Leaflet, que es el mismo problema que
+              tenían el saludo y el dock. Caer al 2D no debería ser un camino de
+              ida: si fue un tropiezo pasajero —una baldosa que no llegó,
+              memoria que se liberó— hay que poder volver sin cerrar la app. */}
+          <button
+            type="button"
+            onClick={() => setConWebGL(true)}
+            className="pointer-events-auto absolute bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/60 bg-zelanda-beige-50/90 px-4 py-2 text-xs font-medium text-zelanda-verde-800 shadow-card backdrop-blur-md"
+          >
+            Volver al mapa 3D
+          </button>
+        </>
       ) : conWebGL === true ? (
         <Mapa3D
           ref={mapaRef}
