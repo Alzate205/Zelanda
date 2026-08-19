@@ -1,31 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { suscribirPush, desuscribirPush } from '../../app/(app)/_acciones/push';
+import {
+  activarPush,
+  conTope,
+  esIPhone,
+  estaInstalada,
+  motivo,
+  obtenerRegistro,
+  retrato,
+  soportaPush,
+} from '../../lib/push/cliente';
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  const base64Plana = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64Plana);
-  const out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
-}
+type Estado = 'no-soporta' | 'denegado' | 'activo' | 'inactivo' | 'sin-motor' | 'cargando';
 
-type Estado = 'no-soporta' | 'denegado' | 'activo' | 'inactivo' | 'cargando';
-
+/**
+ * Interruptor de avisos de Mi Perfil.
+ *
+ * Es la única puerta que queda cuando el cartel de la home ya no aparece, y eso
+ * pasa apenas se toca el permiso una vez: el cartel solo se muestra con el
+ * permiso en "default", y en Android el navegador y la app instalada comparten
+ * ese permiso. Por eso acá nunca puede quedar una pantalla sin salida: si algo
+ * falla, se dice qué falló y se deja un botón para volver a intentar.
+ */
 export function PushToggle() {
   const [estado, setEstado] = useState<Estado>('cargando');
   const [trabajando, setTrabajando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [detalle, setDetalle] = useState<string | null>(null);
+  const registro = useRef<Promise<ServiceWorkerRegistration> | null>(null);
 
   async function refrescar() {
-    if (typeof window === 'undefined') return;
-    if (
-      !('Notification' in window) ||
-      !('PushManager' in window) ||
-      !('serviceWorker' in navigator)
-    ) {
+    if (!soportaPush()) {
       setEstado('no-soporta');
       return;
     }
@@ -33,9 +41,21 @@ export function PushToggle() {
       setEstado('denegado');
       return;
     }
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    setEstado(sub ? 'activo' : 'inactivo');
+    // Antes esto era `await navigator.serviceWorker.ready` a secas. Esa promesa
+    // no resuelve nunca si el worker no llega a activarse, y el componente se
+    // quedaba mostrando "Cargando..." para siempre: sin botón, sin explicación,
+    // sin forma de activar los avisos.
+    registro.current = obtenerRegistro();
+    try {
+      const reg = await registro.current;
+      const sub = await reg.pushManager.getSubscription();
+      setEstado(sub ? 'activo' : 'inactivo');
+    } catch (e) {
+      console.warn('No se pudo consultar el estado de los avisos', e);
+      setAviso(motivo(e));
+      setDetalle(await retrato().catch(() => null));
+      setEstado('sin-motor');
+    }
   }
 
   useEffect(() => {
@@ -44,44 +64,36 @@ export function PushToggle() {
 
   async function activar() {
     setTrabajando(true);
+    setAviso(null);
+    setDetalle(null);
     try {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
+      const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!pub) {
+        console.warn('VAPID public key faltante');
+        setAviso('No se pudo activar. Avisale al jefe de la finca.');
+        return;
+      }
+      const reg = await (registro.current ?? obtenerRegistro());
+      const sub = await activarPush(reg, pub);
+      if (!sub) {
+        // El usuario dijo que no en el diálogo del navegador.
         await refrescar();
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
-      const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!pub) return;
-      // Igual que en PushPrompt: descartar suscripciones viejas y acotar
-      // con timeout para que el botón nunca quede colgado.
-      const vieja = await reg.pushManager.getSubscription();
-      if (vieja) {
-        try {
-          await vieja.unsubscribe();
-        } catch {
-          /* noop */
-        }
-      }
-      const sub = (await Promise.race([
-        reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(pub) as BufferSource,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout de suscripción')), 15000)
-        ),
-      ])) as PushSubscription;
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
       fd.set('p256dh', json.keys?.p256dh ?? '');
       fd.set('auth', json.keys?.auth ?? '');
       fd.set('userAgent', navigator.userAgent);
-      await suscribirPush(fd);
+      await conTope(suscribirPush(fd), 15000, 'registro en el servidor');
       setEstado('activo');
     } catch (e) {
+      // Antes esto era un console.warn y nada más: el botón volvía a su lugar
+      // como si no hubiera pasado nada y no había manera de saber qué falló.
       console.warn('Activación push falló', e);
+      setAviso(motivo(e));
+      setDetalle(await retrato().catch(() => null));
     } finally {
       setTrabajando(false);
     }
@@ -89,26 +101,47 @@ export function PushToggle() {
 
   async function desactivar() {
     setTrabajando(true);
+    setAviso(null);
+    setDetalle(null);
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await (registro.current ?? obtenerRegistro());
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         const fd = new FormData();
         fd.set('endpoint', sub.endpoint);
-        await desuscribirPush(fd);
+        await conTope(desuscribirPush(fd), 15000, 'registro en el servidor');
         await sub.unsubscribe();
       }
       setEstado('inactivo');
     } catch (e) {
       console.warn('Desactivación push falló', e);
+      setAviso(motivo(e));
+      setDetalle(await retrato().catch(() => null));
     } finally {
       setTrabajando(false);
     }
   }
 
+  const problema =
+    aviso || detalle ? (
+      <div className="mt-2">
+        {aviso ? (
+          <p role="status" className="text-xs text-estado-vencida">
+            {aviso}
+          </p>
+        ) : null}
+        {detalle ? (
+          <p className="mt-1 select-all text-[11px] leading-snug text-zelanda-verde-700/70">
+            {detalle}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
+
   if (estado === 'cargando') {
     return <p className="text-sm text-zelanda-verde-700/70">Cargando...</p>;
   }
+
   if (estado === 'no-soporta') {
     return (
       <p className="text-sm text-zelanda-verde-700/70">
@@ -116,46 +149,69 @@ export function PushToggle() {
       </p>
     );
   }
+
   if (estado === 'denegado') {
     return (
       <p className="text-sm text-estado-vencida">
-        Permiso denegado en el navegador. Activá los permisos en Ajustes del sitio para poder
-        recibir notificaciones.
+        Bloqueaste los avisos para esta app. Hay que volver a permitirlos desde el navegador: tocá
+        el candado o los tres puntos junto a la dirección, entrá en Ajustes del sitio y poné
+        Notificaciones en “Permitir”. Después volvé acá y activalos.
       </p>
     );
   }
+
   if (estado === 'activo') {
     return (
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-zelanda-verde-900">
-          <Bell className="h-4 w-4 text-zelanda-verde-700" />
-          Notificaciones activas en este dispositivo
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-zelanda-verde-900">
+            <Bell className="h-4 w-4 text-zelanda-verde-700" />
+            Notificaciones activas en este dispositivo
+          </div>
+          <button
+            type="button"
+            onClick={desactivar}
+            disabled={trabajando}
+            className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm text-zelanda-verde-700 disabled:opacity-60"
+          >
+            {trabajando ? '...' : 'Desactivar'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={desactivar}
-          disabled={trabajando}
-          className="min-h-touch rounded-lg border border-zelanda-beige-300 px-3 py-1.5 text-sm text-zelanda-verde-700 disabled:opacity-60"
-        >
-          {trabajando ? '...' : 'Desactivar'}
-        </button>
+        {problema}
       </div>
     );
   }
+
+  // 'inactivo' y 'sin-motor' comparten pantalla: en los dos casos lo que hace
+  // falta es un botón para intentar, y en 'sin-motor' además el motivo de por
+  // qué la consulta anterior no llegó a buen puerto.
+  const faltaInstalar = esIPhone() && !estaInstalada();
+
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-sm text-zelanda-verde-700/70">
-        <BellOff className="h-4 w-4" />
-        Notificaciones desactivadas
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-zelanda-verde-700/70">
+          <BellOff className="h-4 w-4" />
+          Notificaciones desactivadas
+        </div>
+        {faltaInstalar ? null : (
+          <button
+            type="button"
+            onClick={activar}
+            disabled={trabajando}
+            className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-1.5 text-sm text-white disabled:opacity-60"
+          >
+            {trabajando ? '...' : estado === 'sin-motor' ? 'Reintentar' : 'Activar'}
+          </button>
+        )}
       </div>
-      <button
-        type="button"
-        onClick={activar}
-        disabled={trabajando}
-        className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-1.5 text-sm text-white disabled:opacity-60"
-      >
-        {trabajando ? '...' : 'Activar'}
-      </button>
+      {faltaInstalar ? (
+        <p className="mt-2 text-xs text-zelanda-verde-700/80">
+          En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio: tocá
+          Compartir y luego “Agregar a inicio”. Después abrila desde el icono y activalos acá.
+        </p>
+      ) : null}
+      {problema}
     </div>
   );
 }
