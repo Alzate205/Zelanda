@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { centroideDePoligono, COLOR_BORDE_ESTADO, type EstadoLote } from '@/lib/mapa3d';
+import { centroVisualDePoligono, COLOR_BORDE_ESTADO, type EstadoLote } from '@/lib/mapa3d';
 import { ATRIBUCION_SATELITE, MAXZOOM_SATELITE, URLS_SATELITE_MAPLIBRE } from '@/lib/mapa-tiles';
 
 type GeoJsonPolygon = { type: 'Polygon'; coordinates: number[][][] };
@@ -32,6 +32,21 @@ const VISTA_FINCA = {
   pitch: 55,
   bearing: 150,
 };
+
+/**
+ * Qué tan visible queda un rótulo cuando el relieve lo tapa.
+ *
+ * MapLibre atenúa los marcadores que el terreno 3D deja detrás de una loma, y
+ * por defecto los baja al 0.2 — un 20% de opacidad. Con la cámara inclinada,
+ * media finca queda "detrás" de algo, y por eso los nombres de los lotes bajos
+ * y de las instalaciones se veían desteñidos mientras el del filo se veía
+ * blanco y nítido. No era falta de contraste: encima del color había una
+ * opacidad que no se podía compensar con sombras.
+ *
+ * No se sube a 1: la atenuación es lo que da sensación de profundidad y de que
+ * ese punto está más lejos. Solo se sube lo suficiente para poder leerlo.
+ */
+const OPACIDAD_TAPADO = 0.75;
 
 // Cuánto se le da al mapa para arrancar antes de dar el 3D por perdido. En el
 // campo, con datos móviles, las primeras baldosas pueden tardar bastante.
@@ -306,7 +321,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         const lote = lotesRef.current.find((l) => l.id === id);
         if (lote) {
           map.flyTo({
-            center: centroideDePoligono(lote.geojson),
+            center: centroVisualDePoligono(lote.geojson),
             zoom: Math.max(map.getZoom(), 15),
             duration: 1100,
             // Deja espacio para el panel inferior
@@ -516,14 +531,20 @@ function crearMarcadores(
       (detalle ? `<br><span style="font-size:10.5px;font-family:system-ui">${detalle}</span>` : '');
     el.addEventListener('click', () => onSeleccionLote(l.id));
     ref.current.push(
-      new maplibregl.Marker({ element: el }).setLngLat(centroideDePoligono(l.geojson)).addTo(map)
+      new maplibregl.Marker({ element: el, opacityWhenCovered: OPACIDAD_TAPADO })
+        .setLngLat(centroVisualDePoligono(l.geojson))
+        .addTo(map)
     );
   }
 
   for (const i of instalaciones) {
     if (!i.geojson) continue;
     ref.current.push(
-      new maplibregl.Marker({ element: marcadorPunto(i.nombre, '#fbf7f0'), anchor: 'top' })
+      new maplibregl.Marker({
+        element: marcadorPunto(i.nombre, '#fbf7f0'),
+        anchor: 'top',
+        opacityWhenCovered: OPACIDAD_TAPADO,
+      })
         .setLngLat(i.geojson.coordinates)
         .addTo(map)
     );
@@ -532,7 +553,11 @@ function crearMarcadores(
   for (const a of apiarios) {
     if (!a.geojson) continue;
     ref.current.push(
-      new maplibregl.Marker({ element: marcadorPunto(a.nombre, '#c89045'), anchor: 'top' })
+      new maplibregl.Marker({
+        element: marcadorPunto(a.nombre, '#c89045'),
+        anchor: 'top',
+        opacityWhenCovered: OPACIDAD_TAPADO,
+      })
         .setLngLat(a.geojson.coordinates)
         .addTo(map)
     );

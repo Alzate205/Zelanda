@@ -12,7 +12,7 @@ import { PanelClima } from './PanelClima';
 import type { ClimaFinca } from '@/lib/jefe/clima';
 import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
 import { ordenarPorCercania } from '@/lib/ruta-dron';
-import { centroideDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
+import { centroVisualDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
 import { asignarColoresLotes } from '@/lib/paleta-lotes';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { EVENTO_ABRIR_PANEL } from '@/components/shared/BotonPanel';
@@ -286,7 +286,7 @@ export function CentroControl({
     setLoteId(null);
     setPanelAbierto(false);
     const ruta = ordenarPorCercania(
-      lotesMapa.map((l) => ({ id: l.id, centro: centroideDePoligono(l.geojson) }))
+      lotesMapa.map((l) => ({ id: l.id, centro: centroVisualDePoligono(l.geojson) }))
     );
     setVuelo({ ruta, indice: 0, pausado: false });
   }
@@ -300,7 +300,7 @@ export function CentroControl({
       return;
     }
     mapaRef.current?.volarA({
-      center: centroideDePoligono(lote.geojson),
+      center: centroVisualDePoligono(lote.geojson),
       zoom: 15.3,
       pitch: 58,
       bearing: -15 + vuelo.indice * 30,
