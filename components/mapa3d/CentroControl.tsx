@@ -2,18 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Plane, Satellite, Scan } from 'lucide-react';
+import { Layers, Plane, Satellite, Scan } from 'lucide-react';
 import Mapa3D, { type LoteMapa3D, type ManijaMapa3D, type ModoMapa } from './Mapa3D';
 import { ChipsModos } from './ChipsModos';
 import { DockKPIs } from './DockKPIs';
 import { PanelLote } from './PanelLote';
-import { PanelCentral } from './PanelCentral';
 import { VueloDron } from './VueloDron';
 import { PanelClima } from './PanelClima';
 import type { ClimaFinca } from '@/lib/jefe/clima';
 import { useSnapshotJefe } from '@/hooks/useSnapshotJefe';
 import { ordenarPorCercania } from '@/lib/ruta-dron';
 import { centroideDePoligono, rampaCosecha, type EstadoLote } from '@/lib/mapa3d';
+import { asignarColoresLotes } from '@/lib/paleta-lotes';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { EVENTO_ABRIR_PANEL } from '@/components/shared/BotonPanel';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
@@ -23,6 +23,15 @@ import type { GeoFinca } from '@/lib/geo-finca';
 const MapaFincaFallback = dynamic(() => import('@/components/mapa/MapaFinca'), {
   ssr: false,
 });
+
+// El panel del jefe se carga aparte: es una pantalla entera de datos que antes
+// viajaba y se parseaba junto con el mapa aunque no se abriera nunca.
+const PanelCentral = dynamic(() => import('./PanelCentral').then((m) => m.PanelCentral), {
+  ssr: false,
+});
+
+/** Recuerda si el jefe dejó los lotes apagados, igual que se recuerda la cámara. */
+const CLAVE_LOTES_VISIBLES = 'zelanda_mapa_lotes_visibles';
 
 function soportaWebGL(): boolean {
   try {
@@ -98,10 +107,30 @@ export function CentroControl({
     bbox: [number, number, number, number];
   } | null>(null);
   const [avisoNdvi, setAvisoNdvi] = useState<string | null>(null);
+  // Arranca en true y se corrige al montar: leer localStorage durante el
+  // render rompe la hidratación, porque en el servidor no existe.
+  const [lotesVisibles, setLotesVisibles] = useState(true);
 
   useEffect(() => {
     setConWebGL(soportaWebGL());
+    try {
+      if (localStorage.getItem(CLAVE_LOTES_VISIBLES) === '0') setLotesVisibles(false);
+    } catch {
+      // localStorage bloqueado: se muestran los lotes, que es lo normal.
+    }
   }, []);
+
+  function alternarLotes() {
+    setLotesVisibles((visible) => {
+      const nuevo = !visible;
+      try {
+        localStorage.setItem(CLAVE_LOTES_VISIBLES, nuevo ? '1' : '0');
+      } catch {
+        // No poder recordarlo no es motivo para no hacerlo.
+      }
+      return nuevo;
+    });
+  }
 
   // El mapa llena el espacio entre el header y la bottom nav.
   useEffect(() => {
@@ -172,17 +201,23 @@ export function CentroControl({
 
   const lotesMapa: LoteMapa3D[] = useMemo(() => {
     const maxKg = Math.max(0, ...Array.from(kgPorLote.values()));
-    return geo.lotesParaMapa
-      .filter((l): l is typeof l & { geojson: NonNullable<typeof l.geojson> } => l.geojson !== null)
-      .map((l) => ({
-        id: l.id,
-        nombre: l.nombre,
-        estado: estadoPorLote.get(l.id) ?? 'aldia',
-        kgMes: kgPorLote.get(l.id) ?? 0,
-        colorCosecha: rampaCosecha(kgPorLote.get(l.id) ?? 0, maxKg),
-        trabajandoHoy: (equipoPorLote.get(l.id) ?? []).length,
-        geojson: l.geojson,
-      }));
+    const conPoligono = geo.lotesParaMapa.filter(
+      (l): l is typeof l & { geojson: NonNullable<typeof l.geojson> } => l.geojson !== null
+    );
+    // El color se reparte sobre todos los lotes de la finca, no solo sobre los
+    // que tienen polígono: así un lote que todavía no fue delimitado no le
+    // cambia el color a los demás el día que se delimite.
+    const colores = asignarColoresLotes(geo.lotesParaMapa.map((l) => l.id));
+    return conPoligono.map((l) => ({
+      id: l.id,
+      nombre: l.nombre,
+      estado: estadoPorLote.get(l.id) ?? 'aldia',
+      color: colores.get(l.id) ?? '#3b6e8f',
+      kgMes: kgPorLote.get(l.id) ?? 0,
+      colorCosecha: rampaCosecha(kgPorLote.get(l.id) ?? 0, maxKg),
+      trabajandoHoy: (equipoPorLote.get(l.id) ?? []).length,
+      geojson: l.geojson,
+    }));
   }, [geo.lotesParaMapa, estadoPorLote, kgPorLote, equipoPorLote]);
 
   async function alternarNdvi() {
@@ -291,7 +326,14 @@ export function CentroControl({
       style={{ height: altura ?? '70svh' }}
     >
       {conWebGL === false ? (
-        <div className="h-full w-full p-3">
+        // `isolate` es lo que mantiene a Leaflet en su lugar. Sus paneles usan
+        // z-index 400 y .leaflet-container no crea contexto de apilamiento
+        // propio, así que esos 400 competían de igual a igual contra el z-10
+        // del saludo y del dock de KPIs — y ganaban. En el iPhone, que cae a
+        // este mapa cuando iOS se queda sin memoria para WebGL, el efecto era
+        // que la pantalla aparecía sin saludo y sin indicadores: no faltaban,
+        // estaban debajo del mapa.
+        <div className="isolate h-full w-full p-3">
           <MapaFincaFallback
             lotesPoligonos={geo.lotesParaMapa}
             apiariosPuntos={geo.apiariosParaMapa}
@@ -309,6 +351,7 @@ export function CentroControl({
           instalaciones={geo.instParaMapa}
           modo={modo}
           ndvi={ndvi}
+          lotesVisibles={lotesVisibles}
           onSeleccionLote={(id) => {
             setVuelo(null);
             setLoteId(id);
@@ -353,6 +396,18 @@ export function CentroControl({
             className={ndvi ? BTN_MAPA_ACTIVO : BTN_MAPA}
           >
             <Satellite className="h-4 w-4" aria-hidden />
+          </button>
+          {/* El borde de la finca no se apaga nunca: apagar los lotes es para
+              mirar el terreno, no para perder de vista hasta dónde llega. */}
+          <button
+            type="button"
+            onClick={alternarLotes}
+            title={lotesVisibles ? 'Ocultar lotes' : 'Mostrar lotes'}
+            aria-label={lotesVisibles ? 'Ocultar lotes' : 'Mostrar lotes'}
+            aria-pressed={lotesVisibles}
+            className={lotesVisibles ? BTN_MAPA_ACTIVO : BTN_MAPA}
+          >
+            <Layers className="h-4 w-4" aria-hidden />
           </button>
           {ndvi ? (
             <div className="pointer-events-auto rounded-xl border border-white/60 bg-zelanda-beige-50/90 px-2.5 py-2 shadow-suave backdrop-blur-md">

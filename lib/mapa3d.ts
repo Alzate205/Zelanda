@@ -9,6 +9,23 @@ export const COLOR_ESTADO_LOTE = {
 
 export type EstadoLote = keyof typeof COLOR_ESTADO_LOTE;
 
+/**
+ * Color del borde según el estado de tareas.
+ *
+ * El relleno pasó a identificar al lote, así que el estado se mudó acá. Son
+ * versiones más claras y saturadas que las del relleno: el borde es una línea
+ * fina sobre imágenes de satélite oscuras y necesita brillo propio para leerse.
+ */
+export const COLOR_BORDE_ESTADO = {
+  aldia: '#ffffff',
+  proxima: '#f0b429',
+  vencida: '#e8574a',
+} as const;
+
+// La paleta de identidad de los lotes vive en lib/paleta-lotes.ts, que ya la
+// compartían los mapas 2D. Acá solo queda el color del borde, que es lo propio
+// del centro de control.
+
 type Poligono = { type: 'Polygon'; coordinates: number[][][] };
 
 /** Centro (promedio de vértices del anillo exterior, sin contar el cierre). */
