@@ -131,11 +131,17 @@ if (!enviar) {
 
 console.log('\n=== Enviando aviso de prueba ===\n');
 
+// El tag va único por envío a propósito. Dos avisos con el mismo tag no se
+// apilan: el segundo reemplaza al primero, y encima lo hace en silencio. Con un
+// tag fijo, mandar la prueba tres veces mostraba una sola notificación y parecía
+// que se estuvieran perdiendo. La hora en el cuerpo termina de despejar la duda:
+// se ve de un vistazo si el aviso es el de recién o uno viejo que quedó ahí.
+const hora = new Date().toLocaleTimeString('es-CO', { timeZone: 'America/Bogota' });
 const payload = JSON.stringify({
   titulo: 'La Zelanda',
-  cuerpo: 'Aviso de prueba. Si ves esto, las notificaciones funcionan.',
+  cuerpo: `Aviso de prueba de las ${hora}. Si ves esto, las notificaciones funcionan.`,
   url: '/',
-  tag: 'prueba',
+  tag: `prueba-${Date.now()}`,
 });
 
 let bien = 0;
