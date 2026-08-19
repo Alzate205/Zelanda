@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { centroideDePoligono, COLOR_BORDE_ESTADO, type EstadoLote } from '@/lib/mapa3d';
+import { centroVisualDePoligono, COLOR_BORDE_ESTADO, type EstadoLote } from '@/lib/mapa3d';
 import { ATRIBUCION_SATELITE, MAXZOOM_SATELITE, URLS_SATELITE_MAPLIBRE } from '@/lib/mapa-tiles';
 
 type GeoJsonPolygon = { type: 'Polygon'; coordinates: number[][][] };
@@ -306,7 +306,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         const lote = lotesRef.current.find((l) => l.id === id);
         if (lote) {
           map.flyTo({
-            center: centroideDePoligono(lote.geojson),
+            center: centroVisualDePoligono(lote.geojson),
             zoom: Math.max(map.getZoom(), 15),
             duration: 1100,
             // Deja espacio para el panel inferior
@@ -516,7 +516,7 @@ function crearMarcadores(
       (detalle ? `<br><span style="font-size:10.5px;font-family:system-ui">${detalle}</span>` : '');
     el.addEventListener('click', () => onSeleccionLote(l.id));
     ref.current.push(
-      new maplibregl.Marker({ element: el }).setLngLat(centroideDePoligono(l.geojson)).addTo(map)
+      new maplibregl.Marker({ element: el }).setLngLat(centroVisualDePoligono(l.geojson)).addTo(map)
     );
   }
 

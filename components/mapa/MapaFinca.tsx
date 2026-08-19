@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { asignarColoresLotes } from '@/lib/paleta-lotes';
+import { centroVisualDePoligono } from '@/lib/mapa3d';
 import {
   ATRIBUCION_SATELITE,
   MAXZOOM_SATELITE,
@@ -189,14 +190,24 @@ export default function MapaFinca({
                 click: () => router.push(`/jefe/lotes/${l.id}`),
               }}
             >
+              {/* La posición se fija a mano. Leaflet, por su cuenta, centra la
+                  etiqueta en el rectángulo que envuelve al lote, y en uno
+                  alargado o curvo ese punto cae fuera del polígono: el nombre
+                  terminaba escrito encima del lote vecino. */}
               <Tooltip
                 permanent
                 direction="center"
-                className="!bg-transparent !border-0 !shadow-none !text-white"
+                position={(() => {
+                  const [lng, lat] = centroVisualDePoligono(l.geojson);
+                  return [lat, lng] as [number, number];
+                })()}
+                className="!border-0 !bg-transparent !text-white !shadow-none"
               >
                 <div
                   style={{
-                    textShadow: '0 0 3px rgba(0,0,0,0.7)',
+                    textShadow:
+                      '0 0 2px rgba(0,0,0,.95),0 1px 3px rgba(0,0,0,.9),' +
+                      '1px 0 2px rgba(0,0,0,.75),-1px 0 2px rgba(0,0,0,.75)',
                     fontFamily: 'Georgia, serif',
                   }}
                 >
