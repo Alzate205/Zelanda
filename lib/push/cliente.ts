@@ -104,9 +104,15 @@ function mismaClave(sub: PushSubscription, clave: Uint8Array): boolean {
 export async function suscribir(
   reg: ServiceWorkerRegistration,
   claveTexto: string,
-  claveBytes: Uint8Array
+  claveBytes: Uint8Array,
+  // Si se pasa (aunque sea null), se evita preguntar por la suscripción vieja
+  // acá adentro. Ese `await` corre justo antes de `subscribe()` y en iPhone
+  // alcanza para que se pierda la activación del toque. Quien llama la averigua
+  // de antemano y la trae ya resuelta.
+  viejaConocida?: PushSubscription | null
 ): Promise<PushSubscription> {
-  const vieja = await reg.pushManager.getSubscription();
+  const vieja =
+    viejaConocida !== undefined ? viejaConocida : await reg.pushManager.getSubscription();
   if (vieja) {
     if (mismaClave(vieja, claveBytes)) return vieja;
     try {
@@ -261,24 +267,45 @@ export async function retrato(): Promise<string> {
   return partes.join(' · ');
 }
 
+/** Qué falta para terminar de activar los avisos en este dispositivo. */
+export type PasoPush = 'pedir-permiso' | 'suscribir' | 'bloqueado';
+
 /**
- * Pide el permiso y suscribe, en ese orden y sin nada en el medio.
+ * Qué hay que hacer al tocar el botón, según cómo esté el celular.
  *
- * El orden importa en iPhone: `subscribe()` exige correr dentro de la ventana
- * de activación que abre el toque del usuario, y cada `await` intermedio la
- * cierra. Antes se registraba el worker entre el permiso y la suscripción, y
- * para cuando se llamaba a `subscribe()` el gesto ya había vencido; WebKit en
- * ese caso no rechaza, deja la promesa colgada para siempre. Por eso el
- * registro se recibe ya hecho (`reg`, precalentado al montar la pantalla) y
- * cuando el permiso ya está dado ni siquiera se pasa por `requestPermission`.
+ * Están separados a propósito, y hacen falta dos toques distintos. En iPhone,
+ * `subscribe()` exige correr dentro de la ventana de activación que abre el
+ * toque del usuario, y el diálogo del permiso la cierra: para cuando el usuario
+ * contesta "Permitir", el toque original ya venció. WebKit en ese caso no
+ * rechaza la suscripción, deja la promesa colgada para siempre — que es
+ * exactamente el "no contestó" que se veía en el iPhone real, con el permiso ya
+ * concedido, el worker activo y la app instalada.
+ *
+ * Así que el primer toque solo pide permiso, y el segundo suscribe con el
+ * toque entero para él.
  */
-export async function activarPush(
+export function pasoPendiente(): PasoPush {
+  if (Notification.permission === 'denied') return 'bloqueado';
+  if (Notification.permission !== 'granted') return 'pedir-permiso';
+  return 'suscribir';
+}
+
+/** Primer toque: solo el permiso. No encadenar nada después. */
+export async function pedirPermiso(): Promise<NotificationPermission> {
+  return Notification.requestPermission();
+}
+
+/**
+ * Segundo toque: suscribir.
+ *
+ * No debe haber ningún `await` entre el toque del usuario y esta llamada, ni
+ * acá adentro antes de `subscribe()`, o en iPhone se pierde la activación. Por
+ * eso el registro del worker llega ya resuelto desde afuera.
+ */
+export async function suscribirAhora(
   reg: ServiceWorkerRegistration,
-  clavePublica: string
-): Promise<PushSubscription | null> {
-  if (Notification.permission !== 'granted') {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return null;
-  }
-  return suscribir(reg, clavePublica, urlBase64ToUint8Array(clavePublica));
+  clavePublica: string,
+  viejaConocida?: PushSubscription | null
+): Promise<PushSubscription> {
+  return suscribir(reg, clavePublica, urlBase64ToUint8Array(clavePublica), viejaConocida);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { ErrorTope, conTope, suscribir, urlBase64ToUint8Array } from './cliente';
+import { ErrorTope, conTope, suscribir, suscribirAhora, urlBase64ToUint8Array } from './cliente';
 
 // Clave VAPID pública de ejemplo (65 bytes en base64url), solo para las pruebas.
 const CLAVE =
@@ -107,5 +107,33 @@ describe('suscribir', () => {
 
     await expect(suscribir(reg, CLAVE, bytes)).resolves.toBe(nueva);
     expect(vieja.unsubscribe).toHaveBeenCalled();
+  });
+});
+
+describe('suscribirAhora', () => {
+  it('no consulta la suscripción vieja cuando ya se la pasan', async () => {
+    // Ese `await` corre justo antes de subscribe(), y en iPhone alcanza para
+    // que se pierda la activación del toque y la promesa quede colgada.
+    const getSubscription = vi.fn();
+    const buena = suscripcionFalsa();
+    const reg = registroFalso({
+      getSubscription,
+      subscribe: vi.fn().mockResolvedValue(buena) as unknown as PushManager['subscribe'],
+    });
+
+    await expect(suscribirAhora(reg, CLAVE, null)).resolves.toBe(buena);
+    expect(getSubscription).not.toHaveBeenCalled();
+  });
+
+  it('reusa la suscripción previa que le pasan si la clave no cambió', async () => {
+    const vieja = suscripcionFalsa(urlBase64ToUint8Array(CLAVE));
+    const subscribe = vi.fn();
+    const reg = registroFalso({
+      getSubscription: vi.fn(),
+      subscribe: subscribe as unknown as PushManager['subscribe'],
+    });
+
+    await expect(suscribirAhora(reg, CLAVE, vieja)).resolves.toBe(vieja);
+    expect(subscribe).not.toHaveBeenCalled();
   });
 });

@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { suscribirPush, desuscribirPush } from '../../app/(app)/_acciones/push';
 import {
-  activarPush,
   conTope,
   esIPhone,
   estaInstalada,
   motivo,
   obtenerRegistro,
+  pasoPendiente,
+  pedirPermiso,
   retrato,
   soportaPush,
+  suscribirAhora,
 } from '../../lib/push/cliente';
 
 type Estado = 'no-soporta' | 'denegado' | 'activo' | 'inactivo' | 'sin-motor' | 'cargando';
@@ -30,7 +32,11 @@ export function PushToggle() {
   const [trabajando, setTrabajando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [detalle, setDetalle] = useState<string | null>(null);
-  const registro = useRef<Promise<ServiceWorkerRegistration> | null>(null);
+  // El worker y la suscripción previa se dejan resueltos de antemano: en iPhone
+  // no puede haber ningún await entre el toque y subscribe().
+  const registro = useRef<ServiceWorkerRegistration | null>(null);
+  const suscripcionPrevia = useRef<PushSubscription | null | undefined>(undefined);
+  const [faltaSegundoToque, setFaltaSegundoToque] = useState(false);
 
   async function refrescar() {
     if (!soportaPush()) {
@@ -45,10 +51,11 @@ export function PushToggle() {
     // no resuelve nunca si el worker no llega a activarse, y el componente se
     // quedaba mostrando "Cargando..." para siempre: sin botón, sin explicación,
     // sin forma de activar los avisos.
-    registro.current = obtenerRegistro();
     try {
-      const reg = await registro.current;
+      const reg = await obtenerRegistro();
+      registro.current = reg;
       const sub = await reg.pushManager.getSubscription();
+      suscripcionPrevia.current = sub;
       setEstado(sub ? 'activo' : 'inactivo');
     } catch (e) {
       console.warn('No se pudo consultar el estado de los avisos', e);
@@ -63,9 +70,29 @@ export function PushToggle() {
   }, []);
 
   async function activar() {
-    setTrabajando(true);
     setAviso(null);
     setDetalle(null);
+
+    // Primer toque: solo el permiso. El diálogo cierra la ventana de activación
+    // del toque, así que suscribir acá mismo dejaría la promesa colgada en
+    // iPhone. Ver `pasoPendiente` en lib/push/cliente.
+    if (pasoPendiente() === 'pedir-permiso') {
+      setTrabajando(true);
+      try {
+        const perm = await pedirPermiso();
+        if (perm !== 'granted') {
+          await refrescar();
+          return;
+        }
+        setFaltaSegundoToque(true);
+      } finally {
+        setTrabajando(false);
+      }
+      return;
+    }
+
+    // Segundo toque: suscribir.
+    setTrabajando(true);
     try {
       const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!pub) {
@@ -73,13 +100,8 @@ export function PushToggle() {
         setAviso('No se pudo activar. Avisale al jefe de la finca.');
         return;
       }
-      const reg = await (registro.current ?? obtenerRegistro());
-      const sub = await activarPush(reg, pub);
-      if (!sub) {
-        // El usuario dijo que no en el diálogo del navegador.
-        await refrescar();
-        return;
-      }
+      const reg = registro.current ?? (await obtenerRegistro());
+      const sub = await suscribirAhora(reg, pub, suscripcionPrevia.current);
       const json = sub.toJSON();
       const fd = new FormData();
       fd.set('endpoint', sub.endpoint);
@@ -87,10 +109,10 @@ export function PushToggle() {
       fd.set('auth', json.keys?.auth ?? '');
       fd.set('userAgent', navigator.userAgent);
       await conTope(suscribirPush(fd), 15000, 'registro en el servidor');
+      suscripcionPrevia.current = sub;
+      setFaltaSegundoToque(false);
       setEstado('activo');
     } catch (e) {
-      // Antes esto era un console.warn y nada más: el botón volvía a su lugar
-      // como si no hubiera pasado nada y no había manera de saber qué falló.
       console.warn('Activación push falló', e);
       setAviso(motivo(e));
       setDetalle(await retrato().catch(() => null));
@@ -104,7 +126,7 @@ export function PushToggle() {
     setAviso(null);
     setDetalle(null);
     try {
-      const reg = await (registro.current ?? obtenerRegistro());
+      const reg = registro.current ?? (await obtenerRegistro());
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
         const fd = new FormData();
@@ -112,6 +134,7 @@ export function PushToggle() {
         await conTope(desuscribirPush(fd), 15000, 'registro en el servidor');
         await sub.unsubscribe();
       }
+      suscripcionPrevia.current = null;
       setEstado('inactivo');
     } catch (e) {
       console.warn('Desactivación push falló', e);
@@ -201,10 +224,21 @@ export function PushToggle() {
             disabled={trabajando}
             className="min-h-touch rounded-lg bg-zelanda-verde-700 px-3 py-1.5 text-sm text-white disabled:opacity-60"
           >
-            {trabajando ? '...' : estado === 'sin-motor' ? 'Reintentar' : 'Activar'}
+            {trabajando
+              ? '...'
+              : faltaSegundoToque
+              ? 'Terminar'
+              : estado === 'sin-motor'
+              ? 'Reintentar'
+              : 'Activar'}
           </button>
         )}
       </div>
+      {faltaSegundoToque ? (
+        <p className="mt-2 text-xs text-zelanda-verde-700/80">
+          Permiso concedido. Tocá una vez más para terminar de activarlos.
+        </p>
+      ) : null}
       {faltaInstalar ? (
         <p className="mt-2 text-xs text-zelanda-verde-700/80">
           En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio: tocá
