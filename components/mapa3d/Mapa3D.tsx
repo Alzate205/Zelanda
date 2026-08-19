@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { centroideDePoligono, COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
+import { centroideDePoligono, COLOR_BORDE_ESTADO, type EstadoLote } from '@/lib/mapa3d';
 import { ATRIBUCION_SATELITE, MAXZOOM_SATELITE, URLS_SATELITE_MAPLIBRE } from '@/lib/mapa-tiles';
 
 type GeoJsonPolygon = { type: 'Polygon'; coordinates: number[][][] };
@@ -13,6 +13,8 @@ export type LoteMapa3D = {
   id: string;
   nombre: string;
   estado: EstadoLote;
+  /** Color de identidad del lote: es lo que lo distingue de sus vecinos. */
+  color: string;
   colorCosecha: string;
   kgMes: number;
   trabajandoHoy: number;
@@ -30,6 +32,10 @@ const VISTA_FINCA = {
   pitch: 55,
   bearing: 150,
 };
+
+// Cuánto se le da al mapa para arrancar antes de dar el 3D por perdido. En el
+// campo, con datos móviles, las primeras baldosas pueden tardar bastante.
+const ESPERA_CARGA_MAPA = 20000;
 
 // Última posición de cámara del usuario, para no re-encuadrar la finca
 // cada vez que vuelve al centro de control. v2: la v1 podía apuntar a la
@@ -99,16 +105,28 @@ const ESTILO_BASE: maplibregl.StyleSpecification = {
   layers: [{ id: 'satelite', type: 'raster', source: 'satelite' }],
 };
 
+/**
+ * Relleno del lote: su color de identidad.
+ *
+ * En modo clima todos van del mismo azul a propósito: ahí lo que se compara es
+ * el clima de la finca, no un lote contra otro.
+ */
 function pinturaFill(modo: ModoMapa): maplibregl.ExpressionSpecification | string {
   if (modo === 'clima') return '#4a708a';
+  return ['get', 'color'] as never;
+}
+
+/** Borde del lote: el estado de sus tareas. */
+function pinturaBorde(modo: ModoMapa): maplibregl.ExpressionSpecification | string {
+  if (modo === 'clima') return '#ffffff';
   return [
     'match',
     ['get', 'estado'],
     'vencida',
-    COLOR_ESTADO_LOTE.vencida,
+    COLOR_BORDE_ESTADO.vencida,
     'proxima',
-    COLOR_ESTADO_LOTE.proxima,
-    COLOR_ESTADO_LOTE.aldia,
+    COLOR_BORDE_ESTADO.proxima,
+    COLOR_BORDE_ESTADO.aldia,
   ] as never;
 }
 
@@ -137,24 +155,38 @@ type PropsMapa3D = {
   instalaciones?: InstalacionMapa3D[];
   modo: ModoMapa;
   ndvi?: { url: string; bbox: [number, number, number, number] } | null;
+  /** Con los lotes apagados solo queda el borde de la finca sobre el satélite. */
+  lotesVisibles?: boolean;
   onSeleccionLote: (id: string | null) => void;
   onError: () => void;
 };
 
 const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
-  { lotes, bordeFinca, apiarios, instalaciones = [], modo, ndvi = null, onSeleccionLote, onError },
+  {
+    lotes,
+    bordeFinca,
+    apiarios,
+    instalaciones = [],
+    modo,
+    ndvi = null,
+    lotesVisibles = true,
+    onSeleccionLote,
+    onError,
+  },
   ref
 ) {
   const contRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const marcadoresRef = useRef<maplibregl.Marker[]>([]);
   const cargadoRef = useRef(false);
-  const rafRef = useRef<number>(0);
+  const plazoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Refs para no re-montar el mapa cuando cambian datos/callbacks
   const lotesRef = useRef(lotes);
   const onSeleccionRef = useRef(onSeleccionLote);
+  const lotesVisiblesRef = useRef(lotesVisibles);
   lotesRef.current = lotes;
   onSeleccionRef.current = onSeleccionLote;
+  lotesVisiblesRef.current = lotesVisibles;
 
   // Montaje único del mapa
   useEffect(() => {
@@ -178,14 +210,51 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       return;
     }
     mapRef.current = map;
-    map.on('error', () => {
-      // Errores de baldosas individuales son normales offline; solo caemos
-      // si el mapa nunca llegó a cargar.
+
+    // Muchos Android de gama media tienen pantallas de densidad 3 o 4: sin
+    // tope, el mapa renderiza de 9 a 16 veces más píxeles que una pantalla
+    // normal, y con el terreno 3D encima la GPU no da abasto. A 2 la diferencia
+    // no se nota a simple vista y el trabajo por cuadro cae a menos de la mitad.
+    try {
+      if (window.devicePixelRatio > 2) map.setPixelRatio(2);
+    } catch {
+      // Versión de maplibre sin setPixelRatio: se sigue con la densidad nativa.
+    }
+
+    // Antes, cualquier error anterior a la carga tumbaba el 3D: una sola
+    // baldosa de satélite o de relieve que no llegara —cosa normal con datos
+    // móviles en el campo— y el mapa se cambiaba por el 2D para toda la
+    // sesión, sin reintento. Perder el 3D por una baldosa es un mal negocio:
+    // esas fallan solas y el mapa se arma igual.
+    //
+    // Ahora se le da tiempo real de cargar y solo se cae si al vencer el plazo
+    // sigue sin arrancar, o si el navegador se lleva el contexto WebGL, que sí
+    // es fatal y no tiene vuelta.
+    const plazoCarga = setTimeout(() => {
       if (!cargadoRef.current) onError();
+    }, ESPERA_CARGA_MAPA);
+    plazoRef.current = plazoCarga;
+
+    map.on('error', (e) => {
+      // Se registran pero no se castigan: sirven para entender qué falla sin
+      // decidir por el usuario que no puede tener mapa 3D.
+      console.warn('Mapa 3D: error no fatal', e?.error ?? e);
     });
+
+    map.getCanvas().addEventListener(
+      'webglcontextlost',
+      (e) => {
+        // El navegador se quedó sin recursos y se llevó el contexto. Esto sí es
+        // terminal para esta instancia del mapa.
+        e.preventDefault();
+        onError();
+      },
+      { once: true }
+    );
 
     map.on('load', () => {
       cargadoRef.current = true;
+      clearTimeout(plazoCarga);
       map.setTerrain({ source: 'terreno', exaggeration: 1.3 });
 
       map.addSource('lotes', { type: 'geojson', data: featuresDeLotes(lotesRef.current) });
@@ -195,19 +264,18 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         source: 'lotes',
         paint: { 'fill-color': pinturaFill(modo) as never, 'fill-opacity': 0.42 },
       });
+      // El borde lleva el estado, así que se engrosó: a 1.6 px sobre satélite
+      // el color no alcanzaba a leerse.
       map.addLayer({
         id: 'lotes-borde',
         type: 'line',
         source: 'lotes',
-        paint: { 'line-color': '#ffffff', 'line-width': 1.6, 'line-opacity': 0.85 },
+        paint: { 'line-color': pinturaBorde(modo) as never, 'line-width': 2.4, 'line-opacity': 1 },
       });
-      map.addLayer({
-        id: 'lotes-vencida-pulso',
-        type: 'fill',
-        source: 'lotes',
-        filter: ['==', ['get', 'estado'], 'vencida'],
-        paint: { 'fill-color': COLOR_ESTADO_LOTE.vencida, 'fill-opacity': 0.2 },
-      });
+      // Acá había un 'lotes-vencida-pulso': una segunda pasada de relleno
+      // completa sobre la misma geometría, solo para teñir las vencidas. Ahora
+      // eso lo dice el borde, y el mapa se ahorra dibujar todos los polígonos
+      // dos veces en cada cuadro.
 
       if (bordeFinca) {
         map.addSource('borde-finca', {
@@ -258,15 +326,13 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
         map.getCanvas().style.cursor = '';
       });
 
-      // Pulso sutil en lotes vencidos
-      const animar = (t: number) => {
-        const op = 0.12 + 0.16 * (0.5 + 0.5 * Math.sin(t / 600));
-        if (map.getLayer('lotes-vencida-pulso')) {
-          map.setPaintProperty('lotes-vencida-pulso', 'fill-opacity', op);
-        }
-        rafRef.current = requestAnimationFrame(animar);
-      };
-      rafRef.current = requestAnimationFrame(animar);
+      // Acá vivía el "pulso" de los lotes vencidos: un requestAnimationFrame
+      // sin fin que llamaba a setPaintProperty en cada cuadro. Eso obliga a
+      // MapLibre a repintar el mapa entero 60 veces por segundo para siempre,
+      // aunque nadie lo esté tocando y aunque no haya un solo lote vencido.
+      // Con el terreno 3D encima es lo que tenía la pantalla trabada en los
+      // Android de gama media y comiéndose la batería. El estado vencido ahora
+      // se ve en el color del borde, que es fijo y no cuesta nada.
 
       map.addControl(
         new maplibregl.GeolocateControl({
@@ -278,13 +344,27 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       );
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
-      crearMarcadores(map, lotesRef.current, apiarios, instalaciones, marcadoresRef, modo, (id) =>
-        onSeleccionRef.current(id)
+      // Estado inicial del interruptor de lotes: las capas acaban de nacer
+      // visibles, así que si el usuario las dejó apagadas hay que apagarlas acá.
+      if (!lotesVisiblesRef.current) {
+        for (const capa of ['lotes-fill', 'lotes-borde']) {
+          if (map.getLayer(capa)) map.setLayoutProperty(capa, 'visibility', 'none');
+        }
+      }
+
+      crearMarcadores(
+        map,
+        lotesVisiblesRef.current ? lotesRef.current : [],
+        apiarios,
+        instalaciones,
+        marcadoresRef,
+        modo,
+        (id) => onSeleccionRef.current(id)
       );
     });
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      if (plazoRef.current) clearTimeout(plazoRef.current);
       for (const m of marcadoresRef.current) m.remove();
       marcadoresRef.current = [];
       map.remove();
@@ -303,10 +383,31 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
     if (map.getLayer('lotes-fill')) {
       map.setPaintProperty('lotes-fill', 'fill-color', pinturaFill(modo) as never);
     }
-    crearMarcadores(map, lotes, apiarios, instalaciones, marcadoresRef, modo, (id) =>
-      onSeleccionRef.current(id)
+    if (map.getLayer('lotes-borde')) {
+      map.setPaintProperty('lotes-borde', 'line-color', pinturaBorde(modo) as never);
+    }
+    crearMarcadores(
+      map,
+      lotesVisibles ? lotes : [],
+      apiarios,
+      instalaciones,
+      marcadoresRef,
+      modo,
+      (id) => onSeleccionRef.current(id)
     );
-  }, [modo, lotes, apiarios, instalaciones]);
+  }, [modo, lotes, apiarios, instalaciones, lotesVisibles]);
+
+  // Mostrar u ocultar los lotes. El borde de la finca queda siempre: es la
+  // referencia que dice hasta dónde llega lo propio, y sin ella la foto
+  // satelital es monte indistinguible.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !cargadoRef.current) return;
+    const visibilidad = lotesVisibles ? 'visible' : 'none';
+    for (const capa of ['lotes-fill', 'lotes-borde']) {
+      if (map.getLayer(capa)) map.setLayoutProperty(capa, 'visibility', visibilidad);
+    }
+  }, [lotesVisibles]);
 
   // Capa NDVI (imagen georreferenciada sobre el satélite)
   useEffect(() => {
@@ -375,6 +476,7 @@ function featuresDeLotes(lotes: LoteMapa3D[]): GeoJSON.FeatureCollection {
         lote_id: l.id,
         nombre: l.nombre,
         estado: l.estado,
+        color: l.color,
         colorCosecha: l.colorCosecha,
       },
     })),

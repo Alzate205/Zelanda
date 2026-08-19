@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { centroideDePoligono, rampaCosecha, COLOR_ESTADO_LOTE } from './mapa3d';
+import { centroideDePoligono, rampaCosecha, COLOR_BORDE_ESTADO, COLOR_ESTADO_LOTE } from './mapa3d';
 
 describe('centroideDePoligono', () => {
   it('devuelve el centro de un cuadrado', () => {
@@ -36,5 +36,12 @@ describe('rampaCosecha', () => {
 describe('COLOR_ESTADO_LOTE', () => {
   it('tiene los 3 estados del semáforo', () => {
     expect(Object.keys(COLOR_ESTADO_LOTE).sort()).toEqual(['aldia', 'proxima', 'vencida']);
+  });
+});
+
+describe('COLOR_BORDE_ESTADO', () => {
+  it('cada estado tiene un color de borde distinto', () => {
+    const bordes = Object.values(COLOR_BORDE_ESTADO);
+    expect(new Set(bordes).size).toBe(bordes.length);
   });
 });

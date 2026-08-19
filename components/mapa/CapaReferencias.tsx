@@ -2,7 +2,7 @@
 
 import { GeoJSON, Marker } from 'react-leaflet';
 import L from 'leaflet';
-import { colorDeLote } from '@/lib/paleta-lotes';
+import { asignarColoresLotes } from '@/lib/paleta-lotes';
 import type { GeoJsonPolygon, GeoJsonPoint } from '@/lib/geo';
 
 type LoteRef = {
@@ -42,6 +42,7 @@ export function CapaReferencias({
   apiarios: PuntoRef[];
   instalaciones: PuntoRef[];
 }) {
+  const coloresLote = asignarColoresLotes(lotes.map((l) => l.id));
   return (
     <>
       {borde && (
@@ -57,7 +58,7 @@ export function CapaReferencias({
         />
       )}
       {lotes.map((l) => {
-        const color = colorDeLote(l.id);
+        const color = coloresLote.get(String(l.id)) ?? '#3b6e8f';
         return (
           <GeoJSON
             key={`ref-lote-${l.id}`}

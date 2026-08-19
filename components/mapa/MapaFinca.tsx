@@ -6,7 +6,7 @@ import L from 'leaflet';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { colorDeLote } from '@/lib/paleta-lotes';
+import { asignarColoresLotes } from '@/lib/paleta-lotes';
 import {
   ATRIBUCION_SATELITE,
   MAXZOOM_SATELITE,
@@ -132,6 +132,9 @@ export default function MapaFinca({
   const lotesConPoly = lotesPoligonos.filter(
     (l): l is LotePoly & { geojson: GeoJSON.Polygon } => l.geojson !== null
   );
+  // Sobre todos los lotes, no solo los delimitados: así el día que se dibuje el
+  // polígono de uno que faltaba, los demás no cambian de color.
+  const coloresLote = asignarColoresLotes(lotesPoligonos.map((l) => l.id));
   const apConPto = apiariosPuntos.filter(
     (a): a is ApiarioPto & { geojson: GeoJSON.Point } => a.geojson !== null
   );
@@ -171,7 +174,7 @@ export default function MapaFinca({
         )}
 
         {lotesConPoly.map((l) => {
-          const color = colorDeLote(l.id);
+          const color = coloresLote.get(String(l.id)) ?? '#3b6e8f';
           return (
             <GeoJSON
               key={`lote-${l.id}`}
