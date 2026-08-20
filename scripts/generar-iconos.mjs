@@ -1,38 +1,58 @@
-// Genera iconos PWA a partir de public/icons/image.png (o el archivo configurado).
-// Uso: npm i -D sharp && node scripts/generar-iconos.mjs && npm un sharp
-import sharp from "sharp";
-import { mkdir } from "node:fs/promises";
+// Genera los iconos de la app a partir del logo.
+//
+//   npm run iconos
+//
+// El fondo es el beige del arranque de la app, el mismo que declara
+// `background_color` en el manifiesto: así el icono y la pantalla de carga se
+// ven como una sola cosa y no como dos piezas distintas.
+//
+// Se generan dos juegos porque Android los usa distinto:
+//
+//   icon-192 / icon-512      → purpose "any". Se muestran tal cual, con un
+//                              margen chico para que el dibujo respire.
+//   icon-maskable-512        → purpose "maskable". Android los recorta con la
+//                              forma que tenga el lanzador, muchas veces un
+//                              círculo, y sólo garantiza el 80% central. Con el
+//                              margen chico le cortaba el tallo y la hoja al
+//                              aguacate, así que éste lleva margen del 20%.
+//
+// El monocromo (512x512-monochrome.png) no se regenera acá: es una silueta que
+// no depende del logo a color.
 
-const FUENTE = "public/icons/image.png";
-const FONDO = { r: 0x3d, g: 0x5c, b: 0x42, alpha: 1 }; // zelanda-verde-700
+import sharp from 'sharp';
+import { mkdir } from 'node:fs/promises';
 
-await mkdir("public/icons", { recursive: true });
+const FUENTE = 'public/icons/logoFinal.png';
+const FONDO = { r: 0xf5, g: 0xf1, b: 0xe8, alpha: 1 }; // zelanda-beige-50
 
-for (const size of [192, 512]) {
-  // Tamaño interior con padding ~10% para que el logo respire
-  const padding = Math.round(size * 0.08);
-  const interior = size - padding * 2;
+/** Margen como fracción del lado, por tipo de icono. */
+const MARGEN_NORMAL = 0.1;
+const MARGEN_RECORTABLE = 0.2;
 
-  // Redimensionar manteniendo aspect ratio para que entre dentro del cuadrado interior
-  const resized = await sharp(FUENTE)
+await mkdir('public/icons', { recursive: true });
+
+async function generar(destino, lado, margen) {
+  const pad = Math.round(lado * margen);
+  const interior = lado - pad * 2;
+
+  // `trim` saca el espacio vacío del archivo original: sin eso, el margen
+  // real dependería de cuánto aire trajera la imagen de origen.
+  const logo = await sharp(FUENTE)
+    .trim({ threshold: 1 })
     .resize(interior, interior, {
-      fit: "contain",
+      fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .toBuffer();
 
-  // Componer sobre fondo verde cuadrado
-  await sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 4,
-      background: FONDO,
-    },
-  })
-    .composite([{ input: resized, gravity: "center" }])
+  await sharp({ create: { width: lado, height: lado, channels: 4, background: FONDO } })
+    .composite([{ input: logo, gravity: 'center' }])
     .png()
-    .toFile(`public/icons/icon-${size}.png`);
+    .toFile(destino);
 
-  console.log(`Generated public/icons/icon-${size}.png`);
+  console.log(`✓ ${destino}  (${lado}x${lado}, margen ${Math.round(margen * 100)}%)`);
 }
+
+await generar('public/icons/icon-192.png', 192, MARGEN_NORMAL);
+await generar('public/icons/icon-512.png', 512, MARGEN_NORMAL);
+await generar('public/icons/icon-maskable-512.png', 512, MARGEN_RECORTABLE);
