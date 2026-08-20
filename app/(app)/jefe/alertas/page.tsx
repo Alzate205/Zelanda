@@ -12,6 +12,7 @@ import {
   type BulkInfo,
 } from './_alertas-cliente';
 import { formatearCantidad } from '@/lib/formatos';
+import { obtenerConfiguracion } from '@/lib/configuracion';
 
 export const metadata: Metadata = { title: 'Alertas' };
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,11 @@ type AlertaConFecha = Alerta & { fecha: Date | null };
 
 export default async function PaginaAlertas() {
   await requerirUsuario('JEFE');
+  // La anticipación con la que se avisa sale de la configuración de la finca.
+  // Antes acá iba el valor por defecto de 7 días mientras el mapa sí leía la
+  // configuración: con 14 días puestos, el mapa decía "próxima" y esta pantalla
+  // decía "al día" del mismo lote.
+  const config = await obtenerConfiguracion();
 
   const ahora = new Date();
   const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
@@ -166,7 +172,7 @@ export default async function PaginaAlertas() {
       const key = `${l.id}_${t.id}`;
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const resumen = calcularResumen(ultima, freq);
+      const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
         kind: 'lote',
@@ -206,7 +212,12 @@ export default async function PaginaAlertas() {
     for (const t of tiposApicultura) {
       const key = `${a.id}_${t.id}`;
       const ultima = mapaUltimaApiario.get(key) ?? null;
-      const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
+      const resumen = calcularResumen(
+        ultima,
+        t.frecuencia_dias_default,
+        new Date(),
+        config.alerta_dias_anticipacion
+      );
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
         kind: 'apiario',

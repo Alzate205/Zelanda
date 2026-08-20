@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { calcularResumen } from '@/lib/fechas-tarea';
 import { carenciasActivas } from '@/lib/jefe/carencias';
 import { WizardNuevaAsignacion } from './WizardNuevaAsignacion';
+import { obtenerConfiguracion } from '@/lib/configuracion';
 
 export const metadata: Metadata = { title: 'Nueva asignación' };
 
@@ -19,6 +20,11 @@ export default async function PaginaNuevaAsignacion({
   searchParams: SearchParams;
 }) {
   await requerirUsuario('JEFE');
+  // La anticipación con la que se avisa sale de la configuración de la finca.
+  // Antes acá iba el valor por defecto de 7 días mientras el mapa sí leía la
+  // configuración: con 14 días puestos, el mapa decía "próxima" y esta pantalla
+  // decía "al día" del mismo lote.
+  const config = await obtenerConfiguracion();
   const sp = await searchParams;
 
   const [lotes, apiarios, tipos, personas, completadasLote, frecuenciasOverride, carencias] =
@@ -126,7 +132,7 @@ export default async function PaginaNuevaAsignacion({
       const key = `${l.id}_${t.id}`;
       const ultima = mapaUltimaLote.get(key) ?? null;
       const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const r = calcularResumen(ultima, freq);
+      const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
 
       if (r.estado === 'vencida' || r.estado === 'sin_historial') {
         if (estado !== 'vencida') {
@@ -160,7 +166,7 @@ export default async function PaginaNuevaAsignacion({
         const key = `${l.id}_${t.id}`;
         const ultima = mapaUltimaLote.get(key) ?? null;
         const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-        const r = calcularResumen(ultima, freq);
+        const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
         if (
           r.estado === 'aldia' &&
           r.dias_para_proxima !== null &&

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calcularResumen } from '@/lib/fechas-tarea';
+import { estadoDeTareas } from '@/lib/fechas-tarea';
+import { construirAvisoTareas } from '@/lib/jefe/aviso-tareas';
 import { obtenerConfiguracion } from '@/lib/configuracion';
 import { enviarPushAUsuarios } from '@/lib/push/enviar';
 
@@ -15,18 +16,14 @@ export async function GET(req: NextRequest) {
   const [lotes, tiposCultivo, frecuenciasOverride, completadasLote] = await Promise.all([
     prisma.lotes.findMany({
       where: { deleted_at: null },
-      select: { id: true },
+      select: { id: true, nombre: true },
     }),
     prisma.tipos_tarea.findMany({
       where: { area: 'CULTIVO', activo: true },
-      select: { id: true, frecuencia_dias_default: true },
+      select: { id: true, nombre: true, frecuencia_dias_default: true },
     }),
     prisma.frecuencias_lote.findMany({
-      select: {
-        lote_id: true,
-        tipo_tarea_id: true,
-        frecuencia_dias: true,
-      },
+      select: { lote_id: true, tipo_tarea_id: true, frecuencia_dias: true },
     }),
     prisma.asignaciones.groupBy({
       by: ['lote_id', 'tipo_tarea_id'],
@@ -35,31 +32,33 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const mapaFreq = new Map<string, number>();
-  for (const f of frecuenciasOverride) {
-    mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
-  }
-  const mapaUlt = new Map<string, Date | null>();
-  for (const c of completadasLote) {
-    if (c.lote_id) {
-      mapaUlt.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
-    }
-  }
+  const estados = estadoDeTareas({
+    destinos: lotes.map((l) => String(l.id)),
+    tipos: tiposCultivo.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    frecuenciasPropias: frecuenciasOverride.map((f) => ({
+      destino_id: String(f.lote_id),
+      tipo_tarea_id: String(f.tipo_tarea_id),
+      frecuencia_dias: f.frecuencia_dias,
+    })),
+    ultimas: completadasLote
+      .filter((c) => c.lote_id !== null)
+      .map((c) => ({
+        destino_id: String(c.lote_id),
+        tipo_tarea_id: String(c.tipo_tarea_id),
+        fecha: c._max.fecha_completada,
+      })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
 
-  let totalVencidas = 0;
-  let totalProximas = 0;
-  for (const l of lotes) {
-    for (const t of tiposCultivo) {
-      const key = `${l.id}_${t.id}`;
-      const ultima = mapaUlt.get(key) ?? null;
-      const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
-      if (r.estado === 'vencida' || r.estado === 'sin_historial') totalVencidas++;
-      else if (r.estado === 'proxima') totalProximas++;
-    }
-  }
+  const aviso = construirAvisoTareas(estados, {
+    lote: (id) => lotes.find((l) => String(l.id) === id)?.nombre,
+    tipo: (id) => tiposCultivo.find((t) => String(t.id) === id)?.nombre,
+  });
 
-  if (totalVencidas + totalProximas === 0) {
+  if (!aviso.hayAlgoQueDecir) {
     return NextResponse.json({ enviado: false, motivo: 'nada-que-reportar' });
   }
 
@@ -71,23 +70,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ enviado: false, motivo: 'sin-jefes-activos' });
   }
 
-  const cuerpoPartes: string[] = [];
-  if (totalVencidas > 0) {
-    cuerpoPartes.push(`${totalVencidas} vencida${totalVencidas === 1 ? '' : 's'}`);
-  }
-  if (totalProximas > 0) {
-    cuerpoPartes.push(`${totalProximas} próxima${totalProximas === 1 ? '' : 's'}`);
-  }
-
   await enviarPushAUsuarios(
     jefes.map((j) => j.id),
     {
-      titulo: 'Resumen del día',
-      cuerpo: cuerpoPartes.join(', '),
-      url: '/jefe',
+      titulo: aviso.titulo,
+      cuerpo: aviso.cuerpo,
+      url: '/jefe/alertas',
       tag: 'resumen-diario',
     }
   );
 
-  return NextResponse.json({ enviado: true, totalVencidas, totalProximas });
+  return NextResponse.json({ enviado: true, ...aviso });
 }

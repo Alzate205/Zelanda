@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularResumen } from './fechas-tarea';
+import { calcularResumen, estadoDeTareas } from './fechas-tarea';
 
 const DIA = 24 * 60 * 60 * 1000;
 const HOY = new Date(Date.UTC(2026, 5, 15));
@@ -47,5 +47,181 @@ describe('calcularResumen — estado de alertas de tareas', () => {
   it('el día exacto del umbral cuenta como próxima (≤)', () => {
     const completada = haceDias(23); // próxima en 7 días
     expect(calcularResumen(completada, 30, HOY, 7).estado).toBe('proxima');
+  });
+});
+
+// === El ciclo de repetición, lote por lote ===
+//
+// Esto es lo que no se puede comprobar usando la app: habría que esperar meses.
+// Acá el reloj se mueve a mano y se verifica el ciclo entero.
+
+describe('estadoDeTareas — el ciclo de cada lote va por su cuenta', () => {
+  const PLATEO = { id: 't1', frecuencia_dias_default: 90 };
+  const RIEGO = { id: 't2', frecuencia_dias_default: 15 };
+
+  /** Un día concreto a mediodía, para que la hora no sea la que decide nada. */
+  const dia = (n: number) => new Date(Date.UTC(2026, 0, 1 + n, 12, 0, 0));
+
+  const buscar = (lista: ReturnType<typeof estadoDeTareas>, destino: string, tipo: string) =>
+    lista.find((e) => e.destino_id === destino && e.tipo_tarea_id === tipo)!;
+
+  it('hacer la tarea hoy la deja al día y la vence al cumplirse la frecuencia', () => {
+    const hecha = dia(0);
+    const base = {
+      destinos: ['loteA'],
+      tipos: [PLATEO],
+      frecuenciasPropias: [],
+      ultimas: [{ destino_id: 'loteA', tipo_tarea_id: 't1', fecha: hecha }],
+    };
+
+    // Al día siguiente todavía falta muchísimo.
+    expect(buscar(estadoDeTareas({ ...base, ahora: dia(1) }), 'loteA', 't1').estado).toBe('aldia');
+
+    // Una semana antes de los 90 días ya avisa.
+    expect(buscar(estadoDeTareas({ ...base, ahora: dia(84) }), 'loteA', 't1').estado).toBe(
+      'proxima'
+    );
+
+    // El día 90 vence.
+    expect(buscar(estadoDeTareas({ ...base, ahora: dia(90) }), 'loteA', 't1').estado).toBe(
+      'vencida'
+    );
+
+    // Y sigue vencida si nadie la hace.
+    expect(buscar(estadoDeTareas({ ...base, ahora: dia(120) }), 'loteA', 't1').estado).toBe(
+      'vencida'
+    );
+  });
+
+  it('platear un lote no toca el reloj de los otros', () => {
+    // El caso real de la finca: es tan grande que se hace un lote por día.
+    const lista = estadoDeTareas({
+      destinos: ['loteA', 'loteB', 'loteC'],
+      tipos: [PLATEO],
+      frecuenciasPropias: [],
+      ultimas: [
+        { destino_id: 'loteA', tipo_tarea_id: 't1', fecha: dia(0) }, // recién hecho
+        { destino_id: 'loteB', tipo_tarea_id: 't1', fecha: dia(-85) }, // le falta poco
+        { destino_id: 'loteC', tipo_tarea_id: 't1', fecha: dia(-100) }, // ya venció
+      ],
+      ahora: dia(1),
+    });
+
+    expect(buscar(lista, 'loteA', 't1').estado).toBe('aldia');
+    expect(buscar(lista, 'loteB', 't1').estado).toBe('proxima');
+    expect(buscar(lista, 'loteC', 't1').estado).toBe('vencida');
+  });
+
+  it('cada tarea del mismo lote lleva su propio reloj', () => {
+    // Regar cada 15 días no reinicia el plateo, que va cada 90.
+    const lista = estadoDeTareas({
+      destinos: ['loteA'],
+      tipos: [PLATEO, RIEGO],
+      frecuenciasPropias: [],
+      ultimas: [
+        { destino_id: 'loteA', tipo_tarea_id: 't1', fecha: dia(-100) }, // plateo vencido
+        { destino_id: 'loteA', tipo_tarea_id: 't2', fecha: dia(-1) }, // riego recién hecho
+      ],
+      ahora: dia(0),
+    });
+
+    expect(buscar(lista, 'loteA', 't1').estado).toBe('vencida');
+    expect(buscar(lista, 'loteA', 't2').estado).toBe('aldia');
+  });
+
+  it('volver a hacerla reinicia el ciclo desde la última vez', () => {
+    const base = {
+      destinos: ['loteA'],
+      tipos: [PLATEO],
+      frecuenciasPropias: [],
+      ahora: dia(100),
+    };
+
+    // Con la de hace 100 días, está vencida.
+    expect(
+      buscar(
+        estadoDeTareas({
+          ...base,
+          ultimas: [{ destino_id: 'loteA', tipo_tarea_id: 't1', fecha: dia(0) }],
+        }),
+        'loteA',
+        't1'
+      ).estado
+    ).toBe('vencida');
+
+    // Se rehace el día 95: el reloj arranca de nuevo y vuelve a estar al día.
+    expect(
+      buscar(
+        estadoDeTareas({
+          ...base,
+          ultimas: [{ destino_id: 'loteA', tipo_tarea_id: 't1', fecha: dia(95) }],
+        }),
+        'loteA',
+        't1'
+      ).estado
+    ).toBe('aldia');
+  });
+
+  it('la frecuencia propia del lote le gana a la del tipo de tarea', () => {
+    // Un lote bajo que se riega más seguido que el resto.
+    const lista = estadoDeTareas({
+      destinos: ['loteA', 'loteB'],
+      tipos: [RIEGO],
+      frecuenciasPropias: [{ destino_id: 'loteA', tipo_tarea_id: 't2', frecuencia_dias: 7 }],
+      ultimas: [
+        { destino_id: 'loteA', tipo_tarea_id: 't2', fecha: dia(-8) },
+        { destino_id: 'loteB', tipo_tarea_id: 't2', fecha: dia(-8) },
+      ],
+      ahora: dia(0),
+    });
+
+    // Mismo día de riego, distinto resultado: A va cada 7, B cada 15.
+    expect(buscar(lista, 'loteA', 't2').frecuencia_dias).toBe(7);
+    expect(buscar(lista, 'loteA', 't2').estado).toBe('vencida');
+    expect(buscar(lista, 'loteB', 't2').frecuencia_dias).toBe(15);
+    expect(buscar(lista, 'loteB', 't2').estado).toBe('proxima');
+  });
+
+  it('un lote sin historial aparece como nunca hecho, no como al día', () => {
+    // Importa: si saliera "al día", un lote que nunca se plateó no avisaría
+    // nunca y quedaría olvidado.
+    const lista = estadoDeTareas({
+      destinos: ['loteNuevo'],
+      tipos: [PLATEO],
+      frecuenciasPropias: [],
+      ultimas: [],
+      ahora: dia(0),
+    });
+    expect(buscar(lista, 'loteNuevo', 't1').estado).toBe('sin_historial');
+  });
+
+  it('la anticipación del aviso sale de la configuración, no de un número fijo', () => {
+    const base = {
+      destinos: ['loteA'],
+      tipos: [RIEGO],
+      frecuenciasPropias: [],
+      ultimas: [{ destino_id: 'loteA', tipo_tarea_id: 't2', fecha: dia(-5) }],
+      ahora: dia(0),
+    };
+    // Faltan 10 días. Con 7 de anticipación todavía está al día.
+    expect(buscar(estadoDeTareas({ ...base, diasAlerta: 7 }), 'loteA', 't2').estado).toBe('aldia');
+    // Con 14, ya avisa.
+    expect(buscar(estadoDeTareas({ ...base, diasAlerta: 14 }), 'loteA', 't2').estado).toBe(
+      'proxima'
+    );
+  });
+
+  it('el día exacto del vencimiento ya cuenta como vencida', () => {
+    // El borde importa: si contara como "próxima", el aviso llegaría un día
+    // tarde y en una finca eso es un día de trabajo perdido.
+    const lista = estadoDeTareas({
+      destinos: ['loteA'],
+      tipos: [RIEGO],
+      frecuenciasPropias: [],
+      ultimas: [{ destino_id: 'loteA', tipo_tarea_id: 't2', fecha: dia(0) }],
+      ahora: dia(15),
+    });
+    expect(buscar(lista, 'loteA', 't2').estado).toBe('vencida');
+    expect(buscar(lista, 'loteA', 't2').dias_para_proxima).toBeLessThanOrEqual(0);
   });
 });
