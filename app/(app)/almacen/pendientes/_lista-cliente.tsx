@@ -8,6 +8,7 @@ import { SyncEngine } from '@/lib/offline/sync';
 import { suscribirseACambios } from '@/lib/offline/eventos';
 import { BotonSincronizar } from '@/components/shared/BotonSincronizar';
 import type { ItemColaCosecha, ItemColaSalida } from '@/lib/offline/tipos';
+import { formatearDecimal } from '@/lib/formatos';
 
 const ETIQUETA_SALIDA: Record<string, string> = {
   VENTA: 'Venta',
@@ -80,8 +81,8 @@ export function ListaPendientesAlmacen() {
                 : `Salida · ${ETIQUETA_SALIDA[it.tipo] ?? it.tipo}`;
             const detalle =
               it.kind === 'cosecha'
-                ? `${it.peso_kg.toFixed(2)} kg`
-                : `${it.cantidad_kg.toFixed(2)} kg${
+                ? `${formatearDecimal(it.peso_kg, 2)} kg`
+                : `${formatearDecimal(it.cantidad_kg, 2)} kg${
                     it.cliente_detalle ? ` · ${it.cliente_detalle}` : ''
                   }`;
             const fecha = new Date(it.creado_en).toLocaleString('es-CO');

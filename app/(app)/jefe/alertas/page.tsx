@@ -1,34 +1,35 @@
-import type { Metadata } from "next";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { calcularResumen, formatearDias } from "@/lib/fechas-tarea";
-import { formatearFechaCorta } from "@/lib/utils";
-import { Eyebrow } from "@/components/ui/Eyebrow";
+import type { Metadata } from 'next';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { calcularResumen, formatearDias } from '@/lib/fechas-tarea';
+import { formatearFechaCorta } from '@/lib/utils';
+import { Eyebrow } from '@/components/ui/Eyebrow';
 import {
   AlertasFiltrables,
   type Alerta,
   type Severidad,
   type IconoAlertaTipo,
   type BulkInfo,
-} from "./_alertas-cliente";
+} from './_alertas-cliente';
+import { formatearDecimal } from '@/lib/formatos';
 
-export const metadata: Metadata = { title: "Alertas" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: 'Alertas' };
+export const dynamic = 'force-dynamic';
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
-  PLAGA: "Plaga",
-  DANO_FISICO: "Daño físico",
-  ENFERMEDAD: "Enfermedad",
-  OBSERVACION: "Observación",
-  OTRO: "Otro",
+  PLAGA: 'Plaga',
+  DANO_FISICO: 'Daño físico',
+  ENFERMEDAD: 'Enfermedad',
+  OBSERVACION: 'Observación',
+  OTRO: 'Otro',
 };
 
-const NOVEDADES_CRITICAS = new Set(["PLAGA", "DANO_FISICO", "ENFERMEDAD"]);
+const NOVEDADES_CRITICAS = new Set(['PLAGA', 'DANO_FISICO', 'ENFERMEDAD']);
 
 type AlertaConFecha = Alerta & { fecha: Date | null };
 
 export default async function PaginaAlertas() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const ahora = new Date();
   const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
@@ -56,21 +57,21 @@ export default async function PaginaAlertas() {
       select: { id: true, nombre: true },
     }),
     prisma.tipos_tarea.findMany({
-      where: { area: "CULTIVO", activo: true },
+      where: { area: 'CULTIVO', activo: true },
       select: { id: true, nombre: true, frecuencia_dias_default: true },
     }),
     prisma.tipos_tarea.findMany({
-      where: { area: "APICULTURA", activo: true },
+      where: { area: 'APICULTURA', activo: true },
       select: { id: true, nombre: true, frecuencia_dias_default: true },
     }),
     prisma.asignaciones.groupBy({
-      by: ["lote_id", "tipo_tarea_id"],
-      where: { estado: "COMPLETADA", lote_id: { not: null } },
+      by: ['lote_id', 'tipo_tarea_id'],
+      where: { estado: 'COMPLETADA', lote_id: { not: null } },
       _max: { fecha_completada: true },
     }),
     prisma.asignaciones.groupBy({
-      by: ["apiario_id", "tipo_tarea_id"],
-      where: { estado: "COMPLETADA", apiario_id: { not: null } },
+      by: ['apiario_id', 'tipo_tarea_id'],
+      where: { estado: 'COMPLETADA', apiario_id: { not: null } },
       _max: { fecha_completada: true },
     }),
     prisma.frecuencias_lote.findMany({
@@ -78,7 +79,7 @@ export default async function PaginaAlertas() {
     }),
     prisma.novedades.findMany({
       where: { resuelta: false },
-      orderBy: { fecha: "desc" },
+      orderBy: { fecha: 'desc' },
       take: 30,
       include: {
         arboles: {
@@ -86,7 +87,15 @@ export default async function PaginaAlertas() {
         },
       },
     }),
-    prisma.$queryRaw<{ id: bigint; nombre: string; unidad: string; stock_disponible: string; stock_minimo: string }[]>`
+    prisma.$queryRaw<
+      {
+        id: bigint;
+        nombre: string;
+        unidad: string;
+        stock_disponible: string;
+        stock_minimo: string;
+      }[]
+    >`
       SELECT id, nombre, unidad, stock_disponible::text, stock_minimo::text
       FROM v_insumos_stock
       WHERE activo = TRUE AND por_debajo_minimo = TRUE
@@ -94,8 +103,8 @@ export default async function PaginaAlertas() {
       LIMIT 20
     `,
     prisma.despachos.findMany({
-      where: { estado: "ABIERTO", fecha: { lt: hace24h } },
-      orderBy: { fecha: "asc" },
+      where: { estado: 'ABIERTO', fecha: { lt: hace24h } },
+      orderBy: { fecha: 'asc' },
       take: 20,
       include: { persona: { select: { nombre_completo: true } } },
     }),
@@ -127,7 +136,7 @@ export default async function PaginaAlertas() {
     `,
     prisma.personas.findMany({
       where: { activo: true },
-      orderBy: { nombre_completo: "asc" },
+      orderBy: { nombre_completo: 'asc' },
       select: { id: true, nombre_completo: true },
     }),
   ]);
@@ -160,35 +169,32 @@ export default async function PaginaAlertas() {
       const resumen = calcularResumen(ultima, freq);
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
-        kind: "lote",
+        kind: 'lote',
         destino_id: String(l.id),
       };
-      const base: Pick<
-        AlertaConFecha,
-        "icono" | "titulo" | "url" | "clave_grupo" | "bulk_info"
-      > = {
-        icono: "task",
+      const base: Pick<AlertaConFecha, 'icono' | 'titulo' | 'url' | 'clave_grupo' | 'bulk_info'> = {
+        icono: 'task',
         titulo: `${t.nombre} · Lote ${l.nombre}`,
         url: `/jefe/asignaciones/nueva?lote_id=${l.id}&tipo_tarea_id=${t.id}`,
         clave_grupo: t.nombre,
         bulk_info: bulkInfo,
       };
-      if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
+      if (resumen.estado === 'vencida' || resumen.estado === 'sin_historial') {
         alertas.push({
           ...base,
           id: `tarea-cultivo-${l.id}-${t.id}`,
-          severidad: "importante",
+          severidad: 'importante',
           detalle:
-            resumen.estado === "sin_historial"
+            resumen.estado === 'sin_historial'
               ? `Lote ${l.nombre} · Nunca hecho`
               : `Lote ${l.nombre} · Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
-      } else if (resumen.estado === "proxima") {
+      } else if (resumen.estado === 'proxima') {
         alertas.push({
           ...base,
           id: `tarea-cultivo-prox-${l.id}-${t.id}`,
-          severidad: "informativa",
+          severidad: 'informativa',
           detalle: `Lote ${l.nombre} · ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
@@ -203,35 +209,32 @@ export default async function PaginaAlertas() {
       const resumen = calcularResumen(ultima, t.frecuencia_dias_default);
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
-        kind: "apiario",
+        kind: 'apiario',
         destino_id: String(a.id),
       };
-      const base: Pick<
-        AlertaConFecha,
-        "icono" | "titulo" | "url" | "clave_grupo" | "bulk_info"
-      > = {
-        icono: "apiario",
+      const base: Pick<AlertaConFecha, 'icono' | 'titulo' | 'url' | 'clave_grupo' | 'bulk_info'> = {
+        icono: 'apiario',
         titulo: `${t.nombre} · Apiario ${a.nombre}`,
         url: `/jefe/asignaciones/nueva?apiario_id=${a.id}&tipo_tarea_id=${t.id}`,
         clave_grupo: t.nombre,
         bulk_info: bulkInfo,
       };
-      if (resumen.estado === "vencida" || resumen.estado === "sin_historial") {
+      if (resumen.estado === 'vencida' || resumen.estado === 'sin_historial') {
         alertas.push({
           ...base,
           id: `tarea-api-${a.id}-${t.id}`,
-          severidad: "importante",
+          severidad: 'importante',
           detalle:
-            resumen.estado === "sin_historial"
+            resumen.estado === 'sin_historial'
               ? `Apiario ${a.nombre} · Nunca hecho`
               : `Apiario ${a.nombre} · Vencida ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
-      } else if (resumen.estado === "proxima") {
+      } else if (resumen.estado === 'proxima') {
         alertas.push({
           ...base,
           id: `tarea-api-prox-${a.id}-${t.id}`,
-          severidad: "informativa",
+          severidad: 'informativa',
           detalle: `Apiario ${a.nombre} · ${formatearDias(resumen.dias_para_proxima)}`,
           fecha: resumen.proxima,
         });
@@ -244,10 +247,12 @@ export default async function PaginaAlertas() {
     const etiqueta = ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo;
     alertas.push({
       id: `novedad-${n.id}`,
-      severidad: esCritica ? "critica" : "importante",
-      icono: "novedad",
+      severidad: esCritica ? 'critica' : 'importante',
+      icono: 'novedad',
       titulo: `${etiqueta} · Árbol ${n.arboles.numero_placa}`,
-      detalle: `Lote ${n.arboles.lotes.nombre} · ${n.descripcion.slice(0, 80)}${n.descripcion.length > 80 ? "…" : ""}`,
+      detalle: `Lote ${n.arboles.lotes.nombre} · ${n.descripcion.slice(0, 80)}${
+        n.descripcion.length > 80 ? '…' : ''
+      }`,
       fecha: n.fecha,
       url: `/jefe/novedades/${n.id}`,
       clave_grupo: etiqueta,
@@ -256,15 +261,17 @@ export default async function PaginaAlertas() {
   }
 
   for (const v of visitasApiarioCriticas) {
-    const esCritico = v.estado_apiario === "CRITICO";
+    const esCritico = v.estado_apiario === 'CRITICO';
     alertas.push({
       id: `apiario-estado-${v.apiario_id}`,
-      severidad: esCritico ? "critica" : "importante",
-      icono: "apiario",
+      severidad: esCritico ? 'critica' : 'importante',
+      icono: 'apiario',
       titulo: `Apiario ${v.apiario_nombre}`,
       detalle:
-        (esCritico ? "Estado crítico" : "Con problemas") +
-        (v.observaciones ? ` · ${v.observaciones.slice(0, 80)}${v.observaciones.length > 80 ? "…" : ""}` : ""),
+        (esCritico ? 'Estado crítico' : 'Con problemas') +
+        (v.observaciones
+          ? ` · ${v.observaciones.slice(0, 80)}${v.observaciones.length > 80 ? '…' : ''}`
+          : ''),
       fecha: v.fecha_registro,
       url: `/jefe/apiarios/${v.apiario_id}`,
       clave_grupo: null,
@@ -275,10 +282,12 @@ export default async function PaginaAlertas() {
   for (const s of stockBajoRows) {
     alertas.push({
       id: `stock-${s.id}`,
-      severidad: "critica",
-      icono: "stock",
+      severidad: 'critica',
+      icono: 'stock',
       titulo: `Stock bajo: ${s.nombre}`,
-      detalle: `${Number(s.stock_disponible).toFixed(2)} ${s.unidad} disponibles · mínimo ${Number(s.stock_minimo).toFixed(2)} ${s.unidad}`,
+      detalle: `${formatearDecimal(Number(s.stock_disponible), 2)} ${
+        s.unidad
+      } disponibles · mínimo ${formatearDecimal(Number(s.stock_minimo), 2)} ${s.unidad}`,
       fecha: null,
       url: `/bodega/inventario/insumos/${s.id}/ingresar`,
       clave_grupo: null,
@@ -289,8 +298,8 @@ export default async function PaginaAlertas() {
   for (const d of despachosAbiertos) {
     alertas.push({
       id: `despacho-${d.id}`,
-      severidad: "importante",
-      icono: "despacho",
+      severidad: 'importante',
+      icono: 'despacho',
       titulo: `Despacho abierto · ${d.persona.nombre_completo}`,
       detalle: `Sin cerrar desde ${formatearFechaCorta(d.fecha)}`,
       fecha: d.fecha,
@@ -319,15 +328,15 @@ export default async function PaginaAlertas() {
   });
 
   const criticas = alertas
-    .filter((a) => a.severidad === "critica")
+    .filter((a) => a.severidad === 'critica')
     .sort(orden)
     .map(limpiar);
   const importantes = alertas
-    .filter((a) => a.severidad === "importante")
+    .filter((a) => a.severidad === 'importante')
     .sort(orden)
     .map(limpiar);
   const informativas = alertas
-    .filter((a) => a.severidad === "informativa")
+    .filter((a) => a.severidad === 'informativa')
     .sort(orden)
     .map(limpiar);
 
@@ -335,12 +344,10 @@ export default async function PaginaAlertas() {
     <div className="space-y-5 pb-12">
       <header>
         <Eyebrow>Centro de alertas</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Alertas
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Alertas</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          {criticas.length} críticas · {importantes.length} importantes ·{" "}
-          {informativas.length} informativas
+          {criticas.length} críticas · {importantes.length} importantes · {informativas.length}{' '}
+          informativas
         </p>
       </header>
 

@@ -9,6 +9,7 @@ import { margenMes } from '@/lib/comercio';
 import { obtenerPredicciones } from '@/lib/jefe/prediccion';
 import { obtenerAplicaciones } from '@/lib/jefe/aplicaciones';
 import { agruparCostoPorLote } from '@/lib/aplicaciones';
+import { formatearDecimal } from '@/lib/formatos';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -287,9 +288,11 @@ export default async function PaginaReportesAvanzados({
             etiqueta="Margen"
             valor={fmtMonto(margen)}
             pie={
-              ingresos > 0 ? `${margenPct >= 0 ? '+' : ''}${margenPct.toFixed(1)}%` : 'sin ventas'
+              ingresos > 0
+                ? `${margenPct >= 0 ? '+' : ''}${formatearDecimal(margenPct, 1)}%`
+                : 'sin ventas'
             }
-            acento={margen >= 0 ? 'ocre' : undefined}
+            acento={margen >= 0 ? 'ocre' : 'alerta'}
           />
         </div>
 
@@ -361,7 +364,9 @@ export default async function PaginaReportesAvanzados({
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
               {fmtKg(totalActual)} kg en {anio} ·{' '}
               {variacionAnual !== null
-                ? `${variacionAnual >= 0 ? '+' : ''}${variacionAnual.toFixed(1)}% vs ${anio - 1}`
+                ? `${variacionAnual >= 0 ? '+' : ''}${formatearDecimal(variacionAnual, 1)}% vs ${
+                    anio - 1
+                  }`
                 : `sin datos en ${anio - 1}`}
             </p>
           </div>
@@ -379,7 +384,7 @@ export default async function PaginaReportesAvanzados({
                 <TrendingDown className="h-3 w-3" />
               )}
               {variacionAnual >= 0 ? '+' : ''}
-              {variacionAnual.toFixed(1)}%
+              {formatearDecimal(variacionAnual, 1)}%
             </div>
           ) : null}
         </div>
@@ -463,7 +468,7 @@ export default async function PaginaReportesAvanzados({
                     </span>
                     <span className="text-[11.5px] text-zelanda-verde-700">
                       <strong className="text-zelanda-verde-900">{fmtKg(l.kg_por_ha)}</strong> kg/ha
-                      · {l.kg_por_arbol.toFixed(1)} kg/árbol
+                      · {formatearDecimal(l.kg_por_arbol, 1)} kg/árbol
                     </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-zelanda-beige-200">
@@ -539,7 +544,7 @@ export default async function PaginaReportesAvanzados({
               }}
             >
               {totalesAnio.map((r) => (
-                <span key={r.anio}>{(r.kg / 1000).toFixed(1)} t</span>
+                <span key={r.anio}>{formatearDecimal(r.kg / 1000, 1)} t</span>
               ))}
             </div>
           </>

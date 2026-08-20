@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { CloudOff } from 'lucide-react';
 import { enviarSalida } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { formatearMiles, normalizarEntradaNumerica, parsearDecimal } from '@/lib/formatos';
+import {
+  formatearMiles,
+  normalizarEntradaNumerica,
+  parsearDecimal,
+  formatearDecimal,
+} from '@/lib/formatos';
 
 type Tipo = 'VENTA' | 'CONSUMO' | 'PERDIDA' | 'OTRO';
 type Cliente = { id: string; nombre: string };
@@ -44,7 +49,7 @@ export function FormularioSalida({
       return;
     }
     if (c > stockMax) {
-      setError(`Stock insuficiente. Disponible: ${stockMax.toFixed(2)} kg`);
+      setError(`Stock insuficiente. Disponible: ${formatearDecimal(stockMax, 2)} kg`);
       return;
     }
 

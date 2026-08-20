@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Segmented } from '@/components/ui/Segmented';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { crearAsignacion, type EstadoAsignacion } from '../acciones';
+import { formatearDecimal } from '@/lib/formatos';
 
 type EstadoLote = 'vencida' | 'proxima' | 'aldia';
 
@@ -823,7 +824,7 @@ function Paso4({
             </span>
             <span className="ml-2 text-[11.5px] text-zelanda-verde-700">
               {cantidadInfo}
-              {hectareasInfo !== null ? ` · ${hectareasInfo.toFixed(1)} ha` : ''}
+              {hectareasInfo !== null ? ` · ${formatearDecimal(hectareasInfo, 1)} ha` : ''}
             </span>
           </RevisarFila>
           <RevisarFila label="Tarea">

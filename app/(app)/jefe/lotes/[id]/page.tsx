@@ -17,6 +17,7 @@ import { Badge, type EstadoBadge } from '@/components/ui/Badge';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Bar } from '@/components/ui/Bar';
 import { BuscadorArbol } from './_buscador-arbol';
+import { formatearDecimal } from '@/lib/formatos';
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -169,7 +170,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ id: st
           {lote.hectareas ? (
             <span>
               <strong className="font-serif text-sm text-white">
-                {Number(lote.hectareas).toFixed(1)}
+                {formatearDecimal(Number(lote.hectareas), 1)}
               </strong>{' '}
               ha
             </span>
@@ -230,7 +231,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ id: st
               Hectáreas
             </dt>
             <dd className="mt-0.5 font-medium text-zelanda-verde-900">
-              {lote.hectareas ? Number(lote.hectareas).toFixed(1) : '—'}
+              {lote.hectareas ? formatearDecimal(Number(lote.hectareas), 1) : '—'}
             </dd>
           </div>
           <div>
@@ -290,7 +291,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ id: st
                 Promedio
               </dt>
               <dd className="mt-0.5 font-serif text-xl text-zelanda-verde-900">
-                {promedioKgPorArbol.toFixed(1)} <span className="text-sm">kg/árbol</span>
+                {formatearDecimal(promedioKgPorArbol, 1)} <span className="text-sm">kg/árbol</span>
               </dd>
             </div>
             <div>

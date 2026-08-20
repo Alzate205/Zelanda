@@ -6,6 +6,7 @@ import { obtenerConfiguracion } from '@/lib/configuracion';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
+import { formatearCantidad } from '@/lib/formatos';
 
 export const metadata = { title: 'Bodega' };
 
@@ -237,7 +238,7 @@ export default async function PaginaInicioBodega() {
                 <div className="min-w-0 flex-1">
                   <p className="m-0 text-sm text-zelanda-verde-900">{i.nombre}</p>
                   <p className="m-0 mt-0.5 text-[11.5px] text-zelanda-verde-700">
-                    Stock {i.stock_disponible} {i.unidad}
+                    Stock {formatearCantidad(i.stock_disponible)} {i.unidad}
                   </p>
                 </div>
                 <Link

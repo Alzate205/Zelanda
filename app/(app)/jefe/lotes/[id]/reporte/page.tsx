@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { KPI } from '@/components/ui/KPI';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { formatearDecimal } from '@/lib/formatos';
 
 export const metadata = { title: 'Reporte de lote' };
 
@@ -143,7 +144,7 @@ export default async function PaginaReporteLote({ params }: { params: Promise<{ 
           {lote.hectareas ? (
             <span>
               <strong className="font-serif text-sm text-white">
-                {Number(lote.hectareas).toFixed(1)}
+                {formatearDecimal(Number(lote.hectareas), 1)}
               </strong>{' '}
               ha
             </span>
@@ -164,7 +165,7 @@ export default async function PaginaReporteLote({ params }: { params: Promise<{ 
           />
           <KPI
             etiqueta="Promedio"
-            valor={`${promedioKgArbol.toFixed(1)} kg`}
+            valor={`${formatearDecimal(promedioKgArbol, 1)} kg`}
             pie="por árbol"
             acento="ocre"
           />
@@ -196,7 +197,7 @@ export default async function PaginaReporteLote({ params }: { params: Promise<{ 
               Cosecha últimos 12 meses
             </h2>
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
-              {(totalKg / 1000).toFixed(1)} t totales
+              {formatearDecimal(totalKg / 1000, 1)} t totales
             </p>
           </div>
           {cosechasMes.length === 0 ? (

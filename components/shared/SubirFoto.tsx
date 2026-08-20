@@ -1,7 +1,8 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { Camera, X, Loader2 } from "lucide-react";
+import { useRef, useState } from 'react';
+import { Camera, X, Loader2 } from 'lucide-react';
+import { formatearDecimal } from '@/lib/formatos';
 
 const MAX_LADO = 1280;
 const CALIDAD_JPEG = 0.85;
@@ -17,26 +18,26 @@ async function comprimirImagen(file: File): Promise<File> {
 
   // Si no hay que escalar y el archivo no es enorme, devolvemos tal cual
   if (escala === 1 && file.size <= 500 * 1024) {
-    if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
+    if ('close' in bitmap && typeof bitmap.close === 'function') bitmap.close();
     return file;
   }
 
   const w = Math.round(w0 * escala);
   const h = Math.round(h0 * escala);
 
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
   if (!ctx) {
-    if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
+    if ('close' in bitmap && typeof bitmap.close === 'function') bitmap.close();
     return file;
   }
   ctx.drawImage(bitmap, 0, 0, w, h);
-  if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
+  if ('close' in bitmap && typeof bitmap.close === 'function') bitmap.close();
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", CALIDAD_JPEG),
+    canvas.toBlob(resolve, 'image/jpeg', CALIDAD_JPEG)
   );
   if (!blob) return file;
 
@@ -45,13 +46,13 @@ async function comprimirImagen(file: File): Promise<File> {
 
   const nombre = renombrarAJpg(file.name);
   return new File([blob], nombre, {
-    type: "image/jpeg",
+    type: 'image/jpeg',
     lastModified: Date.now(),
   });
 }
 
 async function crearBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
-  if (typeof createImageBitmap === "function") {
+  if (typeof createImageBitmap === 'function') {
     try {
       return await createImageBitmap(file);
     } catch {
@@ -67,21 +68,21 @@ async function crearBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> 
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("No se pudo leer la imagen"));
+      reject(new Error('No se pudo leer la imagen'));
     };
     img.src = url;
   });
 }
 
 function renombrarAJpg(nombre: string): string {
-  const sinExt = nombre.replace(/\.[^.]+$/, "");
+  const sinExt = nombre.replace(/\.[^.]+$/, '');
   return `${sinExt}.jpg`;
 }
 
 function tamanoLegible(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024) return `${formatearDecimal(bytes / 1024, 0)} KB`;
+  return `${formatearDecimal(bytes / (1024 * 1024), 1)} MB`;
 }
 
 export function SubirFoto({ name }: { name: string }) {
@@ -127,16 +128,16 @@ export function SubirFoto({ name }: { name: string }) {
       reader.onload = (ev) => setPreview(ev.target?.result as string);
       reader.readAsDataURL(comprimida);
     } catch (err) {
-      console.warn("Error procesando imagen:", err);
-      setError("No se pudo procesar la imagen. Probá con otra.");
-      if (inputRef.current) inputRef.current.value = "";
+      console.warn('Error procesando imagen:', err);
+      setError('No se pudo procesar la imagen. Probá con otra.');
+      if (inputRef.current) inputRef.current.value = '';
     } finally {
       setProcesando(false);
     }
   }
 
   function limpiar() {
-    if (inputRef.current) inputRef.current.value = "";
+    if (inputRef.current) inputRef.current.value = '';
     setPreview(null);
     setNombreArchivo(null);
     setTamano(null);
@@ -177,7 +178,7 @@ export function SubirFoto({ name }: { name: string }) {
               <span className="whitespace-nowrap">
                 {tamano.comprimido ? (
                   <>
-                    {tamanoLegible(tamano.original)} →{" "}
+                    {tamanoLegible(tamano.original)} →{' '}
                     <strong className="text-zelanda-verde-900">
                       {tamanoLegible(tamano.final)}
                     </strong>
@@ -192,7 +193,9 @@ export function SubirFoto({ name }: { name: string }) {
       ) : (
         <label
           htmlFor={`input-${name}`}
-          className={`flex min-h-touch w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-zelanda-beige-300 bg-zelanda-beige-50 px-4 py-6 text-sm text-zelanda-verde-700 transition hover:border-zelanda-verde-300 hover:bg-zelanda-beige-100 ${procesando ? "pointer-events-none opacity-60" : ""}`}
+          className={`flex min-h-touch w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-dashed border-zelanda-beige-300 bg-zelanda-beige-50 px-4 py-6 text-sm text-zelanda-verde-700 transition hover:border-zelanda-verde-300 hover:bg-zelanda-beige-100 ${
+            procesando ? 'pointer-events-none opacity-60' : ''
+          }`}
         >
           {procesando ? (
             <>
@@ -207,13 +210,10 @@ export function SubirFoto({ name }: { name: string }) {
           )}
         </label>
       )}
-      {error ? (
-        <p className="text-[11.5px] text-estado-vencida">{error}</p>
-      ) : null}
+      {error ? <p className="text-[11.5px] text-estado-vencida">{error}</p> : null}
       {tamano?.comprimido ? (
         <p className="text-[10.5px] text-zelanda-verde-700/70">
-          Reescalada automáticamente a {MAX_LADO} px de lado mayor para subir
-          rápido en señal débil.
+          Reescalada automáticamente a {MAX_LADO} px de lado mayor para subir rápido en señal débil.
         </p>
       ) : null}
     </div>
