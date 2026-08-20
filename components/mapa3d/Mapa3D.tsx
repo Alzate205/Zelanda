@@ -48,6 +48,24 @@ const VISTA_FINCA = {
  */
 const OPACIDAD_TAPADO = 0.75;
 
+/**
+ * A partir de qué zoom se muestran los nombres de instalaciones y apiarios.
+ *
+ * Casa, bodega, almacén, parqueadero y establo están a metros unos de otros, así
+ * que vistos de lejos sus nombres se encabalgan y no se lee ninguno. Debajo de
+ * este zoom se muestra sólo el punto; al acercarse aparecen los nombres, que es
+ * cuando hay espacio para ellos.
+ *
+ * La entrada y los nombres de los lotes se muestran siempre: son las dos cosas
+ * que sirven para ubicarse mirando la finca entera.
+ */
+const ZOOM_ROTULOS = 16;
+
+/** Se muestra siempre, sin importar el zoom. */
+function rotuloSiempreVisible(nombre: string): boolean {
+  return /entrada/i.test(nombre);
+}
+
 // Cuánto se le da al mapa para arrancar antes de dar el 3D por perdido. En el
 // campo, con datos móviles, las primeras baldosas pueden tardar bastante.
 const ESPERA_CARGA_MAPA = 20000;
@@ -195,6 +213,7 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
   const marcadoresRef = useRef<maplibregl.Marker[]>([]);
   const cargadoRef = useRef(false);
   const plazoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rotulosCercaRef = useRef<boolean | null>(null);
   // Refs para no re-montar el mapa cuando cambian datos/callbacks
   const lotesRef = useRef(lotes);
   const onSeleccionRef = useRef(onSeleccionLote);
@@ -348,6 +367,21 @@ const Mapa3D = forwardRef<ManijaMapa3D, PropsMapa3D>(function Mapa3D(
       // Con el terreno 3D encima es lo que tenía la pantalla trabada en los
       // Android de gama media y comiéndose la batería. El estado vencido ahora
       // se ve en el color del borde, que es fijo y no cuesta nada.
+
+      // Nombres de instalaciones: sólo cuando hay zoom para que entren.
+      //
+      // Se engancha a 'zoomend' y no a 'zoom' o al bucle de dibujo: alcanza con
+      // enterarse cuando el usuario terminó de acercar. Y sólo se toca el DOM
+      // al cruzar el umbral, no en cada evento, así el costo es una comparación
+      // por gesto de zoom.
+      const aplicarRotulos = () => {
+        const cerca = map.getZoom() >= ZOOM_ROTULOS;
+        if (rotulosCercaRef.current === cerca) return;
+        rotulosCercaRef.current = cerca;
+        map.getContainer().classList.toggle('mapa-rotulos-lejos', !cerca);
+      };
+      aplicarRotulos();
+      map.on('zoomend', aplicarRotulos);
 
       map.addControl(
         new maplibregl.GeolocateControl({
@@ -567,6 +601,7 @@ function crearMarcadores(
 // Marker cartográfico sobrio: punto con borde oscuro + etiqueta en
 // mayúsculas, al estilo de un plano topográfico.
 function marcadorPunto(nombre: string, colorPunto: string): HTMLDivElement {
+  const siempre = rotuloSiempreVisible(nombre);
   const el = document.createElement('div');
   el.style.cssText =
     'display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;' +
@@ -583,7 +618,8 @@ function marcadorPunto(nombre: string, colorPunto: string): HTMLDivElement {
   el.innerHTML =
     `<span style="width:10px;height:10px;border-radius:50%;background:${colorPunto};` +
     `border:2px solid #24382a;box-shadow:0 1px 4px rgba(0,0,0,.7)"></span>` +
-    `<span style="font-family:system-ui;font-size:10.5px;font-weight:700;letter-spacing:.06em;` +
+    `<span class="rotulo-punto${siempre ? ' rotulo-siempre' : ''}" ` +
+    `style="font-family:system-ui;font-size:10.5px;font-weight:700;letter-spacing:.06em;` +
     `text-transform:uppercase;color:#fff;text-shadow:${contorno};white-space:nowrap">` +
     `${nombre}</span>`;
   return el;
