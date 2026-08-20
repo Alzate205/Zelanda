@@ -24,6 +24,8 @@ import {
   History,
   Download,
   Stethoscope,
+  ListChecks,
+  Boxes,
   ClipboardCopy,
   X,
 } from 'lucide-react';
@@ -195,6 +197,12 @@ export function PanelCentral({
               titulo="Asignar tarea"
               sub="Crear nueva"
             />
+            <Atajo
+              href="/jefe/tareas"
+              icono={ListChecks}
+              titulo="Tipos de tarea"
+              sub="Cada cuántos días"
+            />
             <Atajo href="/jefe/lotes" icono={MapIcon} titulo="Lotes" sub="Lista y apiarios" />
             <Atajo
               href="/jefe/equipo"
@@ -269,6 +277,12 @@ export function PanelCentral({
               icono={FlaskConical}
               titulo="Aplicaciones"
               sub="Insumos por lote"
+            />
+            <Atajo
+              href="/jefe/inventario"
+              icono={Boxes}
+              titulo="Inventario"
+              sub="Insumos y herramientas"
             />
             <Atajo
               href="/jefe/proveedores"
