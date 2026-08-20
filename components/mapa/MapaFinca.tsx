@@ -14,6 +14,7 @@ import {
   SUBDOMINIOS_SATELITE,
   URL_SATELITE_LEAFLET,
 } from '@/lib/mapa-tiles';
+import { formatearDecimal } from '@/lib/formatos';
 
 const CENTRO_FINCA: [number, number] = [4.9409, -75.5165];
 
@@ -213,7 +214,7 @@ export default function MapaFinca({
                 >
                   <strong>{l.nombre}</strong>
                   {l.hectareas != null && (
-                    <div style={{ fontSize: 11 }}>{l.hectareas.toFixed(1)} ha</div>
+                    <div style={{ fontSize: 11 }}>{formatearDecimal(l.hectareas, 1)} ha</div>
                   )}
                 </div>
               </Tooltip>

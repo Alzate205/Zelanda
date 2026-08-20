@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { formatearFechaCorta } from '@/lib/utils';
 import { EditorArbol } from './_editor';
+import { formatearDecimal } from '@/lib/formatos';
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
   PLAGA: 'Plaga',
@@ -347,7 +348,11 @@ export default async function FichaArbol({
             unidad={edad.anios > 0 ? 'edad' : 'días'}
             sub={edad.dias > 0 ? `${edad.dias.toLocaleString('es-CO')} d` : 'sin fecha'}
           />
-          <HeroMini valor={promedioKg.toFixed(1)} unidad="kg / árbol" sub="promedio lote" />
+          <HeroMini
+            valor={formatearDecimal(promedioKg, 1)}
+            unidad="kg / árbol"
+            sub="promedio lote"
+          />
           <HeroMini valor={totalIntervenciones} unidad="tareas" sub="registradas" />
           <HeroMini
             valor={novedades.length}
@@ -398,7 +403,7 @@ export default async function FichaArbol({
             <Card lift className="mt-2 border-zelanda-ocre-200 p-4">
               <div className="flex items-baseline gap-2">
                 <span className="font-serif text-[32px] leading-none text-zelanda-verde-900">
-                  {promedioKg.toFixed(1)}
+                  {formatearDecimal(promedioKg, 1)}
                 </span>
                 <span className="text-[13px] text-zelanda-verde-700">
                   kg estimados (promedio del lote)
@@ -413,7 +418,10 @@ export default async function FichaArbol({
                 </strong>{' '}
                 kg ÷ {arbolesGenerados.toLocaleString('es-CO')} árboles
                 {mejorAnio !== null
-                  ? ` · mejor año ${mejorAnio.anio} (${mejorAnio.kg_arbol.toFixed(1)} kg/árbol)`
+                  ? ` · mejor año ${mejorAnio.anio} (${formatearDecimal(
+                      mejorAnio.kg_arbol,
+                      1
+                    )} kg/árbol)`
                   : ''}
               </p>
 
@@ -436,10 +444,10 @@ export default async function FichaArbol({
                         <div
                           key={c.anio}
                           className="flex flex-col items-center justify-end gap-1"
-                          title={`${c.anio}: ${c.kg_arbol.toFixed(1)} kg/árbol`}
+                          title={`${c.anio}: ${formatearDecimal(c.kg_arbol, 1)} kg/árbol`}
                         >
                           <span className="text-[10px] font-semibold text-zelanda-verde-900">
-                            {c.kg_arbol.toFixed(1)}
+                            {formatearDecimal(c.kg_arbol, 1)}
                           </span>
                           <div
                             className={`relative w-full rounded-t-[4px] ${

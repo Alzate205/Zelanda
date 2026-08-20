@@ -7,6 +7,7 @@ import { DescargarCSVButton } from '@/components/jefe/DescargarCSVButton';
 import { mesBogota, periodoMesBogota } from '@/lib/fecha';
 import { obtenerAplicaciones } from '@/lib/jefe/aplicaciones';
 import { FiltroLote } from './FiltroLote';
+import { formatearDecimal } from '@/lib/formatos';
 
 export const metadata = { title: 'Aplicaciones' };
 
@@ -149,12 +150,12 @@ export default async function PaginaAplicaciones({
             rows={aplicaciones.map((a) => [
               a.fecha.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }),
               a.insumo,
-              a.cantidad.toFixed(3),
+              formatearDecimal(a.cantidad, 3),
               a.unidad,
               a.lote ?? 'Sin lote',
               a.persona,
               a.tarea ?? '',
-              a.costo.toFixed(0),
+              formatearDecimal(a.costo, 0),
             ])}
           />
         </div>

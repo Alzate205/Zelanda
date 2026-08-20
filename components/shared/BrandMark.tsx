@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { LOGO_SRC, dimensionesLogo } from '@/lib/marca';
 
 export function BrandMark({ tamano = 34, className }: { tamano?: number; className?: string }) {
   return (
@@ -14,10 +15,9 @@ export function BrandMark({ tamano = 34, className }: { tamano?: number; classNa
       style={{ width: tamano, height: tamano }}
     >
       <Image
-        src="/logo-zelanda.webp"
+        src={LOGO_SRC}
         alt=""
-        width={tamano - 4}
-        height={Math.round((tamano - 4) * 1.68)}
+        {...dimensionesLogo(tamano - 4)}
         priority={false}
         style={{ height: tamano - 4, width: 'auto' }}
       />

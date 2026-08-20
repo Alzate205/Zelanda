@@ -1,69 +1,27 @@
-import Link from 'next/link';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { requerirUsuario } from '@/lib/auth';
-import { iaConfigurada } from '@/lib/ia/cliente';
-import { Eyebrow } from '@/components/ui/Eyebrow';
-import { ChatAsistente } from '@/components/jefe/ChatAsistente';
 
-export const metadata = { title: 'Asistente' };
-
+/**
+ * Pantalla oculta hasta que el jefe decida si contrata la IA.
+ *
+ * Es la única parte de la app que consume la API de Claude y por lo tanto la
+ * única que genera factura: cada pregunta cuesta plata. Mientras no esté
+ * aprobada, la puerta queda cerrada — también para quien escriba la dirección a
+ * mano, que si no dejaría un gasto abierto sin que nadie lo haya autorizado.
+ *
+ * No se borró nada. El resto sigue en su lugar: la ruta
+ * `app/api/jefe/asistente/route.ts`, el chat en `components/jefe/ChatAsistente.tsx`
+ * y toda la lógica de `lib/ia/`. Para volver a mostrarla:
+ *
+ *   1. Recuperar el contenido de esta página del historial: el commit que la
+ *      ocultó es el último que la tocó antes de este archivo.
+ *   2. Devolver el atajo "Asistente" en `components/mapa3d/PanelCentral.tsx`.
+ *
+ * Sin `ANTHROPIC_API_KEY` en el entorno tampoco habría llamadas —el cliente
+ * devuelve null y la pantalla lo avisa—, pero eso depende de una variable que
+ * alguien puede poner sin darse cuenta. Cerrar la puerta acá no depende de eso.
+ */
 export default async function PaginaAsistente() {
   await requerirUsuario('JEFE');
-  const activo = iaConfigurada();
-
-  return (
-    <div className="space-y-5">
-      <Link
-        href="/jefe"
-        className="-ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-zelanda-verde-700 hover:text-zelanda-verde-900"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Centro de control
-      </Link>
-
-      <header>
-        <Eyebrow>Jefe · Asistente</Eyebrow>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Preguntale a la finca</h1>
-      </header>
-
-      {activo ? (
-        <ChatAsistente />
-      ) : (
-        <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-          <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zelanda-beige-100 text-zelanda-verde-700">
-              <Sparkles className="h-[18px] w-[18px]" aria-hidden />
-            </span>
-            <div>
-              <p className="font-serif text-[15px] text-zelanda-verde-900">
-                El asistente todavía no está activado
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-zelanda-verde-800">
-                Está implementado pero apagado. Se cobra por pregunta, así que mientras no se active
-                no genera ningún costo.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-zelanda-beige-200 bg-zelanda-beige-50 p-3">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-zelanda-verde-700">
-              Para encenderlo
-            </p>
-            <ol className="mt-2 space-y-1.5 text-[13px] text-zelanda-verde-800">
-              <li>
-                1. Correr <code className="font-mono text-[12px]">migracion-rol-ia.sql</code> en
-                Supabase para crear el usuario de solo lectura.
-              </li>
-              <li>
-                2. Cargar <code className="font-mono text-[12px]">DATABASE_URL_IA</code> con ese
-                usuario y <code className="font-mono text-[12px]">ANTHROPIC_API_KEY</code> en
-                Vercel.
-              </li>
-              <li>3. Volver a desplegar.</li>
-            </ol>
-          </div>
-        </section>
-      )}
-    </div>
-  );
+  redirect('/jefe');
 }

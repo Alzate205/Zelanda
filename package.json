@@ -30,7 +30,10 @@
     "limpiar:prueba": "node --env-file=.env --env-file=.env.local scripts/limpiar-datos-prueba.mjs",
     "limpiar:prueba:aplicar": "node --env-file=.env --env-file=.env.local scripts/limpiar-datos-prueba.mjs --aplicar",
     "ci": "npm run lint && npm run test && npm run build",
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "probar:push": "node --env-file=.env.local --env-file=.env scripts/probar-push.mjs",
+    "barrido": "node scripts/barrido-pantallas.mjs",
+    "capturas": "node scripts/capturas-pantallas.mjs"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx,json,css,md}": [

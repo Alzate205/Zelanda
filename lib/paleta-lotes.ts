@@ -17,6 +17,19 @@ const PALETA = [
   '#4e8090', // teal apagado
   '#9a8845', // mostaza tierra
   '#7a5a8e', // ciruela
+  // La finca tiene 16 lotes y con 12 colores cuatro habrían quedado repetidos
+  // apenas se terminaran de dibujar los polígonos que faltan. Estos ocho se
+  // eligieron en los huecos de tono que dejaban los anteriores, y variando
+  // también el brillo: dos tonos parecidos se distinguen igual si uno es
+  // claramente más oscuro que el otro.
+  '#87963b', // oliva claro
+  '#2f6f7a', // petróleo
+  '#c2856b', // terracota claro
+  '#6a4f7d', // morado oscuro
+  '#4f9d78', // jade
+  '#8f3f52', // vino
+  '#5a7fb5', // azul cielo
+  '#a9a05c', // arena
 ];
 
 /**
@@ -28,8 +41,8 @@ const PALETA = [
  * cambia de color: si el mapa te cambiara los colores cada vez que agregás un
  * lote, dejaría de servir para reconocerlos.
  *
- * Pasados los colores de la paleta se vuelve a empezar. Con 12 lotes o menos
- * no se repite ninguno.
+ * Pasados los colores de la paleta se vuelve a empezar. Con 20 lotes o menos
+ * no se repite ninguno; la finca tiene 16.
  */
 export function asignarColoresLotes(ids: Array<number | bigint | string>): Map<string, string> {
   const textos = ids.map((id) => String(id));
@@ -46,5 +59,10 @@ export function asignarColoresLotes(ids: Array<number | bigint | string>): Map<s
   return mapa;
 }
 
-/** Cuántos lotes se pueden pintar antes de que un color se repita. */
+/**
+ * Cuántos lotes se pueden pintar antes de que un color se repita.
+ *
+ * Si la finca llega a tener más lotes que esto, hay que sumar colores acá: el
+ * reparto vuelve a empezar y dos lotes distintos salen del mismo color.
+ */
 export const COLORES_DISPONIBLES = PALETA.length;

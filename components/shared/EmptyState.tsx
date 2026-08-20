@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { LOGO_SRC, dimensionesLogo } from '@/lib/marca';
 
 export function EmptyState({
   titulo,
@@ -20,10 +21,9 @@ export function EmptyState({
       className={cn('flex flex-col items-center justify-center px-6 py-10 text-center', className)}
     >
       <Image
-        src="/logo-zelanda.webp"
+        src={LOGO_SRC}
         alt=""
-        width={dim}
-        height={Math.round(dim * 1.68)}
+        {...dimensionesLogo(dim)}
         className="opacity-95 drop-shadow-md"
         style={{ height: dim, width: 'auto' }}
       />

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { FormularioLogin } from './formulario';
+import { LOGO_SRC } from '@/lib/marca';
 
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
@@ -33,7 +34,7 @@ export default async function PaginaLogin({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo-zelanda.webp"
+                src={LOGO_SRC}
                 alt="La Zelanda"
                 style={{
                   height: '75%',

@@ -4,6 +4,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { obtenerGeoFinca } from '@/lib/geo-finca';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
+import { formatearDecimal } from '@/lib/formatos';
 
 export const metadata = { title: 'Lotes' };
 
@@ -91,7 +92,7 @@ export default async function PaginaLotes() {
                 {lote.hectareas != null ? (
                   <>
                     <span aria-hidden>·</span>
-                    <span>{lote.hectareas.toFixed(1)} ha</span>
+                    <span>{formatearDecimal(lote.hectareas, 1)} ha</span>
                   </>
                 ) : null}
               </div>

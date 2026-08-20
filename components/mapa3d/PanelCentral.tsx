@@ -24,7 +24,6 @@ import {
   History,
   Download,
   Stethoscope,
-  Sparkles,
   ClipboardCopy,
   X,
 } from 'lucide-react';
@@ -177,12 +176,6 @@ export function PanelCentral({
         <section>
           <h3 className="mb-2 font-serif text-base text-zelanda-verde-900">Atajos</h3>
           <div className="grid grid-cols-2 gap-2.5">
-            <Atajo
-              href="/jefe/asistente"
-              icono={Sparkles}
-              titulo="Asistente"
-              sub="Preguntale a la finca"
-            />
             <Atajo
               href="/jefe/informe-ia"
               icono={ClipboardCopy}

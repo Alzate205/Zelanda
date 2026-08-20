@@ -8,7 +8,7 @@ import { enviarCosecha } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Segmented } from '@/components/ui/Segmented';
 import { pesoCanastas } from '@/lib/comercio';
-import { parsearDecimal } from '@/lib/formatos';
+import { parsearDecimal, formatearDecimal } from '@/lib/formatos';
 
 /** Un gramo: por debajo de eso no hay báscula en la finca que lo distinga. */
 const MINIMO_KG = 0.001;
@@ -260,7 +260,7 @@ export function FormularioCosecha({
             <div className="col-span-2 flex items-center justify-between rounded-[10px] border border-zelanda-verde-200 bg-zelanda-verde-50 px-3 py-2.5">
               <span className="text-xs text-zelanda-verde-700">Total calculado</span>
               <span className="font-serif text-[22px] text-zelanda-verde-900">
-                {pesoCalculado.toFixed(0)} kg
+                {formatearDecimal(pesoCalculado, 0)} kg
               </span>
             </div>
           ) : null}

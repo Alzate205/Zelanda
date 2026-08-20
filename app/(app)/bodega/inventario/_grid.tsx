@@ -1,25 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  FlaskConical,
-  PackagePlus,
-  Plus,
-  Search,
-  Wrench,
-} from "lucide-react";
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { FlaskConical, PackagePlus, Plus, Search, Wrench } from 'lucide-react';
+import { formatearCantidad } from '@/lib/formatos';
 
-type Categoria = "CULTIVO" | "COSECHA" | "APICULTURA";
-type Filtro =
-  | "TODOS"
-  | "HERRAMIENTAS"
-  | "INSUMOS"
-  | Categoria;
+type Categoria = 'CULTIVO' | 'COSECHA' | 'APICULTURA';
+type Filtro = 'TODOS' | 'HERRAMIENTAS' | 'INSUMOS' | Categoria;
 
 export type ItemInventario =
   | {
-      tipo: "HERRAMIENTA";
+      tipo: 'HERRAMIENTA';
       id: string;
       nombre: string;
       categoria: Categoria;
@@ -29,7 +20,7 @@ export type ItemInventario =
       disponibles: number;
     }
   | {
-      tipo: "INSUMO";
+      tipo: 'INSUMO';
       id: string;
       nombre: string;
       categoria: Categoria;
@@ -41,36 +32,33 @@ export type ItemInventario =
     };
 
 const ETIQUETA_FILTRO: Record<Filtro, string> = {
-  TODOS: "Todos",
-  HERRAMIENTAS: "Herramientas",
-  INSUMOS: "Insumos",
-  CULTIVO: "Cultivo",
-  COSECHA: "Cosecha",
-  APICULTURA: "Apicultura",
+  TODOS: 'Todos',
+  HERRAMIENTAS: 'Herramientas',
+  INSUMOS: 'Insumos',
+  CULTIVO: 'Cultivo',
+  COSECHA: 'Cosecha',
+  APICULTURA: 'Apicultura',
 };
 
 const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
-  CULTIVO: "Cultivo",
-  COSECHA: "Cosecha",
-  APICULTURA: "Apicultura",
+  CULTIVO: 'Cultivo',
+  COSECHA: 'Cosecha',
+  APICULTURA: 'Apicultura',
 };
 
 export function GridInventario({ items }: { items: ItemInventario[] }) {
-  const [cat, setCat] = useState<Filtro>("TODOS");
-  const [query, setQuery] = useState("");
+  const [cat, setCat] = useState<Filtro>('TODOS');
+  const [query, setQuery] = useState('');
 
   const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
-      if (cat === "HERRAMIENTAS" && i.tipo !== "HERRAMIENTA") return false;
-      if (cat === "INSUMOS" && i.tipo !== "INSUMO") return false;
-      if (
-        (cat === "CULTIVO" || cat === "COSECHA" || cat === "APICULTURA") &&
-        i.categoria !== cat
-      ) {
+      if (cat === 'HERRAMIENTAS' && i.tipo !== 'HERRAMIENTA') return false;
+      if (cat === 'INSUMOS' && i.tipo !== 'INSUMO') return false;
+      if ((cat === 'CULTIVO' || cat === 'COSECHA' || cat === 'APICULTURA') && i.categoria !== cat) {
         return false;
       }
-      if (q !== "" && !i.nombre.toLowerCase().includes(q)) return false;
+      if (q !== '' && !i.nombre.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [items, cat, query]);
@@ -104,29 +92,22 @@ export function GridInventario({ items }: { items: ItemInventario[] }) {
       </div>
 
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {(
-          [
-            "TODOS",
-            "HERRAMIENTAS",
-            "INSUMOS",
-            "CULTIVO",
-            "COSECHA",
-            "APICULTURA",
-          ] as const
-        ).map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCat(c)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              cat === c
-                ? "bg-zelanda-verde-700 text-white"
-                : "border border-zelanda-beige-300 text-zelanda-verde-700"
-            }`}
-          >
-            {ETIQUETA_FILTRO[c]}
-          </button>
-        ))}
+        {(['TODOS', 'HERRAMIENTAS', 'INSUMOS', 'CULTIVO', 'COSECHA', 'APICULTURA'] as const).map(
+          (c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCat(c)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                cat === c
+                  ? 'bg-zelanda-verde-700 text-white'
+                  : 'border border-zelanda-beige-300 text-zelanda-verde-700'
+              }`}
+            >
+              {ETIQUETA_FILTRO[c]}
+            </button>
+          )
+        )}
       </div>
 
       {filtrados.length === 0 ? (
@@ -146,20 +127,20 @@ export function GridInventario({ items }: { items: ItemInventario[] }) {
 
 function CardItem({ item }: { item: ItemInventario }) {
   const hrefEditar =
-    item.tipo === "HERRAMIENTA"
+    item.tipo === 'HERRAMIENTA'
       ? `/bodega/inventario/herramientas/${item.id}/editar`
       : `/bodega/inventario/insumos/${item.id}/editar`;
 
-  if (item.tipo === "HERRAMIENTA") {
+  if (item.tipo === 'HERRAMIENTA') {
     const sinStock = item.disponibles <= 0;
     return (
       <article
         className={`flex flex-col rounded-xl border p-3 shadow-card ${
           !item.activo
-            ? "border-zelanda-beige-200 bg-zelanda-beige-100/40 opacity-60"
+            ? 'border-zelanda-beige-200 bg-zelanda-beige-100/40 opacity-60'
             : sinStock
-              ? "border-estado-vencida/40 bg-white"
-              : "border-zelanda-beige-200 bg-white"
+            ? 'border-estado-vencida/40 bg-white'
+            : 'border-zelanda-beige-200 bg-white'
         }`}
       >
         <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zelanda-verde-700/60">
@@ -169,13 +150,13 @@ function CardItem({ item }: { item: ItemInventario }) {
 
         <p
           className={`mt-2 font-serif text-4xl leading-none ${
-            sinStock ? "text-estado-vencida" : "text-zelanda-verde-900"
+            sinStock ? 'text-estado-vencida' : 'text-zelanda-verde-900'
           }`}
         >
           {item.disponibles}
         </p>
         <p className="text-[11px] uppercase tracking-wider text-zelanda-verde-700/70">
-          disponible{item.disponibles === 1 ? "" : "s"}
+          disponible{item.disponibles === 1 ? '' : 's'}
         </p>
 
         <Link
@@ -186,7 +167,7 @@ function CardItem({ item }: { item: ItemInventario }) {
         </Link>
         <p className="text-[11px] text-zelanda-verde-700/60">
           de {item.total} total
-          {item.prestadas > 0 && ` · ${item.prestadas} prestada${item.prestadas === 1 ? "" : "s"}`}
+          {item.prestadas > 0 && ` · ${item.prestadas} prestada${item.prestadas === 1 ? '' : 's'}`}
         </p>
       </article>
     );
@@ -199,10 +180,10 @@ function CardItem({ item }: { item: ItemInventario }) {
     <article
       className={`flex flex-col rounded-xl border p-3 shadow-card ${
         !item.activo
-          ? "border-zelanda-beige-200 bg-zelanda-beige-100/40 opacity-60"
+          ? 'border-zelanda-beige-200 bg-zelanda-beige-100/40 opacity-60'
           : item.por_debajo_minimo
-            ? "border-estado-vencida/40 bg-white"
-            : "border-zelanda-beige-200 bg-white"
+          ? 'border-estado-vencida/40 bg-white'
+          : 'border-zelanda-beige-200 bg-white'
       }`}
     >
       <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zelanda-verde-700/60">
@@ -212,17 +193,13 @@ function CardItem({ item }: { item: ItemInventario }) {
 
       <p
         className={`mt-2 font-serif text-3xl leading-none ${
-          item.por_debajo_minimo ? "text-estado-vencida" : "text-zelanda-verde-900"
+          item.por_debajo_minimo ? 'text-estado-vencida' : 'text-zelanda-verde-900'
         }`}
       >
-        {disponible.toLocaleString("es-CO", { maximumFractionDigits: 2 })}
-        <span className="ml-1 text-base text-zelanda-verde-700/70">
-          {item.unidad}
-        </span>
+        {formatearCantidad(disponible)}
+        <span className="ml-1 text-base text-zelanda-verde-700/70">{item.unidad}</span>
       </p>
-      <p className="text-[11px] uppercase tracking-wider text-zelanda-verde-700/70">
-        disponible
-      </p>
+      <p className="text-[11px] uppercase tracking-wider text-zelanda-verde-700/70">disponible</p>
 
       <Link
         href={hrefEditar}
@@ -232,13 +209,11 @@ function CardItem({ item }: { item: ItemInventario }) {
       </Link>
       {item.por_debajo_minimo ? (
         <p className="text-[11px] text-estado-vencida">
-          bajo mín ({minimo.toLocaleString("es-CO", { maximumFractionDigits: 2 })}{" "}
-          {item.unidad})
+          bajo mín ({formatearCantidad(minimo)} {item.unidad})
         </p>
       ) : (
         <p className="text-[11px] text-zelanda-verde-700/60">
-          mín {minimo.toLocaleString("es-CO", { maximumFractionDigits: 2 })}{" "}
-          {item.unidad}
+          mín {formatearCantidad(minimo)} {item.unidad}
         </p>
       )}
 

@@ -6,7 +6,13 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { PrismaClient } from '@prisma/client';
-import { E2E_JEFE, E2E_TRABAJADOR, E2E_LOTE } from '../tests/e2e/credenciales.mjs';
+import {
+  E2E_JEFE,
+  E2E_TRABAJADOR,
+  E2E_BODEGA,
+  E2E_ALMACEN,
+  E2E_LOTE,
+} from '../tests/e2e/credenciales.mjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -34,7 +40,11 @@ async function resolverAuthIdPorEmail(email) {
 
 try {
   const personas = await prisma.personas.findMany({
-    where: { nombre_completo: { in: [E2E_JEFE.nombre, E2E_TRABAJADOR.nombre] } },
+    where: {
+      nombre_completo: {
+        in: [E2E_JEFE.nombre, E2E_TRABAJADOR.nombre, E2E_BODEGA.nombre, E2E_ALMACEN.nombre],
+      },
+    },
     select: { id: true },
   });
   const personaIds = personas.map((p) => p.id);
@@ -45,7 +55,12 @@ try {
   }
 
   // Borrar auth users (cascade borra la fila en `usuarios`). Trabajador primero.
-  for (const email of [E2E_TRABAJADOR.email, E2E_JEFE.email]) {
+  for (const email of [
+    E2E_TRABAJADOR.email,
+    E2E_JEFE.email,
+    E2E_BODEGA.email,
+    E2E_ALMACEN.email,
+  ]) {
     const id = await resolverAuthIdPorEmail(email);
     if (id) {
       const { error } = await supabase.auth.admin.deleteUser(id);

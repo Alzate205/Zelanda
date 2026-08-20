@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma';
 import { DescargarCSVButton } from '@/components/jefe/DescargarCSVButton';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { formatearDecimal } from '@/lib/formatos';
 
 export const metadata = { title: 'Reportes' };
 export default async function PaginaReportes() {
@@ -261,14 +262,18 @@ export default async function PaginaReportes() {
               Cosecha últimos 12 meses
             </h2>
             <p className="mt-0.5 text-[11.5px] text-zelanda-verde-700">
-              {(cosechasMes.reduce((a, m) => a + Number(m.total_kg), 0) / 1000).toFixed(1)} t
-              totales
+              {formatearDecimal(cosechasMes.reduce((a, m) => a + Number(m.total_kg), 0) / 1000, 1)}{' '}
+              t totales
             </p>
           </div>
           <DescargarCSVButton
             filename={`cosecha-12m-${hoy}.csv`}
             headers={['Mes', 'Total kg', 'Cosechas']}
-            rows={cosechasMes.map((r) => [r.ym, Number(r.total_kg).toFixed(2), r.n_cosechas])}
+            rows={cosechasMes.map((r) => [
+              r.ym,
+              formatearDecimal(Number(r.total_kg), 2),
+              r.n_cosechas,
+            ])}
           />
         </div>
         {cosechasMes.length === 0 ? (
@@ -379,9 +384,9 @@ export default async function PaginaReportes() {
                 l.nombre,
                 l.total_arboles,
                 l.hectareas ?? '',
-                kg.toFixed(2),
-                l.total_arboles > 0 ? (kg / l.total_arboles).toFixed(2) : '',
-                hect > 0 ? (kg / hect).toFixed(2) : '',
+                formatearDecimal(kg, 2),
+                l.total_arboles > 0 ? formatearDecimal(kg / l.total_arboles, 2) : '',
+                hect > 0 ? formatearDecimal(kg / hect, 2) : '',
               ];
             })}
           />
@@ -403,7 +408,7 @@ export default async function PaginaReportes() {
                       </span>
                       <span className="text-[12px] text-zelanda-verde-700">
                         <strong className="text-zelanda-verde-900">{fmtKg(kg)}</strong> kg ·{' '}
-                        {pctTotal.toFixed(1)}%
+                        {formatearDecimal(pctTotal, 1)}%
                       </span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-zelanda-beige-200">
@@ -438,7 +443,7 @@ export default async function PaginaReportes() {
             rows={topRecolectores.map((r) => [
               r.nombre_completo,
               r.n_cosechas,
-              Number(r.total_kg).toFixed(2),
+              formatearDecimal(Number(r.total_kg), 2),
             ])}
           />
         </div>
@@ -485,7 +490,11 @@ export default async function PaginaReportes() {
           <DescargarCSVButton
             filename={`insumos-consumidos-${hoy}.csv`}
             headers={['Insumo', 'Unidad', 'Total consumido']}
-            rows={insumosConsumidos.map((c) => [c.nombre, c.unidad, Number(c.total).toFixed(3)])}
+            rows={insumosConsumidos.map((c) => [
+              c.nombre,
+              c.unidad,
+              formatearDecimal(Number(c.total), 3),
+            ])}
           />
         </div>
         {insumosConsumidos.length === 0 ? (
@@ -532,7 +541,10 @@ export default async function PaginaReportes() {
                 <DescargarCSVButton
                   filename={`miel-por-apiario-${hoy}.csv`}
                   headers={['Apiario', 'Total kg']}
-                  rows={rankingApiarios.map((a) => [a.nombre, Number(a.total_kg).toFixed(2)])}
+                  rows={rankingApiarios.map((a) => [
+                    a.nombre,
+                    formatearDecimal(Number(a.total_kg), 2),
+                  ])}
                 />
               </div>
               <div className="mt-2 flex flex-col gap-1.5">
@@ -566,7 +578,7 @@ export default async function PaginaReportes() {
                   headers={['Persona', 'Total kg']}
                   rows={topRecolectoresMiel.map((r) => [
                     r.nombre_completo,
-                    Number(r.total_kg).toFixed(2),
+                    formatearDecimal(Number(r.total_kg), 2),
                   ])}
                 />
               </div>
@@ -613,7 +625,11 @@ export default async function PaginaReportes() {
           <DescargarCSVButton
             filename={`salidas-12m-${hoy}.csv`}
             headers={['Tipo', 'Total kg', 'Salidas']}
-            rows={salidasPorTipo.map((s) => [s.tipo, Number(s.total_kg).toFixed(2), s.n_salidas])}
+            rows={salidasPorTipo.map((s) => [
+              s.tipo,
+              formatearDecimal(Number(s.total_kg), 2),
+              s.n_salidas,
+            ])}
           />
         </div>
         {salidasPorTipo.length === 0 ? (
@@ -646,7 +662,7 @@ export default async function PaginaReportes() {
                     {s.tipo}
                   </span>
                   <span className="text-[11.5px] text-zelanda-verde-700">
-                    {s.n_salidas} mov · {pctTotal.toFixed(1)}%
+                    {s.n_salidas} mov · {formatearDecimal(pctTotal, 1)}%
                   </span>
                   <span className={`min-w-[68px] text-right font-serif text-[14px] ${color}`}>
                     {fmtKg(kg)} <span className="text-[10px] text-zelanda-verde-700">kg</span>

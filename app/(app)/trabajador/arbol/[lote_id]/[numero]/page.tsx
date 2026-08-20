@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { formatearFechaCorta } from '@/lib/utils';
+import { formatearDecimal } from '@/lib/formatos';
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
   PLAGA: 'Plaga',
@@ -340,7 +341,7 @@ export default async function FichaArbolTrabajador({
             <Card lift className="mt-2 border-zelanda-ocre-200 p-4">
               <div className="flex items-baseline gap-2">
                 <span className="font-serif text-[32px] leading-none text-zelanda-verde-900">
-                  {promedioKg.toFixed(1)}
+                  {formatearDecimal(promedioKg, 1)}
                 </span>
                 <span className="text-[13px] text-zelanda-verde-700">
                   kg / árbol (promedio del lote)

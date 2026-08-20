@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LOGO_SRC, dimensionesLogo } from '@/lib/marca';
 
 export function AsignacionCerradaSuccess({
   loteNombre,
@@ -26,10 +27,9 @@ export function AsignacionCerradaSuccess({
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
       <div className="relative">
         <Image
-          src="/logo-zelanda.webp"
+          src={LOGO_SRC}
           alt=""
-          width={200}
-          height={336}
+          {...dimensionesLogo(200)}
           style={{ height: 200, width: 'auto' }}
           className="drop-shadow-lg"
         />

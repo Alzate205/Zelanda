@@ -178,6 +178,35 @@ export function motivo(e: unknown): string {
   if (esIPhone() && !estaInstalada()) {
     return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
   }
+  // Caso observado en un iPhone real (iOS 18.7, Safari) y no resuelto: permiso
+  // concedido —incluso recién concedido, con el cartel de iOS y todo—, app
+  // instalada, worker activo, red disponible, y `subscribe()` que no contesta
+  // nunca. En Ajustes → Notificaciones del teléfono la app no figuraba.
+  //
+  // Se probó de todo del lado del código y nada cambió el resultado, así que
+  // apunta a que iOS no completa el registro con el servicio de Apple. Lo único
+  // honesto que se puede hacer acá es no mandar a buscar el problema donde no
+  // está: "probá con mejor señal" con señal perfecta es una pista falsa que hace
+  // perder el tiempo. Se dice lo que se sabe y lo que se puede intentar.
+  if (
+    e instanceof ErrorTope &&
+    e.que.includes('servicio de avisos') &&
+    esIPhone() &&
+    estaInstalada() &&
+    navigator.onLine &&
+    Notification.permission === 'granted'
+  ) {
+    return (
+      'iOS aceptó el permiso pero no está completando el registro de avisos, y no es ' +
+      'la señal: la app tiene internet. Podés intentar, en este orden: apagar el Modo ' +
+      'de bajo consumo; reiniciar el iPhone; y si sigue igual, borrar La Zelanda de la ' +
+      'pantalla de inicio, borrar los datos del sitio en Ajustes → Safari → Avanzado → ' +
+      'Datos de sitios web, reiniciar y volver a instalarla. Si después de todo eso ' +
+      'La Zelanda no aparece en Ajustes → Notificaciones, es un problema del teléfono ' +
+      'con el servicio de Apple y hay que reportarlo: mientras tanto, los avisos de ese ' +
+      'celular no van a funcionar y conviene revisar la app a mano.'
+    );
+  }
   // Un silencio no es un rechazo. Decir "el celular rechazó la suscripción"
   // mandaba a buscar el problema en el teléfono, cuando lo que pasó es que la
   // app se cansó de esperar una respuesta que nunca llegó.

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CloudOff, Check } from 'lucide-react';
 import { enviarDespachoCerrar } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { formatearDecimal } from '@/lib/formatos';
 
 type ItemRow = {
   id: string;
@@ -347,7 +348,7 @@ function FilaConsumo({
         </div>
         <span className="text-[12px] text-zelanda-verde-700">{unidad}</span>
         <span className="ml-auto font-serif text-[13px] text-zelanda-verde-900">
-          {pct.toFixed(0)}%
+          {formatearDecimal(pct, 0)}%
         </span>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zelanda-beige-200">

@@ -1,3 +1,5 @@
+import { LOGO_SRC } from '@/lib/marca';
+
 export const metadata = { title: 'La Zelanda' };
 
 export default function PaginaSplash() {
@@ -13,7 +15,7 @@ export default function PaginaSplash() {
       <div className="flex flex-col items-center px-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo-zelanda.webp"
+          src={LOGO_SRC}
           alt="La Zelanda"
           style={{
             height: 280,

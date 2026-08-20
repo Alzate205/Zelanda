@@ -16,6 +16,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { enviarDespachoCrear } from '@/lib/offline/api-cliente';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { formatearDecimal } from '@/lib/formatos';
 
 type Persona = { id: string; nombre: string };
 
@@ -462,7 +463,7 @@ function FilaCantidad({
   paso?: number;
 }) {
   const activo = cantidad > 0;
-  const fmtCantidad = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  const fmtCantidad = (n: number) => (Number.isInteger(n) ? String(n) : formatearDecimal(n, 1));
 
   function inc(delta: number) {
     const nuevo = Math.max(0, Math.min(maximo, cantidad + delta));
@@ -622,7 +623,9 @@ function Paso3({
                       {it.nombre}
                     </span>
                     <span className="font-serif text-[14px] text-zelanda-verde-900">
-                      {Number.isInteger(it.cantidad) ? it.cantidad : it.cantidad.toFixed(1)}{' '}
+                      {Number.isInteger(it.cantidad)
+                        ? it.cantidad
+                        : formatearDecimal(it.cantidad, 1)}{' '}
                       <span className="text-[11px] text-zelanda-verde-700">{it.unidad}</span>
                     </span>
                   </li>

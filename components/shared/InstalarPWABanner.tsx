@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { LOGO_SRC, dimensionesLogo } from '@/lib/marca';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -27,10 +28,9 @@ export function InstalarPWABanner() {
     <div className="fixed inset-x-3 bottom-[88px] z-30 flex items-center gap-3 rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-[0_20px_50px_rgba(20,44,26,0.28)]">
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-zelanda-verde-700 to-zelanda-verde-900">
         <Image
-          src="/logo-zelanda.webp"
+          src={LOGO_SRC}
           alt=""
-          width={52}
-          height={52}
+          {...dimensionesLogo(52)}
           style={{ height: 52, width: 'auto' }}
         />
       </div>

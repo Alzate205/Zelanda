@@ -6,6 +6,7 @@ import type { SnapshotJefe, PrediccionLoteResumen } from '@/lib/offline/tipos';
 import type { GeoFinca } from '@/lib/geo-finca';
 import { COLOR_ESTADO_LOTE, type EstadoLote } from '@/lib/mapa3d';
 import { fmtCarenciaHasta } from '@/lib/carencia';
+import { formatearDecimal } from '@/lib/formatos';
 
 const ETIQUETA_ESTADO: Record<EstadoLote, string> = {
   aldia: 'Al día',
@@ -48,7 +49,7 @@ export function PanelLote({
           </div>
           <p className="m-0 mt-0.5 text-xs text-zelanda-verde-700">
             {ETIQUETA_ESTADO[estado]}
-            {lote.hectareas != null ? ` · ${lote.hectareas.toFixed(1)} ha` : ''}
+            {lote.hectareas != null ? ` · ${formatearDecimal(lote.hectareas, 1)} ha` : ''}
           </p>
         </div>
         <button
