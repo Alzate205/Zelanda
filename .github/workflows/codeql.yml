@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   analyze:
+    timeout-minutes: 20
     name: Analyze (CodeQL)
     runs-on: ubuntu-latest
     steps:

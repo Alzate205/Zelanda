@@ -9,6 +9,12 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # Sin esto rige el default de GitHub: 6 horas. Un paso colgado se queda
+    # ocupando un runner toda la tarde y el PR se ve "en progreso" como si
+    # estuviera trabajando. Pasó de verdad dos veces seguidas: la descarga de
+    # navegadores se trabó 30 y 36 minutos, cuando normalmente tarda uno.
+    # El job entero suele correr en unos 5 minutos.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,8 +31,11 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
       - name: Install Playwright browsers
+        # Es una descarga, y las descargas se cuelgan. Normalmente toma 1-2 min.
+        timeout-minutes: 8
         run: npx playwright install --with-deps chromium
       - name: Run Playwright tests
+        timeout-minutes: 12
         run: npx playwright test --config=playwright.config.ts --reporter=list
         env:
           # El servidor de Next y el seed corren dentro de este paso, así que
