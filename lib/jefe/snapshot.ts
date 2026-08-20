@@ -2,7 +2,7 @@ import 'server-only';
 
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { calcularResumen } from '@/lib/fechas-tarea';
+import { estadoDeTareas } from '@/lib/fechas-tarea';
 import { obtenerConfiguracion } from '@/lib/configuracion';
 import { obtenerPredicciones } from '@/lib/jefe/prediccion';
 import { carenciasActivas } from '@/lib/jefe/carencias';
@@ -38,27 +38,42 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
     }),
   ]);
 
-  const mapaFreq = new globalThis.Map<string, number>();
-  for (const f of frecuenciasOverride) {
-    mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
-  }
+  // El estado de cada lote × tarea sale de `estadoDeTareas`, la misma función
+  // que usan el aviso diario y las demás pantallas. Antes esto era una copia a
+  // mano de la misma regla, y así fue como el mapa terminó leyendo la
+  // anticipación configurada mientras las otras pantallas usaban un 7 fijo.
+  const estados = estadoDeTareas({
+    destinos: lotes.map((l) => String(l.id)),
+    tipos: tiposCultivo.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    frecuenciasPropias: frecuenciasOverride.map((f) => ({
+      destino_id: String(f.lote_id),
+      tipo_tarea_id: String(f.tipo_tarea_id),
+      frecuencia_dias: f.frecuencia_dias,
+    })),
+    ultimas: completadasLote
+      .filter((c) => c.lote_id !== null)
+      .map((c) => ({
+        destino_id: String(c.lote_id),
+        tipo_tarea_id: String(c.tipo_tarea_id),
+        fecha: c._max.fecha_completada,
+      })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
 
-  const mapaUltimaLote = new globalThis.Map<string, Date | null>();
-  for (const c of completadasLote) {
-    if (c.lote_id) {
-      mapaUltimaLote.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
-    }
-  }
+  const nombreLote = new globalThis.Map(lotes.map((l) => [String(l.id), l.nombre]));
+  const nombreTipo = new globalThis.Map(tiposCultivo.map((t) => [String(t.id), t.nombre]));
 
   type FilaInterna = AlertaTareaJefe & { ord: number };
   const filas: FilaInterna[] = [];
 
   for (const l of lotes) {
     for (const t of tiposCultivo) {
-      const key = `${l.id}_${t.id}`;
-      const ultima = mapaUltimaLote.get(key) ?? null;
-      const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
+      const resumen = estados.find(
+        (e) => e.destino_id === String(l.id) && e.tipo_tarea_id === String(t.id)
+      )!;
 
       if (
         resumen.estado === 'vencida' ||
@@ -66,9 +81,9 @@ const construirSnapshotJefaUncached = async (): Promise<SnapshotJefe> => {
         resumen.estado === 'proxima'
       ) {
         filas.push({
-          lote_nombre: l.nombre,
+          lote_nombre: nombreLote.get(String(l.id)) ?? l.nombre,
           lote_id: String(l.id),
-          tipo_nombre: t.nombre,
+          tipo_nombre: nombreTipo.get(String(t.id)) ?? t.nombre,
           tipo_id: String(t.id),
           dias_para_proxima: resumen.dias_para_proxima,
           estado: resumen.estado,

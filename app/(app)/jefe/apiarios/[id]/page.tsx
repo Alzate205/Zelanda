@@ -6,7 +6,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { BadgeBase } from '@/components/shared/BadgeRol';
 import { Badge } from '@/components/ui/Badge';
-import { calcularResumen, formatearDias, etiquetaEstado } from '@/lib/fechas-tarea';
+import { estadoDeTareas, formatearDias, etiquetaEstado } from '@/lib/fechas-tarea';
 import { obtenerConfiguracion } from '@/lib/configuracion';
 
 const ETIQUETA_ESTADO_APIARIO: Record<string, string> = {
@@ -129,20 +129,28 @@ export default async function DetalleApiario({ params }: { params: Promise<{ id:
 
   const totalKgAnio = Number(totalKgAnioRows[0]?.kg ?? 0);
 
-  const mapaUltima = new Map<string, Date | null>();
-  for (const c of completadas) {
-    const key = String(c.tipo_tarea_id);
-    if (!mapaUltima.has(key)) mapaUltima.set(key, c.fecha_completada);
-  }
+  // `completadas` viene ordenada de más reciente a más vieja, así que la
+  // primera de cada tipo es la última vez que se hizo. `estadoDeTareas` toma la
+  // última que se le pasa para cada clave, de modo que se invierte el orden
+  // para que gane la más reciente.
+  const estados = estadoDeTareas({
+    destinos: [String(idBig)],
+    tipos: tiposApicultura.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    // Los apiarios no tienen frecuencia propia: van con la del tipo.
+    frecuenciasPropias: [],
+    ultimas: [...completadas].reverse().map((c) => ({
+      destino_id: String(idBig),
+      tipo_tarea_id: String(c.tipo_tarea_id),
+      fecha: c.fecha_completada,
+    })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
 
   const filasTarea = tiposApicultura.map((t) => {
-    const ultima = mapaUltima.get(String(t.id)) ?? null;
-    const resumen = calcularResumen(
-      ultima,
-      t.frecuencia_dias_default,
-      new Date(),
-      config.alerta_dias_anticipacion
-    );
+    const resumen = estados.find((e) => e.tipo_tarea_id === String(t.id))!;
     return { id: String(t.id), nombre: t.nombre, ...resumen };
   });
 
