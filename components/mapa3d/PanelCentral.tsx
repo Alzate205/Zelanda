@@ -185,7 +185,6 @@ export function PanelCentral({
               titulo="Informe IA"
               sub="Copiar para Claude"
             />
-            <BuscadorGlobal variante="atajo" />
             <Atajo
               href="/jefe/resumen"
               icono={Stethoscope}
@@ -235,6 +234,7 @@ export function PanelCentral({
         <section>
           <h3 className="mb-2 font-serif text-base text-zelanda-verde-900">Más</h3>
           <div className="grid grid-cols-2 gap-2.5">
+            <BuscadorGlobal variante="atajo" />
             <Atajo
               href="/jefe/tarifas"
               icono={DollarSign}
