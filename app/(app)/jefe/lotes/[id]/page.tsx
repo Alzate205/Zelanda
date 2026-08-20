@@ -18,6 +18,7 @@ import { Card, CardTitle } from '@/components/ui/Card';
 import { Bar } from '@/components/ui/Bar';
 import { BuscadorArbol } from './_buscador-arbol';
 import { formatearDecimal } from '@/lib/formatos';
+import { obtenerConfiguracion } from '@/lib/configuracion';
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
@@ -54,6 +55,11 @@ export async function generateMetadata({
 
 export default async function DetalleLote({ params }: { params: Promise<{ id: string }> }) {
   await requerirUsuario('JEFE');
+  // La anticipación con la que se avisa sale de la configuración de la finca.
+  // Antes acá iba el valor por defecto de 7 días mientras el mapa sí leía la
+  // configuración: con 14 días puestos, el mapa decía "próxima" y esta pantalla
+  // decía "al día" del mismo lote.
+  const config = await obtenerConfiguracion();
   const { id } = await params;
 
   const loteId = parsearId(id);
@@ -109,7 +115,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ id: st
   const filasTarea = tiposCultivo.map((t) => {
     const ultima = mapaUltima.get(String(t.id)) ?? null;
     const freq = mapaFreq.get(String(t.id)) ?? t.frecuencia_dias_default;
-    const resumen = calcularResumen(ultima, freq);
+    const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
     return { id: String(t.id), nombre: t.nombre, ...resumen };
   });
 
