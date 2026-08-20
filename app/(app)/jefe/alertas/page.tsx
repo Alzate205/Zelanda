@@ -11,7 +11,7 @@ import {
   type IconoAlertaTipo,
   type BulkInfo,
 } from './_alertas-cliente';
-import { formatearDecimal } from '@/lib/formatos';
+import { formatearCantidad } from '@/lib/formatos';
 
 export const metadata: Metadata = { title: 'Alertas' };
 export const dynamic = 'force-dynamic';
@@ -285,9 +285,12 @@ export default async function PaginaAlertas() {
       severidad: 'critica',
       icono: 'stock',
       titulo: `Stock bajo: ${s.nombre}`,
-      detalle: `${formatearDecimal(Number(s.stock_disponible), 2)} ${
+      // Con `formatearDecimal(..., 2)` esto decía "1,00 L" mientras el
+      // inventario, mirando el mismo dato, decía "1 L". `formatearCantidad`
+      // suelta los ceros que no aportan, así las dos pantallas coinciden.
+      detalle: `${formatearCantidad(s.stock_disponible)} ${
         s.unidad
-      } disponibles · mínimo ${formatearDecimal(Number(s.stock_minimo), 2)} ${s.unidad}`,
+      } disponibles · mínimo ${formatearCantidad(s.stock_minimo)} ${s.unidad}`,
       fecha: null,
       url: `/bodega/inventario/insumos/${s.id}/ingresar`,
       clave_grupo: null,

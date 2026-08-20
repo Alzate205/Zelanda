@@ -82,9 +82,11 @@ const ICONO_APIARIO = L.divIcon({
 function ControlesMapa({
   borde,
   fallback,
+  zoomAbajo = false,
 }: {
   borde: GeoJSON.Polygon | null;
   fallback: [number, number];
+  zoomAbajo?: boolean;
 }) {
   const map = useMap();
   useEffect(() => {
@@ -100,6 +102,8 @@ function ControlesMapa({
     }
     const escala = L.control.scale({ imperial: false, position: 'bottomright' });
     escala.addTo(map);
+    const zoom = zoomAbajo ? L.control.zoom({ position: 'bottomright' }) : null;
+    zoom?.addTo(map);
     const ControlNorte = L.Control.extend({
       onAdd() {
         const div = L.DomUtil.create('div', 'leaflet-bar');
@@ -112,8 +116,9 @@ function ControlesMapa({
     return () => {
       escala.remove();
       norte.remove();
+      zoom?.remove();
     };
-  }, [borde, map, fallback]);
+  }, [borde, map, fallback, zoomAbajo]);
   return null;
 }
 
@@ -123,12 +128,21 @@ export default function MapaFinca({
   instalacionesPuntos,
   bordeFinca,
   altura = '60vh',
+  zoomAbajo = false,
 }: {
   lotesPoligonos: LotePoly[];
   apiariosPuntos: ApiarioPto[];
   instalacionesPuntos: InstPto[];
   bordeFinca: GeoJSON.Polygon | null;
   altura?: string;
+  /**
+   * Manda el control de zoom abajo a la derecha.
+   *
+   * Por defecto Leaflet lo pone arriba a la izquierda, y en el centro de
+   * control ahí vive la tarjeta del saludo: el control quedaba tapado y no se
+   * podía tocar.
+   */
+  zoomAbajo?: boolean;
 }) {
   const router = useRouter();
   const lotesConPoly = lotesPoligonos.filter(
@@ -153,6 +167,7 @@ export default function MapaFinca({
         center={CENTRO_FINCA}
         zoom={13}
         scrollWheelZoom
+        zoomControl={!zoomAbajo}
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
@@ -161,7 +176,7 @@ export default function MapaFinca({
           subdomains={SUBDOMINIOS_SATELITE}
           maxZoom={MAXZOOM_SATELITE}
         />
-        <ControlesMapa borde={bordeFinca} fallback={CENTRO_FINCA} />
+        <ControlesMapa borde={bordeFinca} fallback={CENTRO_FINCA} zoomAbajo={zoomAbajo} />
 
         {bordeFinca && (
           <GeoJSON

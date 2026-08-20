@@ -362,13 +362,17 @@ export function CentroControl({
         // que la pantalla aparecía sin saludo y sin indicadores: no faltaban,
         // estaban debajo del mapa.
         <>
-          <div className="isolate h-full w-full p-3">
+          {/* Los controles de Leaflet se anclan al borde de abajo a la derecha,
+              que es donde vive la barra de indicadores: sin el empujón quedan
+              tapados, igual que pasaba con los de MapLibre en el mapa 3D. */}
+          <div className="isolate h-full w-full p-3 [&_.leaflet-bottom.leaflet-right]:mb-[4.5rem]">
             <MapaFincaFallback
               lotesPoligonos={geo.lotesParaMapa}
               apiariosPuntos={geo.apiariosParaMapa}
               instalacionesPuntos={geo.instParaMapa}
               bordeFinca={geo.bordeFinca}
               altura="100%"
+              zoomAbajo
             />
           </div>
           {/* Fuera del contenedor aislado a propósito: adentro quedaría por
