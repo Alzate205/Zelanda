@@ -8,6 +8,8 @@ import { PrismaClient } from '@prisma/client';
 import {
   E2E_JEFE,
   E2E_TRABAJADOR,
+  E2E_BODEGA,
+  E2E_ALMACEN,
   E2E_LOTE,
   E2E_LOTE_ARBOLES,
 } from '../tests/e2e/credenciales.mjs';
@@ -162,6 +164,18 @@ try {
     'TRABAJADOR',
     trabPersona.id
   );
+
+  // Bodega y almacén test. Van con vinculación FAMILIAR porque es la que no
+  // exige tarifa ni salario: acá lo que importa es poder entrar con ese rol.
+  for (const [cred, rol, rolFinca] of [
+    [E2E_BODEGA, 'BODEGA', 'Encargado de bodega'],
+    [E2E_ALMACEN, 'ALMACEN', 'Encargado de almacén'],
+  ]) {
+    const authId = await asegurarAuthUser(cred.email, cred.password, cred.nombre);
+    const persona = await asegurarPersona(cred.nombre);
+    await asegurarVinculacionActiva(persona.id, 'FAMILIAR', rolFinca);
+    await asegurarUsuario(authId, cred.email, cred.nombre, rol, persona.id);
+  }
 
   // Pre-limpieza defensiva: asignaciones/avances de corridas previas interrumpidas.
   await prisma.registros_avance.deleteMany({ where: { persona_id: trabPersona.id } });

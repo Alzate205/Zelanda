@@ -15,6 +15,20 @@ export const E2E_TRABAJADOR = {
   nombre: 'E2E Trabajador Test',
 };
 
+// Bodega y almacén: sin estos usuarios, dos de los cuatro roles de la app no se
+// probaban nunca — ni sus pantallas ni su navegación.
+export const E2E_BODEGA = {
+  email: 'e2e-bodega@zelanda.test',
+  password: 'E2e-Test-Passw0rd!',
+  nombre: 'E2E Bodega Test',
+};
+
+export const E2E_ALMACEN = {
+  email: 'e2e-almacen@zelanda.test',
+  password: 'E2e-Test-Passw0rd!',
+  nombre: 'E2E Almacen Test',
+};
+
 // Lote propio del test: se crea en el seed y se borra en el teardown. Antes se
 // usaba un lote real en solo lectura, pero registrar avance exige que el lote
 // tenga árboles, y sembrarlos en un lote real ensucia los datos de la finca.
