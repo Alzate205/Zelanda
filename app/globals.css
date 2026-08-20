@@ -177,3 +177,34 @@ input[type='date']::-webkit-date-and-time-value {
     border: none !important;
   }
 }
+
+/**
+ * Contenedor que se desliza a lo ancho y lo dice.
+ *
+ * La tabla del inventario se cortaba a mitad de palabra —"DISPONIE"— sin
+ * ninguna señal de que hubiera más a la derecha. Tenía `overflow-x-auto`, o sea
+ * que se podía deslizar, pero en un celular eso no se adivina: parece rota.
+ *
+ * Las sombras aparecen sólo del lado donde queda contenido por ver, sin nada de
+ * JavaScript. El truco son los dos pares de degradados: los del color del fondo
+ * van con `background-attachment: local`, así que viajan con el contenido y
+ * tapan la sombra cuando se llegó al extremo; los oscuros van con `scroll` y se
+ * quedan quietos. Cuando el contenido entra completo, los del fondo cubren a
+ * los dos oscuros y no se ve ninguna.
+ *
+ * `--fondo-desliza` tiene que coincidir con el fondo real del contenedor, o la
+ * sombra se apoyaría sobre un color que no está.
+ */
+.desliza-h {
+  --fondo-desliza: #ffffff;
+  overflow-x: auto;
+  background: linear-gradient(to right, var(--fondo-desliza) 30%, rgba(255, 255, 255, 0)) left
+      center,
+    linear-gradient(to left, var(--fondo-desliza) 30%, rgba(255, 255, 255, 0)) right center,
+    radial-gradient(farthest-side at 0 50%, rgba(20, 44, 26, 0.16), rgba(20, 44, 26, 0)) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(20, 44, 26, 0.16), rgba(20, 44, 26, 0)) right
+      center;
+  background-repeat: no-repeat;
+  background-size: 34px 100%, 34px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}

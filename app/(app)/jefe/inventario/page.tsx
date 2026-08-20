@@ -57,7 +57,7 @@ export default async function PaginaInventarioJefe() {
           <FlaskConical className="h-4 w-4 text-zelanda-ocre-600" /> Insumos{' '}
           <span className="text-sm font-normal text-zelanda-verde-700">({insumos.length})</span>
         </h2>
-        <div className="mt-3 overflow-x-auto">
+        <div className="desliza-h mt-3">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-zelanda-beige-200 text-left text-xs uppercase text-zelanda-verde-700">
