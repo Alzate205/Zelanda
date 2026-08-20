@@ -208,3 +208,18 @@ input[type='date']::-webkit-date-and-time-value {
   background-size: 34px 100%, 34px 100%, 14px 100%, 14px 100%;
   background-attachment: local, local, scroll, scroll;
 }
+
+/**
+ * Nombres de instalaciones y apiarios en el mapa 3D: sólo con zoom suficiente.
+ *
+ * Casa, bodega, almacén, parqueadero y establo están a metros unos de otros. Con
+ * la finca entera en pantalla sus nombres se encabalgan y no se lee ninguno, así
+ * que de lejos queda sólo el punto. `Mapa3D` pone y quita esta clase al cruzar
+ * el umbral de zoom; el resto lo resuelve el navegador sin JavaScript.
+ *
+ * La entrada lleva `.rotulo-siempre` y no se esconde nunca: junto con los
+ * nombres de los lotes es lo que permite ubicarse mirando la finca completa.
+ */
+.mapa-rotulos-lejos .rotulo-punto:not(.rotulo-siempre) {
+  display: none;
+}

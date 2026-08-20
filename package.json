@@ -33,7 +33,8 @@
     "check:types": "tsc --noEmit",
     "probar:push": "node --env-file=.env.local --env-file=.env scripts/probar-push.mjs",
     "barrido": "node scripts/barrido-pantallas.mjs",
-    "capturas": "node scripts/capturas-pantallas.mjs"
+    "capturas": "node scripts/capturas-pantallas.mjs",
+    "tarifas:iniciales": "node --env-file=.env.local --env-file=.env scripts/tarifas-iniciales.mjs"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx,json,css,md}": [
