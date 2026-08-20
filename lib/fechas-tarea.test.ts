@@ -225,3 +225,93 @@ describe('estadoDeTareas — el ciclo de cada lote va por su cuenta', () => {
     expect(buscar(lista, 'loteA', 't2').dias_para_proxima).toBeLessThanOrEqual(0);
   });
 });
+
+describe('los relojes de cada lote no se fusionan nunca', () => {
+  const PLATEO = { id: 't1', frecuencia_dias_default: 90 };
+  const dia = (n: number) => new Date(Date.UTC(2026, 0, 1 + n, 12, 0, 0));
+  const buscar = (lista: ReturnType<typeof estadoDeTareas>, destino: string) =>
+    lista.find((e) => e.destino_id === destino && e.tipo_tarea_id === 't1')!;
+
+  /**
+   * El caso que hay que tener claro para poder planificar la semana: la misma
+   * tarea hecha en dos lotes con dos semanas de diferencia vence con esas mismas
+   * dos semanas de diferencia. Si los relojes se fusionaran, el jefe planearía
+   * los dos para el mismo día y uno de los dos quedaría mal.
+   */
+  it('Armenia hoy y Calarcá dos semanas después vencen con dos semanas de diferencia', () => {
+    const ultimas = [
+      { destino_id: 'armenia', tipo_tarea_id: 't1', fecha: dia(0) },
+      { destino_id: 'calarca', tipo_tarea_id: 't1', fecha: dia(14) },
+    ];
+    const base = { destinos: ['armenia', 'calarca'], tipos: [PLATEO], frecuenciasPropias: [] };
+
+    // Las próximas fechas están separadas exactamente por los mismos 14 días.
+    const enElDia14 = estadoDeTareas({ ...base, ultimas, ahora: dia(14) });
+    const proximaArmenia = buscar(enElDia14, 'armenia').proxima!;
+    const proximaCalarca = buscar(enElDia14, 'calarca').proxima!;
+    const diferenciaDias =
+      (proximaCalarca.getTime() - proximaArmenia.getTime()) / (24 * 60 * 60 * 1000);
+    expect(diferenciaDias).toBe(14);
+
+    // El día 90 vence Armenia y Calarcá todavía no.
+    const enElDia90 = estadoDeTareas({ ...base, ultimas, ahora: dia(90) });
+    expect(buscar(enElDia90, 'armenia').estado).toBe('vencida');
+    expect(buscar(enElDia90, 'calarca').estado).not.toBe('vencida');
+
+    // Recién el día 104 vence Calarcá.
+    const enElDia104 = estadoDeTareas({ ...base, ultimas, ahora: dia(104) });
+    expect(buscar(enElDia104, 'calarca').estado).toBe('vencida');
+  });
+
+  it('con muchos lotes, cada uno vence el día que le toca y ninguno arrastra a otro', () => {
+    // Un lote por día durante una semana: siete relojes distintos.
+    const destinos = ['l0', 'l1', 'l2', 'l3', 'l4', 'l5', 'l6'];
+    const ultimas = destinos.map((d, i) => ({
+      destino_id: d,
+      tipo_tarea_id: 't1',
+      fecha: dia(i),
+    }));
+
+    for (let i = 0; i < destinos.length; i++) {
+      // El día en que vence el lote i: ese vence, y ninguno posterior.
+      const lista = estadoDeTareas({
+        destinos,
+        tipos: [PLATEO],
+        frecuenciasPropias: [],
+        ultimas,
+        ahora: dia(90 + i),
+      });
+      expect(buscar(lista, destinos[i]).estado).toBe('vencida');
+      for (let j = i + 1; j < destinos.length; j++) {
+        expect(buscar(lista, destinos[j]).estado).not.toBe('vencida');
+      }
+    }
+  });
+
+  it('completar una tarea en un lote no mueve la fecha de ningún otro', () => {
+    const base = {
+      destinos: ['armenia', 'calarca'],
+      tipos: [PLATEO],
+      frecuenciasPropias: [],
+      ahora: dia(50),
+    };
+    const antes = estadoDeTareas({
+      ...base,
+      ultimas: [
+        { destino_id: 'armenia', tipo_tarea_id: 't1', fecha: dia(0) },
+        { destino_id: 'calarca', tipo_tarea_id: 't1', fecha: dia(10) },
+      ],
+    });
+    // Se rehace sólo Armenia.
+    const despues = estadoDeTareas({
+      ...base,
+      ultimas: [
+        { destino_id: 'armenia', tipo_tarea_id: 't1', fecha: dia(50) },
+        { destino_id: 'calarca', tipo_tarea_id: 't1', fecha: dia(10) },
+      ],
+    });
+
+    expect(buscar(despues, 'armenia').proxima).not.toEqual(buscar(antes, 'armenia').proxima);
+    expect(buscar(despues, 'calarca').proxima).toEqual(buscar(antes, 'calarca').proxima);
+  });
+});
