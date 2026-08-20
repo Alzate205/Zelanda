@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Suele correr en unos 3 minutos; sin tope, un cuelgue ocuparía el runner
+    # seis horas antes de que GitHub lo corte.
+    timeout-minutes: 20
     strategy:
       matrix:
         node-version: [20]
