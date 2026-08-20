@@ -13,6 +13,7 @@ export const PANTALLAS_JEFE = [
   ['/jefe/resumen', 'jefe · resumen'],
   ['/jefe/asignaciones', 'jefe · asignaciones'],
   ['/jefe/asignaciones/nueva', 'jefe · nueva asignación'],
+  ['/jefe/semana', 'jefe · la semana'],
   ['/jefe/tareas', 'jefe · tareas'],
   ['/jefe/tareas/nuevo', 'jefe · nueva tarea'],
   ['/jefe/lotes', 'jefe · lotes'],

@@ -25,6 +25,7 @@ import {
   Download,
   Stethoscope,
   ListChecks,
+  CalendarDays,
   Boxes,
   ClipboardCopy,
   X,
@@ -196,6 +197,12 @@ export function PanelCentral({
               icono={Plus}
               titulo="Asignar tarea"
               sub="Crear nueva"
+            />
+            <Atajo
+              href="/jefe/semana"
+              icono={CalendarDays}
+              titulo="La semana"
+              sub="Qué toca cada día"
             />
             <Atajo
               href="/jefe/tareas"
