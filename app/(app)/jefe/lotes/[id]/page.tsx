@@ -6,7 +6,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatearFechaCorta } from '@/lib/utils';
 import {
-  calcularResumen,
+  estadoDeTareas,
   formatearDias,
   etiquetaEstado,
   tonoEstado,
@@ -102,20 +102,29 @@ export default async function DetalleLote({ params }: { params: Promise<{ id: st
     }),
   ]);
 
-  const mapaUltima = new globalThis.Map<string, Date | null>();
-  for (const c of asignacionesCompletadas) {
-    mapaUltima.set(String(c.tipo_tarea_id), c._max.fecha_completada);
-  }
-
-  const mapaFreq = new globalThis.Map<string, number>();
-  for (const f of frecuenciasOverride) {
-    mapaFreq.set(String(f.tipo_tarea_id), f.frecuencia_dias);
-  }
+  // Acá el destino es uno solo —este lote—, pero el cálculo es el mismo que el
+  // del mapa y el del aviso diario, y sale de la misma función.
+  const estados = estadoDeTareas({
+    destinos: [String(idBig)],
+    tipos: tiposCultivo.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    frecuenciasPropias: frecuenciasOverride.map((f) => ({
+      destino_id: String(idBig),
+      tipo_tarea_id: String(f.tipo_tarea_id),
+      frecuencia_dias: f.frecuencia_dias,
+    })),
+    ultimas: asignacionesCompletadas.map((c) => ({
+      destino_id: String(idBig),
+      tipo_tarea_id: String(c.tipo_tarea_id),
+      fecha: c._max.fecha_completada,
+    })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
 
   const filasTarea = tiposCultivo.map((t) => {
-    const ultima = mapaUltima.get(String(t.id)) ?? null;
-    const freq = mapaFreq.get(String(t.id)) ?? t.frecuencia_dias_default;
-    const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
+    const resumen = estados.find((e) => e.tipo_tarea_id === String(t.id))!;
     return { id: String(t.id), nombre: t.nombre, ...resumen };
   });
 

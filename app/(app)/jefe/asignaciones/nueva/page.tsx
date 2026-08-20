@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { calcularResumen } from '@/lib/fechas-tarea';
+import { estadoDeTareas } from '@/lib/fechas-tarea';
 import { carenciasActivas } from '@/lib/jefe/carencias';
 import { WizardNuevaAsignacion } from './WizardNuevaAsignacion';
 import { obtenerConfiguracion } from '@/lib/configuracion';
@@ -110,16 +110,29 @@ export default async function PaginaNuevaAsignacion({
 
   // Estado por lote (peor estado de sus tipos de tarea de cultivo)
   const tiposCultivo = tipos.filter((t) => t.area === 'CULTIVO');
-  const mapaFreq = new globalThis.Map<string, number>();
-  for (const f of frecuenciasOverride) {
-    mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
-  }
-  const mapaUltimaLote = new globalThis.Map<string, Date | null>();
-  for (const c of completadasLote) {
-    if (c.lote_id) {
-      mapaUltimaLote.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
-    }
-  }
+  // Mismo cálculo que el mapa, las alertas y el aviso diario: una sola función.
+  const estados = estadoDeTareas({
+    destinos: lotes.map((l) => String(l.id)),
+    tipos: tiposCultivo.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    frecuenciasPropias: frecuenciasOverride.map((f) => ({
+      destino_id: String(f.lote_id),
+      tipo_tarea_id: String(f.tipo_tarea_id),
+      frecuencia_dias: f.frecuencia_dias,
+    })),
+    ultimas: completadasLote
+      .filter((c) => c.lote_id !== null)
+      .map((c) => ({
+        destino_id: String(c.lote_id),
+        tipo_tarea_id: String(c.tipo_tarea_id),
+        fecha: c._max.fecha_completada,
+      })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
+  const estadoDe = (loteId: bigint, tipoId: bigint) =>
+    estados.find((e) => e.destino_id === String(loteId) && e.tipo_tarea_id === String(tipoId))!;
 
   type EstadoLote = 'vencida' | 'proxima' | 'aldia';
   const lotesEnriquecidos = lotes.map((l) => {
@@ -129,10 +142,7 @@ export default async function PaginaNuevaAsignacion({
     let tipoMasUrgenteId: string | null = null;
 
     for (const t of tiposCultivo) {
-      const key = `${l.id}_${t.id}`;
-      const ultima = mapaUltimaLote.get(key) ?? null;
-      const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
+      const r = estadoDe(l.id, t.id);
 
       if (r.estado === 'vencida' || r.estado === 'sin_historial') {
         if (estado !== 'vencida') {
@@ -163,10 +173,7 @@ export default async function PaginaNuevaAsignacion({
       // mostrar la siguiente tarea más próxima (positiva)
       let proxDias = Number.POSITIVE_INFINITY;
       for (const t of tiposCultivo) {
-        const key = `${l.id}_${t.id}`;
-        const ultima = mapaUltimaLote.get(key) ?? null;
-        const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-        const r = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
+        const r = estadoDe(l.id, t.id);
         if (
           r.estado === 'aldia' &&
           r.dias_para_proxima !== null &&

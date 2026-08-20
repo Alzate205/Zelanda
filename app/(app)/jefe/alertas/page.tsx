@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { calcularResumen, formatearDias } from '@/lib/fechas-tarea';
+import { estadoDeTareas, formatearDias } from '@/lib/fechas-tarea';
 import { formatearFechaCorta } from '@/lib/utils';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import {
@@ -147,32 +147,58 @@ export default async function PaginaAlertas() {
     }),
   ]);
 
-  const mapaFreq = new Map<string, number>();
-  for (const f of frecuenciasOverride) {
-    mapaFreq.set(`${f.lote_id}_${f.tipo_tarea_id}`, f.frecuencia_dias);
-  }
+  // Una sola función decide el estado de cada destino × tarea, la misma que usa
+  // el aviso diario y el mapa. Antes acá se armaban los mapas a mano, con la
+  // misma convención de clave copiada; era una de las cinco copias de la regla.
+  const tiposParaCalculo = tiposCultivo.map((t) => ({
+    id: String(t.id),
+    frecuencia_dias_default: t.frecuencia_dias_default,
+  }));
 
-  const mapaUltimaLote = new Map<string, Date | null>();
-  for (const c of completadasLote) {
-    if (c.lote_id) {
-      mapaUltimaLote.set(`${c.lote_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
-    }
-  }
-  const mapaUltimaApiario = new Map<string, Date | null>();
-  for (const c of completadasApiario) {
-    if (c.apiario_id) {
-      mapaUltimaApiario.set(`${c.apiario_id}_${c.tipo_tarea_id}`, c._max.fecha_completada);
-    }
-  }
+  const estadosLote = estadoDeTareas({
+    destinos: lotes.map((l) => String(l.id)),
+    tipos: tiposParaCalculo,
+    frecuenciasPropias: frecuenciasOverride.map((f) => ({
+      destino_id: String(f.lote_id),
+      tipo_tarea_id: String(f.tipo_tarea_id),
+      frecuencia_dias: f.frecuencia_dias,
+    })),
+    ultimas: completadasLote
+      .filter((c) => c.lote_id !== null)
+      .map((c) => ({
+        destino_id: String(c.lote_id),
+        tipo_tarea_id: String(c.tipo_tarea_id),
+        fecha: c._max.fecha_completada,
+      })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
+
+  const estadosApiario = estadoDeTareas({
+    destinos: apiarios.map((a) => String(a.id)),
+    tipos: tiposApicultura.map((t) => ({
+      id: String(t.id),
+      frecuencia_dias_default: t.frecuencia_dias_default,
+    })),
+    // Los apiarios no tienen frecuencia propia: van siempre con la del tipo.
+    frecuenciasPropias: [],
+    ultimas: completadasApiario
+      .filter((c) => c.apiario_id !== null)
+      .map((c) => ({
+        destino_id: String(c.apiario_id),
+        tipo_tarea_id: String(c.tipo_tarea_id),
+        fecha: c._max.fecha_completada,
+      })),
+    diasAlerta: config.alerta_dias_anticipacion,
+  });
+
+  const buscarEstado = (lista: typeof estadosLote, destinoId: bigint, tipoId: bigint) =>
+    lista.find((e) => e.destino_id === String(destinoId) && e.tipo_tarea_id === String(tipoId))!;
 
   const alertas: AlertaConFecha[] = [];
 
   for (const l of lotes) {
     for (const t of tiposCultivo) {
-      const key = `${l.id}_${t.id}`;
-      const ultima = mapaUltimaLote.get(key) ?? null;
-      const freq = mapaFreq.get(key) ?? t.frecuencia_dias_default;
-      const resumen = calcularResumen(ultima, freq, new Date(), config.alerta_dias_anticipacion);
+      const resumen = buscarEstado(estadosLote, l.id, t.id);
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
         kind: 'lote',
@@ -210,14 +236,7 @@ export default async function PaginaAlertas() {
 
   for (const a of apiarios) {
     for (const t of tiposApicultura) {
-      const key = `${a.id}_${t.id}`;
-      const ultima = mapaUltimaApiario.get(key) ?? null;
-      const resumen = calcularResumen(
-        ultima,
-        t.frecuencia_dias_default,
-        new Date(),
-        config.alerta_dias_anticipacion
-      );
+      const resumen = buscarEstado(estadosApiario, a.id, t.id);
       const bulkInfo: BulkInfo = {
         tipo_tarea_id: String(t.id),
         kind: 'apiario',
