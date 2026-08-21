@@ -12,6 +12,11 @@ import { Check } from 'lucide-react';
  * que sí depende de nosotros: quita el foco del campo y con eso el teclado baja.
  *
  * Solo aparece en pantallas táctiles y mientras haya un campo enfocado.
+ *
+ * Un formulario puede pedir que no salga marcándose con `data-sin-barra-listo`:
+ * en formularios cortos la barra queda encima del botón de guardar y estorba
+ * más de lo que ayuda. Se declara en el formulario y no en una lista de rutas
+ * acá para que la excepción viaje con el que la necesita.
  */
 export function BarraListoTeclado() {
   const [visible, setVisible] = useState(false);
@@ -22,7 +27,9 @@ export function BarraListoTeclado() {
     if (!window.matchMedia?.('(pointer: coarse)').matches) return;
 
     const esCampo = (el: Element | null) =>
-      !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
+      !!el &&
+      (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') &&
+      !el.closest('[data-sin-barra-listo]');
 
     const alEnfocar = (e: FocusEvent) => setVisible(esCampo(e.target as Element));
     const alSalir = () => {
