@@ -29,6 +29,15 @@ export function ResumenClima({ clima }: { clima: ClimaFinca }) {
         </span>
       </div>
 
+      {clima.dias[0] ? (
+        <p className="m-0 mt-2 text-[13px] text-zelanda-verde-900">
+          <strong className="font-semibold">Hoy:</strong> {clima.dias[0].resumen}
+          {clima.dias[1] ? (
+            <span className="text-zelanda-verde-700"> · Mañana: {clima.dias[1].resumen}</span>
+          ) : null}
+        </p>
+      ) : null}
+
       <div className="-mx-1 overflow-x-auto">
         <div className="flex gap-2 px-1">
           {clima.dias.map((d, i) => (
@@ -43,9 +52,10 @@ export function ResumenClima({ clima }: { clima: ClimaFinca }) {
                 {Math.round(d.tmax)}°
               </p>
               <p className="text-[11px] text-zelanda-verde-700">{Math.round(d.tmin)}°</p>
-              <p className="mt-1 text-[11px] text-zelanda-verde-600">
+              <p className="mt-1 text-[11px] font-semibold text-zelanda-verde-600">
                 {Math.round(d.lluvia_mm)} mm
               </p>
+              <p className="text-[10px] text-zelanda-verde-700/70">{Math.round(d.prob_lluvia)}%</p>
             </div>
           ))}
         </div>

@@ -1,7 +1,16 @@
 'use client';
 
-import { CloudRain, Wind, ThermometerSnowflake, CheckCircle2 } from 'lucide-react';
+import { CloudRain, Wind, ThermometerSnowflake, CheckCircle2, Clock } from 'lucide-react';
 import type { ClimaFinca } from '@/lib/jefe/clima';
+import { intensidad } from '@/lib/clima-dia';
+
+/** Cuánta agua cae, en palabras. Un número de mm solo no le dice nada a nadie. */
+const COLOR_INTENSIDAD: Record<string, string> = {
+  seco: 'text-zelanda-verde-700/50',
+  llovizna: 'text-zelanda-verde-700',
+  lluvia: 'text-zelanda-ocre-700',
+  aguacero: 'text-estado-vencida',
+};
 
 const DIAS_CORTO = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -61,22 +70,52 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
         </p>
       ) : null}
 
+      {dias[0] ? (
+        <p className="m-0 mt-2.5 flex items-start gap-1.5 rounded-xl bg-white/70 px-3 py-2 text-[13px] text-zelanda-verde-900">
+          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zelanda-verde-700" aria-hidden />
+          <span>
+            <strong className="font-semibold">Hoy:</strong> {dias[0].resumen}
+          </span>
+        </p>
+      ) : null}
+      {dias[1] ? (
+        <p className="m-0 mt-1 pl-6 text-[12px] text-zelanda-verde-700">
+          Mañana: {dias[1].resumen}
+        </p>
+      ) : null}
+
       <div className="mt-3 grid grid-cols-7 gap-1 text-center">
-        {dias.map((d, i) => (
-          <div key={d.fecha} className="rounded-lg bg-white/70 px-0.5 py-1.5">
-            <p className="m-0 text-[10px] font-semibold text-zelanda-verde-800">
-              {diaCorto(d.fecha, i)}
-            </p>
-            <p className="m-0 mt-0.5 text-[10px] text-zelanda-verde-700">
-              {Math.round(d.prob_lluvia)}%
-            </p>
-            <p className="m-0 text-[10px] text-zelanda-verde-700">{Math.round(d.lluvia_mm)} mm</p>
-            <p className="m-0 mt-0.5 text-[10.5px] text-zelanda-verde-900">
-              {Math.round(d.tmin)}–{Math.round(d.tmax)}°
-            </p>
-          </div>
-        ))}
+        {dias.map((d, i) => {
+          const nivel = intensidad(d.lluvia_mm);
+          return (
+            <div
+              key={d.fecha}
+              className={`rounded-lg bg-white/70 px-0.5 py-1.5 ${
+                d.confianza === 'baja' ? 'opacity-55' : ''
+              }`}
+              title={`${d.resumen} · ${Math.round(d.prob_lluvia)} % de probabilidad media`}
+            >
+              <p className="m-0 text-[10px] font-semibold text-zelanda-verde-800">
+                {diaCorto(d.fecha, i)}
+              </p>
+              <p className={`m-0 mt-0.5 text-[11.5px] font-semibold ${COLOR_INTENSIDAD[nivel]}`}>
+                {Math.round(d.lluvia_mm)}
+                <span className="text-[9px] font-normal"> mm</span>
+              </p>
+              <p className="m-0 text-[9.5px] text-zelanda-verde-700/70">
+                {Math.round(d.prob_lluvia)}%
+              </p>
+              <p className="m-0 mt-0.5 text-[10.5px] text-zelanda-verde-900">
+                {Math.round(d.tmin)}–{Math.round(d.tmax)}°
+              </p>
+            </div>
+          );
+        })}
       </div>
+
+      <p className="m-0 mt-1.5 text-[10px] text-zelanda-verde-700/60">
+        Los días en gris están a más de 4 días: el pronóstico ahí es flojo.
+      </p>
     </div>
   );
 }
