@@ -52,11 +52,20 @@ export default function RootLayout({
         <Script id="zelanda-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function () {
+              function zelandaRegistrarSW() {
                 navigator.serviceWorker.register('/sw.js').catch(function (err) {
                   console.warn('SW registration failed', err);
                 });
-              });
+              }
+              // Este script corre "afterInteractive", que muchas veces es
+              // DESPUÉS de que 'load' ya disparó: engancharse a 'load' a secas
+              // dejaba el listener esperando un evento que ya pasó y el service
+              // worker no se instalaba nunca. Sin él no hay nada offline.
+              if (document.readyState === 'complete') {
+                zelandaRegistrarSW();
+              } else {
+                window.addEventListener('load', zelandaRegistrarSW);
+              }
               // Cuando un SW nuevo toma control (deploy nuevo), recargar una
               // vez: evita quedar con HTML viejo pidiendo chunks que ya no
               // existen, que dejaba la app a medio renderizar. En la primera
