@@ -27,6 +27,7 @@ export function FormularioNovedad({
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
+  const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
   const [pendiente, startTransition] = useTransition();
   const [loteId, setLoteId] = useState<string>(loteInicial ?? '');
   const loteSeleccionado = lotes.find((l) => l.id === loteId);
@@ -82,8 +83,43 @@ export function FormularioNovedad({
         setError(r.error);
         return;
       }
+      if (r.offline) {
+        // /trabajador lo arma el servidor, y sin señal esa navegación termina
+        // en la pantalla de error del navegador. El aviso se da acá mismo.
+        setGuardadoSinSenal(true);
+        return;
+      }
       router.push('/trabajador');
     });
+  }
+
+  if (guardadoSinSenal) {
+    return (
+      <div className="space-y-6 pb-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zelanda-ocre-600/15 text-zelanda-ocre-700">
+          <CloudOff className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl text-zelanda-verde-900">Guardado en el celular</h1>
+          <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
+            No hay señal, así que la novedad —y la foto, si tomaste una— quedó anotada acá y se
+            envía sola apenas vuelva internet. No hace falta que la repitas.
+          </p>
+        </div>
+        <Link
+          href="/trabajador"
+          className="block min-h-touch rounded-xl bg-zelanda-verde-700 px-4 py-3 font-semibold text-zelanda-beige-50 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
+        >
+          Volver a mis tareas
+        </Link>
+        <Link
+          href="/trabajador/pendientes"
+          className="block min-h-touch rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 py-3 font-semibold text-zelanda-verde-800"
+        >
+          Ver lo que falta enviar
+        </Link>
+      </div>
+    );
   }
 
   return (

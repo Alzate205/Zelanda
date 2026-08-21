@@ -22,7 +22,13 @@ import type {
 } from './tipos';
 
 type Resultado =
-  | { ok: true; offline: boolean; id_local: string }
+  | {
+      ok: true;
+      offline: boolean;
+      id_local: string;
+      /** Lo que contestó el servidor, cuando hubo servidor. Sin señal va vacío. */
+      respuesta?: Record<string, unknown>;
+    }
   | { ok: false; error: string; enCola: boolean };
 
 export type PayloadAvance = Omit<
@@ -196,7 +202,8 @@ async function intentarSubirGenerico(
     const clase = clasificarRespuesta(res.status);
     if (clase === 'ok') {
       await marcarSubido(tipo, id_local);
-      return { ok: true, offline: false, id_local };
+      const respuesta = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      return { ok: true, offline: false, id_local, respuesta };
     }
     if (clase === 'permanente') {
       const j = await res.json().catch(() => ({} as { error?: string }));

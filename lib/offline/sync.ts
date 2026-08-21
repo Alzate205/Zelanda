@@ -4,6 +4,8 @@ import {
   marcarSubido,
   marcarFallidoTemp,
   marcarErrorPermanente,
+  reclamarSubiendo,
+  TIPOS_COLA,
   type TipoCola,
 } from './cola';
 import type {
@@ -32,15 +34,6 @@ export type ResumenSync = {
 
 const MAX_INTENTOS = 5;
 const CONCURRENCIA_POR_TIPO = 3;
-
-const TIPOS: TipoCola[] = [
-  'avance',
-  'novedad',
-  'despacho_crear',
-  'despacho_cerrar',
-  'cosecha',
-  'salida',
-];
 
 async function procesarEnParalelo<T>(
   items: T[],
@@ -213,7 +206,10 @@ class SyncEngineImpl {
       resumen.sinSenal = true;
       return resumen;
     }
-    for (const tipo of TIPOS) {
+    // Lo que quedó a medio subir de una corrida anterior vuelve a la cola:
+    // si no, se queda en "subiendo" y no lo reintenta nadie.
+    await reclamarSubiendo();
+    for (const tipo of TIPOS_COLA) {
       await this.procesarTipo(tipo, resumen);
     }
     return resumen;

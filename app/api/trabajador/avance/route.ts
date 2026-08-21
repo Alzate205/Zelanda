@@ -134,7 +134,7 @@ export async function POST(req: Request) {
 
     revalidarSnapshotTrabajador();
     revalidarDashboards();
-    return NextResponse.json({ ok: true, id: String(creado.id) });
+    return NextResponse.json({ ok: true, id: String(creado.id), completada: true });
   }
 
   if (asignacion.lote_id === null) {
@@ -225,5 +225,5 @@ export async function POST(req: Request) {
 
   revalidarSnapshotTrabajador();
   revalidarDashboards();
-  return NextResponse.json({ ok: true, id: String(creado.id) });
+  return NextResponse.json({ ok: true, id: String(creado.id), completada: debeCompletar });
 }

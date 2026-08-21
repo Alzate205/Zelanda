@@ -18,6 +18,16 @@ export type TipoCola =
   | 'cosecha'
   | 'salida';
 
+/** Todos los tipos de cola, en el orden en que se procesan. */
+export const TIPOS_COLA: TipoCola[] = [
+  'avance',
+  'novedad',
+  'despacho_crear',
+  'despacho_cerrar',
+  'cosecha',
+  'salida',
+];
+
 type ItemCola =
   | ItemColaAvance
   | ItemColaNovedad
@@ -252,6 +262,34 @@ export async function marcarErrorPermanente(
   error: string
 ): Promise<void> {
   await actualizarEstado(tipo, id_local, { estado: 'error_permanente', ultimo_error: error });
+}
+
+/**
+ * Devuelve a la cola lo que quedó marcado como "subiendo".
+ *
+ * Un item se marca "subiendo" justo antes de mandarlo. Si el celular navega a
+ * otra pantalla, se cierra la app o se apaga en ese momento, la subida se
+ * aborta y nadie vuelve a escribir su estado: el item queda en "subiendo" para
+ * siempre, y como la cola solo reintenta lo que está "pendiente", ese registro
+ * —con su foto— no se sube nunca más.
+ *
+ * Se llama al empezar cada corrida, cuando por definición no hay ninguna
+ * subida nuestra en vuelo. Reintentar de más es inofensivo: el servidor
+ * descarta los duplicados por `id_local`.
+ */
+export async function reclamarSubiendo(): Promise<number> {
+  const db = await abrirDb();
+  let reclamados = 0;
+  for (const tipo of TIPOS_COLA) {
+    const store = nombreStore(tipo);
+    const varados = await db.getAllFromIndex(store, 'por_estado', 'subiendo');
+    for (const item of varados) {
+      await db.put(store, { ...item, estado: 'pendiente' } as ItemCola);
+      reclamados += 1;
+    }
+  }
+  if (reclamados > 0) emitirCambio();
+  return reclamados;
 }
 
 export async function reintentar(tipo: TipoCola, id_local: string): Promise<void> {

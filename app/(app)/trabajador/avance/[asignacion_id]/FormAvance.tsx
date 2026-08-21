@@ -78,6 +78,9 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const [paso, setPaso] = useState<Paso>('inicio');
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
   const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
+  const [avanceAnotado, setAvanceAnotado] = useState(false);
+  /** Cuántos árboles entraron en el último registro, para poder contárselo. */
+  const [ultimoLote, setUltimoLote] = useState(0);
 
   const total = asignacion.totalArboles ?? 0;
   // El árbol donde arranca el tramo se calcula solo: el trabajador nunca lo escribe.
@@ -111,6 +114,8 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(j.error ?? `Error ${res.status}`);
           return;
         }
+        // La cosecha de miel cierra la tarea, así que la pantalla de éxito
+        // sí existe.
         router.push(`/trabajador/exito/${asignacion.id}`);
       });
       return;
@@ -200,13 +205,54 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         setGuardadoSinSenal(true);
         return;
       }
-      router.push(`/trabajador/exito/${asignacion.id}`);
+      // La pantalla de éxito solo existe si la tarea quedó cerrada. Mandarlo
+      // allá tras un avance parcial lo rebotaba al inicio sin decirle nada, y
+      // el trabajador se quedaba sin saber si su trabajo quedó anotado.
+      if (r.respuesta?.completada === true) {
+        router.push(`/trabajador/exito/${asignacion.id}`);
+        return;
+      }
+      setUltimoLote(
+        arboles_lista.length > 0
+          ? arboles_lista.length
+          : arbol_desde !== null && arbol_hasta !== null
+          ? arbol_hasta - arbol_desde + 1
+          : 0
+      );
+      setAvanceAnotado(true);
     });
   }
 
   const destino = esCultivo
     ? `Lote ${asignacion.loteNombre}`
     : `Apiario ${asignacion.apiarioNombre}`;
+
+  if (avanceAnotado) {
+    const total = asignacion.totalArboles ?? 0;
+    const hechos = Math.min(asignacion.arbolesCompletados + ultimoLote, total || Infinity);
+    const faltan = total > 0 ? Math.max(0, total - hechos) : null;
+    return (
+      <div className="space-y-6 pb-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-estado-aldia/15 text-estado-aldia">
+          <Check className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl text-zelanda-verde-900">Anotado</h1>
+          <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
+            {faltan !== null && faltan > 0
+              ? `Llevás ${hechos} de ${total} árboles. Te faltan ${faltan}.`
+              : 'Tu avance quedó registrado.'}
+          </p>
+        </div>
+        <Link href={`/trabajador/avance/${asignacion.id}`} className={botonPrimario}>
+          Seguir con esta tarea
+        </Link>
+        <Link href="/trabajador" className={botonSecundario}>
+          Volver a mis tareas
+        </Link>
+      </div>
+    );
+  }
 
   if (guardadoSinSenal) {
     return (
