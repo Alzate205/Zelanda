@@ -205,6 +205,19 @@ async function actualizarEstado(
   emitirCambio();
 }
 
+/**
+ * Escribe campos sueltos de un item sin tocar su estado en la cola.
+ * Lo usa la subida de fotos para guardar el path ya resuelto (y soltar el blob)
+ * antes de mandar el registro.
+ */
+export async function parchearItem(
+  tipo: TipoCola,
+  id_local: string,
+  parche: Partial<ItemCola>
+): Promise<void> {
+  await actualizarEstado(tipo, id_local, parche);
+}
+
 export async function marcarSubiendo(tipo: TipoCola, id_local: string): Promise<void> {
   await actualizarEstado(tipo, id_local, { estado: 'subiendo' });
 }

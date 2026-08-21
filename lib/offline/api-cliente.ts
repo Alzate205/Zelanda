@@ -1,5 +1,6 @@
 import { generarUuid } from './uuid';
 import { clasificarRespuesta } from './clasificar';
+import { llevaFoto, resolverFotoDeItem } from './foto';
 import {
   encolarAvance,
   encolarNovedad,
@@ -49,6 +50,17 @@ export type PayloadSalida = Omit<
   'id_local' | 'estado' | 'intentos' | 'ultimo_error' | 'creado_en'
 >;
 
+/**
+ * El blob de la foto vive solo en IndexedDB: mandarlo en el JSON lo convertiría
+ * en `{}` y ensuciaría el cuerpo. El path lo agrega intentarSubirGenerico.
+ */
+function sinFoto<T extends object>(payload: T): Omit<T, 'foto_blob' | 'foto_nombre'> {
+  const resto = { ...payload } as Record<string, unknown>;
+  delete resto.foto_blob;
+  delete resto.foto_nombre;
+  return resto as Omit<T, 'foto_blob' | 'foto_nombre'>;
+}
+
 export async function enviarAvance(payload: PayloadAvance): Promise<Resultado> {
   const id_local = generarUuid();
   const item: ItemColaAvance = {
@@ -62,7 +74,7 @@ export async function enviarAvance(payload: PayloadAvance): Promise<Resultado> {
   await encolarAvance(item);
   return intentarSubirGenerico(
     '/api/trabajador/avance',
-    { ...payload, id_local },
+    sinFoto({ ...payload, id_local }),
     'avance',
     id_local
   );
@@ -81,7 +93,7 @@ export async function enviarNovedad(payload: PayloadNovedad): Promise<Resultado>
   await encolarNovedad(item);
   return intentarSubirGenerico(
     '/api/trabajador/novedad',
-    { ...payload, id_local },
+    sinFoto({ ...payload, id_local }),
     'novedad',
     id_local
   );
@@ -167,11 +179,19 @@ async function intentarSubirGenerico(
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return { ok: true, offline: true, id_local };
   }
+  let cuerpo = body;
+  if (llevaFoto(tipo)) {
+    // Si la foto no sube ahora, el registro entero espera en la cola con ella:
+    // así el trabajador nunca queda con un reporte sin la foto que tomó.
+    const r = await resolverFotoDeItem(tipo, id_local);
+    if (!r.ok) return { ok: true, offline: true, id_local };
+    cuerpo = { ...(body as object), foto_path: r.foto_path };
+  }
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(cuerpo),
     });
     const clase = clasificarRespuesta(res.status);
     if (clase === 'ok') {

@@ -17,6 +17,7 @@ import type {
 import { captureException } from '@/lib/sentry';
 import { clasificarRespuesta } from './clasificar';
 import { esDeLaSesion, usuarioLocal } from './sesion';
+import { llevaFoto, resolverFotoDeItem } from './foto';
 
 /** Lo que pasó en una corrida, para poder decírselo al que apretó el botón. */
 export type ResumenSync = {
@@ -80,6 +81,7 @@ function payloadNovedad(i: ItemColaNovedad) {
     numero_placa: i.numero_placa,
     tipo: i.tipo,
     descripcion: i.descripcion,
+    foto_path: i.foto_path ?? null,
   };
 }
 
@@ -243,7 +245,20 @@ class SyncEngineImpl {
     }
     await marcarSubiendo(tipo, item.id_local);
     try {
-      const body = payloadDeItem(tipo, item);
+      // La foto va primero: el registro no se manda hasta que ella tenga path,
+      // porque mandarlo antes lo dejaría para siempre sin la foto que se tomó.
+      let conFoto: object = item;
+      if (llevaFoto(tipo)) {
+        const r = await resolverFotoDeItem(tipo, item.id_local);
+        if (!r.ok) {
+          await marcarFallidoTemp(tipo, item.id_local, r.error);
+          resumen.pendientes += 1;
+          resumen.ultimoError = r.error;
+          return;
+        }
+        conFoto = { ...item, foto_path: r.foto_path };
+      }
+      const body = payloadDeItem(tipo, conFoto);
       const res = await fetch(endpointPara(tipo), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

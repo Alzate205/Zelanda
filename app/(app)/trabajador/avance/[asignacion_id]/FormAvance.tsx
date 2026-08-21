@@ -71,7 +71,6 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
-  const [fotoFallo, setFotoFallo] = useState(false);
   const [pendiente, startTransition] = useTransition();
   const esCultivo = asignacion.area === 'CULTIVO';
   const esCosechaMiel = asignacion.esCosechaMiel;
@@ -86,33 +85,13 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
 
   function irA(p: Paso) {
     setError(null);
-    setFotoFallo(false);
     setPaso(p);
-  }
-
-  /** Sube la foto si la hay. Devuelve el path, o `false` si falló el envío. */
-  async function resolverFoto(formData: FormData): Promise<string | null | false> {
-    const foto = formData.get('foto');
-    if (!(foto instanceof File) || foto.size === 0) return null;
-    if (!online) return false;
-    try {
-      const fd = new FormData();
-      fd.append('foto', foto);
-      const res = await fetch('/api/trabajador/foto-avance', { method: 'POST', body: fd });
-      if (!res.ok) return false;
-      const j = (await res.json()) as { path?: string };
-      return j.path ?? false;
-    } catch {
-      return false;
-    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
-    const sinFoto = submitter?.getAttribute('name') === 'sin_foto';
     const observaciones = String(formData.get('observaciones') ?? '').trim() || null;
 
     if (esCosechaMiel) {
@@ -192,15 +171,11 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
     }
 
     startTransition(async () => {
-      let foto_path: string | null = null;
-      if (!sinFoto) {
-        const resultadoFoto = await resolverFoto(formData);
-        if (resultadoFoto === false) {
-          setFotoFallo(true);
-          return;
-        }
-        foto_path = resultadoFoto;
-      }
+      // La foto viaja con el registro: se sube ahora si hay señal y si no
+      // espera en el celular. En el lote casi nunca hay señal, y exigirla
+      // obligaba a elegir entre la foto y el trabajo.
+      const foto = formData.get('foto');
+      const hayFoto = foto instanceof File && foto.size > 0;
 
       const r = await enviarAvance({
         asignacion_id: asignacion.id,
@@ -210,7 +185,9 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         arboles_lista,
         observaciones,
         estado_apiario: esVisitaApiario ? estadoApiario : null,
-        foto_path,
+        foto_blob: hayFoto ? (foto as File) : null,
+        foto_nombre: hayFoto ? (foto as File).name : null,
+        foto_path: null,
       });
       if (!r.ok) {
         setError(r.error);
@@ -493,23 +470,6 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           <CloudOff className="h-5 w-5 shrink-0" />
           Sin señal. La cosecha de miel necesita señal para registrarse.
         </p>
-      ) : null}
-
-      {fotoFallo ? (
-        <div className="space-y-3 rounded-xl border-2 border-zelanda-ocre-300 bg-zelanda-ocre-50 p-4">
-          <p role="alert" className="text-sm text-zelanda-ocre-700">
-            No se pudo subir la foto. Intenta otra vez, o guarda el trabajo sin la foto.
-          </p>
-          <button
-            type="submit"
-            name="sin_foto"
-            value="1"
-            disabled={pendiente}
-            className={botonSecundario}
-          >
-            Guardar sin la foto
-          </button>
-        </div>
       ) : null}
 
       {error ? (

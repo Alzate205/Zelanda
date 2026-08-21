@@ -1,36 +1,41 @@
-import { NextResponse } from "next/server";
-import { obtenerUsuarioActual } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { obtenerUsuarioActual } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { pathFotoValido } from '@/lib/fotos-path';
 
 type Body = {
   id_local: string;
   lote_id: string;
   numero_placa: number;
-  tipo: "PLAGA" | "DANO_FISICO" | "ENFERMEDAD" | "OBSERVACION" | "OTRO";
+  tipo: 'PLAGA' | 'DANO_FISICO' | 'ENFERMEDAD' | 'OBSERVACION' | 'OTRO';
   descripcion: string;
+  foto_path?: string | null;
 };
 
 function esUuid(s: unknown): s is string {
-  return typeof s === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  return (
+    typeof s === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+  );
 }
 
-const TIPOS_VALIDOS = ["PLAGA", "DANO_FISICO", "ENFERMEDAD", "OBSERVACION", "OTRO"];
+const TIPOS_VALIDOS = ['PLAGA', 'DANO_FISICO', 'ENFERMEDAD', 'OBSERVACION', 'OTRO'];
 
 export async function POST(req: Request) {
   const usuario = await obtenerUsuarioActual();
   if (!usuario || usuario.persona_id === null) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
   let body: Body;
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'JSON inválido' }, { status: 400 });
   }
 
   if (!esUuid(body.id_local)) {
-    return NextResponse.json({ error: "id_local inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'id_local inválido' }, { status: 400 });
   }
 
   const existente = await prisma.novedades.findUnique({
@@ -42,17 +47,17 @@ export async function POST(req: Request) {
   }
 
   if (!/^\d+$/.test(body.lote_id)) {
-    return NextResponse.json({ error: "lote_id inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'lote_id inválido' }, { status: 400 });
   }
   if (!Number.isInteger(body.numero_placa) || body.numero_placa < 1) {
-    return NextResponse.json({ error: "numero_placa inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'numero_placa inválido' }, { status: 400 });
   }
   if (!TIPOS_VALIDOS.includes(body.tipo)) {
-    return NextResponse.json({ error: "tipo inválido" }, { status: 400 });
+    return NextResponse.json({ error: 'tipo inválido' }, { status: 400 });
   }
   const descripcion = body.descripcion?.trim();
   if (!descripcion) {
-    return NextResponse.json({ error: "Descripción obligatoria" }, { status: 400 });
+    return NextResponse.json({ error: 'Descripción obligatoria' }, { status: 400 });
   }
 
   const arbol = await prisma.arboles.findFirst({
@@ -62,7 +67,7 @@ export async function POST(req: Request) {
   if (!arbol) {
     return NextResponse.json(
       { error: `No existe el árbol ${body.numero_placa} en ese lote` },
-      { status: 404 },
+      { status: 404 }
     );
   }
 
@@ -73,7 +78,7 @@ export async function POST(req: Request) {
       persona_id: BigInt(usuario.persona_id),
       tipo: body.tipo,
       descripcion,
-      foto_path: null,
+      foto_path: pathFotoValido(body.foto_path, 'novedades'),
       resuelta: false,
     },
   });
@@ -81,22 +86,22 @@ export async function POST(req: Request) {
   // Push a jefes (best effort)
   try {
     const ETIQUETA: Record<string, string> = {
-      PLAGA: "Plaga",
-      DANO_FISICO: "Daño físico",
-      ENFERMEDAD: "Enfermedad",
-      OBSERVACION: "Observación",
-      OTRO: "Otro",
+      PLAGA: 'Plaga',
+      DANO_FISICO: 'Daño físico',
+      ENFERMEDAD: 'Enfermedad',
+      OBSERVACION: 'Observación',
+      OTRO: 'Otro',
     };
     const detalle = await prisma.arboles.findUnique({
       where: { id: arbol.id },
       select: { numero_placa: true, lotes: { select: { nombre: true } } },
     });
     const jefes = await prisma.usuarios.findMany({
-      where: { rol: "JEFE", activo: true },
+      where: { rol: 'JEFE', activo: true },
       select: { id: true },
     });
     if (detalle && jefes.length > 0) {
-      const { enviarPushAUsuarios } = await import("@/lib/push/enviar");
+      const { enviarPushAUsuarios } = await import('@/lib/push/enviar');
       await enviarPushAUsuarios(
         jefes.map((j) => j.id),
         {
@@ -104,11 +109,11 @@ export async function POST(req: Request) {
           cuerpo: `Árbol ${detalle.numero_placa} · Lote ${detalle.lotes.nombre}`,
           url: `/jefe/novedades/${creada.id}`,
           tag: `novedad-${creada.id}`,
-        },
+        }
       );
     }
   } catch (e) {
-    console.warn("Push novedad falló:", e);
+    console.warn('Push novedad falló:', e);
   }
 
   return NextResponse.json({ ok: true, id: String(creada.id) });

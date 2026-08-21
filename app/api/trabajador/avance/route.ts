@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidarSnapshotTrabajador, revalidarDashboards } from '@/lib/revalidar';
+import { pathFotoValido } from '@/lib/fotos-path';
 
 type Body = {
   id_local: string;
@@ -17,9 +18,7 @@ type Body = {
 
 // La foto ya se subió a Storage vía /api/trabajador/foto-avance; acá solo llega la ruta.
 function fotoValida(v: unknown): string | null {
-  if (typeof v !== 'string') return null;
-  const p = v.trim();
-  return p.startsWith('avance/') && p.length <= 300 ? p : null;
+  return pathFotoValido(v, 'avance');
 }
 
 function esUuid(s: unknown): s is string {
