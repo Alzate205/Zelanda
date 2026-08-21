@@ -1,24 +1,17 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import { ingresarStock, type EstadoEdicion } from "../../../acciones";
+import { useActionState } from 'react';
+import { ingresarStock, type EstadoEdicion } from '../../../acciones';
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
 
-export function FormularioIngresoStock({
-  insumoId,
-  unidad,
-}: {
-  insumoId: string;
-  unidad: string;
-}) {
-  const [estado, formAction, pending] = useActionState(
-    ingresarStock,
-    ESTADO_INICIAL,
-  );
+export function FormularioIngresoStock({ insumoId, unidad }: { insumoId: string; unidad: string }) {
+  const [estado, formAction, pending] = useActionState(ingresarStock, ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="space-y-4">
+    // Sin la barra "Listo": el campo tiene autoFocus, así que aparecía de
+    // entrada tapando "Registrar ingreso" y había que cerrarla para guardar.
+    <form action={formAction} className="space-y-4" data-sin-barra-listo>
       <input type="hidden" name="insumo_id" value={insumoId} />
 
       <div>
@@ -61,7 +54,7 @@ export function FormularioIngresoStock({
         disabled={pending}
         className="flex min-h-touch w-full items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
       >
-        {pending ? "Registrando..." : "Registrar ingreso"}
+        {pending ? 'Registrando...' : 'Registrar ingreso'}
       </button>
     </form>
   );
