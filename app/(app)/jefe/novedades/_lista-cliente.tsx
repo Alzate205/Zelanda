@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
-import { BadgeBase } from "@/components/shared/BadgeRol";
-import { formatearFechaCorta } from "@/lib/utils";
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ChevronRight, Search, CheckCircle2, Archive } from 'lucide-react';
+import { BadgeBase } from '@/components/shared/BadgeRol';
+import { formatearFechaCorta } from '@/lib/utils';
 
 export type NovedadResumen = {
   id: string;
@@ -18,22 +18,22 @@ export type NovedadResumen = {
 };
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
-  PLAGA: "Plaga",
-  DANO_FISICO: "Daño físico",
-  ENFERMEDAD: "Enfermedad",
-  OBSERVACION: "Observación",
-  OTRO: "Otro",
+  PLAGA: 'Plaga',
+  DANO_FISICO: 'Daño físico',
+  ENFERMEDAD: 'Enfermedad',
+  OBSERVACION: 'Observación',
+  OTRO: 'Otro',
 };
 
-type FiltroTipo = "TODOS" | keyof typeof ETIQUETA_NOVEDAD;
+type FiltroTipo = 'TODOS' | keyof typeof ETIQUETA_NOVEDAD;
 
 const ORDEN_FILTRO: FiltroTipo[] = [
-  "TODOS",
-  "PLAGA",
-  "DANO_FISICO",
-  "ENFERMEDAD",
-  "OBSERVACION",
-  "OTRO",
+  'TODOS',
+  'PLAGA',
+  'DANO_FISICO',
+  'ENFERMEDAD',
+  'OBSERVACION',
+  'OTRO',
 ];
 
 export function ListaNovedadesCliente({
@@ -43,15 +43,16 @@ export function ListaNovedadesCliente({
   novedades: NovedadResumen[];
   verResueltas: boolean;
 }) {
-  const [query, setQuery] = useState("");
-  const [tipo, setTipo] = useState<FiltroTipo>("TODOS");
+  const [query, setQuery] = useState('');
+  const [tipo, setTipo] = useState<FiltroTipo>('TODOS');
 
   const filtradas = useMemo(() => {
     const q = query.trim().toLowerCase();
     return novedades.filter((n) => {
-      if (tipo !== "TODOS" && n.tipo !== tipo) return false;
-      if (q !== "") {
-        const blob = `${n.descripcion} ${n.lote_nombre} ${n.persona_nombre} arbol ${n.arbol_numero}`.toLowerCase();
+      if (tipo !== 'TODOS' && n.tipo !== tipo) return false;
+      if (q !== '') {
+        const blob =
+          `${n.descripcion} ${n.lote_nombre} ${n.persona_nombre} arbol ${n.arbol_numero}`.toLowerCase();
         if (!blob.includes(q)) return false;
       }
       return true;
@@ -60,7 +61,7 @@ export function ListaNovedadesCliente({
 
   const total = novedades.length;
   const filtrado = filtradas.length;
-  const hayFiltros = query.trim() !== "" || tipo !== "TODOS";
+  const hayFiltros = query.trim() !== '' || tipo !== 'TODOS';
 
   return (
     <div className="space-y-4">
@@ -69,8 +70,8 @@ export function ListaNovedadesCliente({
           href="/jefe/novedades"
           className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
             !verResueltas
-              ? "bg-zelanda-verde-700 text-zelanda-beige-50"
-              : "border border-zelanda-beige-300 text-zelanda-verde-700 hover:bg-zelanda-beige-100"
+              ? 'bg-zelanda-verde-700 text-zelanda-beige-50'
+              : 'border border-zelanda-beige-300 text-zelanda-verde-700 hover:bg-zelanda-beige-100'
           }`}
         >
           Pendientes
@@ -79,8 +80,8 @@ export function ListaNovedadesCliente({
           href="/jefe/novedades?resueltas=si"
           className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
             verResueltas
-              ? "bg-zelanda-verde-700 text-zelanda-beige-50"
-              : "border border-zelanda-beige-300 text-zelanda-verde-700 hover:bg-zelanda-beige-100"
+              ? 'bg-zelanda-verde-700 text-zelanda-beige-50'
+              : 'border border-zelanda-beige-300 text-zelanda-verde-700 hover:bg-zelanda-beige-100'
           }`}
         >
           Resueltas
@@ -107,11 +108,11 @@ export function ListaNovedadesCliente({
                 onClick={() => setTipo(t)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   tipo === t
-                    ? "bg-zelanda-verde-700 text-white"
-                    : "border border-zelanda-beige-300 bg-white text-zelanda-verde-700"
+                    ? 'bg-zelanda-verde-700 text-white'
+                    : 'border border-zelanda-beige-300 bg-white text-zelanda-verde-700'
                 }`}
               >
-                {t === "TODOS" ? "Todas" : ETIQUETA_NOVEDAD[t]}
+                {t === 'TODOS' ? 'Todas' : ETIQUETA_NOVEDAD[t]}
               </button>
             ))}
           </div>
@@ -119,8 +120,8 @@ export function ListaNovedadesCliente({
             <button
               type="button"
               onClick={() => {
-                setQuery("");
-                setTipo("TODOS");
+                setQuery('');
+                setTipo('TODOS');
               }}
               className="text-xs text-zelanda-verde-700 underline hover:text-zelanda-verde-900"
             >
@@ -129,18 +130,37 @@ export function ListaNovedadesCliente({
           ) : null}
           <p className="text-xs text-zelanda-verde-700">
             {hayFiltros
-              ? `${filtrado} de ${total} novedad${total === 1 ? "" : "es"}`
-              : `${total} novedad${total === 1 ? "" : "es"}`}
+              ? `${filtrado} de ${total} novedad${total === 1 ? '' : 'es'}`
+              : `${total} novedad${total === 1 ? '' : 'es'}`}
           </p>
         </div>
       ) : null}
 
       <ul className="space-y-2">
         {total === 0 ? (
-          <li className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
-            {verResueltas
-              ? "No hay novedades resueltas."
-              : "No hay novedades pendientes."}
+          <li className="rounded-2xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center">
+            {verResueltas ? (
+              <>
+                <Archive className="mx-auto h-8 w-8 text-zelanda-verde-700/40" />
+                <p className="mt-3 font-serif text-base text-zelanda-verde-900">
+                  Todavía no hay novedades resueltas
+                </p>
+                <p className="mt-1 text-sm text-zelanda-verde-700">
+                  Acá van quedando las que marques como resueltas, para poder mirarlas después.
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="mx-auto h-8 w-8 text-zelanda-verde-600/60" />
+                <p className="mt-3 font-serif text-base text-zelanda-verde-900">
+                  Ninguna novedad sin resolver
+                </p>
+                <p className="mt-1 text-sm text-zelanda-verde-700">
+                  Cuando un trabajador reporte algo raro en un árbol —plaga, daño, enfermedad— te
+                  aparece acá.
+                </p>
+              </>
+            )}
           </li>
         ) : filtrado === 0 ? (
           <li className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-8 text-center text-sm text-zelanda-verde-700/70">
@@ -152,13 +172,10 @@ export function ListaNovedadesCliente({
               key={n.id}
               className="rounded-xl border border-zelanda-beige-200 bg-white p-3 shadow-suave"
             >
-              <Link
-                href={`/jefe/novedades/${n.id}`}
-                className="flex items-center gap-3"
-              >
+              <Link href={`/jefe/novedades/${n.id}`} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <BadgeBase tono={n.resuelta ? "info" : "alerta"}>
+                    <BadgeBase tono={n.resuelta ? 'info' : 'alerta'}>
                       {ETIQUETA_NOVEDAD[n.tipo] ?? n.tipo}
                     </BadgeBase>
                     <span className="text-xs text-zelanda-verde-700">
@@ -168,12 +185,8 @@ export function ListaNovedadesCliente({
                   <p className="mt-1 truncate text-sm font-medium text-zelanda-verde-900">
                     Árbol {n.arbol_numero} · Lote {n.lote_nombre}
                   </p>
-                  <p className="truncate text-xs text-zelanda-verde-700">
-                    {n.descripcion}
-                  </p>
-                  <p className="mt-0.5 text-xs text-zelanda-verde-700/80">
-                    por {n.persona_nombre}
-                  </p>
+                  <p className="truncate text-xs text-zelanda-verde-700">{n.descripcion}</p>
+                  <p className="mt-0.5 text-xs text-zelanda-verde-700/80">por {n.persona_nombre}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-zelanda-verde-700/40" />
               </Link>

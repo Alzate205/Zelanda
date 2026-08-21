@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { requerirUsuario } from '@/lib/auth';
 import { sanitizarError } from '@/lib/errores';
+import { parsearMontoCop } from '@/lib/monto';
 
 export type EstadoJornal = { error: string | null };
 
@@ -35,9 +36,15 @@ export async function crearJornal(_prev: EstadoJornal, formData: FormData): Prom
     return { error: 'Fecha inválida.' };
   }
 
-  const tarifa = Number(tarifaRaw.replace(/\./g, ''));
-  if (!Number.isFinite(tarifa) || tarifa < 0) {
-    return { error: 'Tarifa inválida.' };
+  const tarifa = parsearMontoCop(tarifaRaw);
+  if (tarifa === null) {
+    return { error: 'Escribí cuánto se le paga por el día.' };
+  }
+  if (tarifa <= 0) {
+    return { error: 'La tarifa del jornal debe ser mayor a 0.' };
+  }
+  if (tarifa > 500_000_000) {
+    return { error: 'Tarifa fuera de rango (máximo 500.000.000 COP).' };
   }
 
   const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;
@@ -81,9 +88,15 @@ export async function editarJornal(_prev: EstadoJornal, formData: FormData): Pro
   const descripcion = String(formData.get('descripcion_actividad') ?? '').trim();
   const notas = String(formData.get('notas') ?? '').trim();
 
-  const tarifa = Number(tarifaRaw.replace(/\./g, ''));
-  if (!Number.isFinite(tarifa) || tarifa < 0) {
-    return { error: 'Tarifa inválida.' };
+  const tarifa = parsearMontoCop(tarifaRaw);
+  if (tarifa === null) {
+    return { error: 'Escribí cuánto se le paga por el día.' };
+  }
+  if (tarifa <= 0) {
+    return { error: 'La tarifa del jornal debe ser mayor a 0.' };
+  }
+  if (tarifa > 500_000_000) {
+    return { error: 'Tarifa fuera de rango (máximo 500.000.000 COP).' };
   }
 
   const loteId = loteIdRaw ? parsearId(loteIdRaw) : null;

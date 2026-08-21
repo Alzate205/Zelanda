@@ -7,6 +7,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { sanitizarError } from '@/lib/errores';
 import { hoyEnBogota } from '@/lib/fecha';
 import type { esquema_pago_actividad } from '@prisma/client';
+import { parsearMontoCop } from '@/lib/monto';
 
 export type EstadoTarifa = { error: string | null };
 
@@ -44,9 +45,12 @@ export async function crearTarifa(_prev: EstadoTarifa, formData: FormData): Prom
   if (!ESQUEMAS_VALIDOS.includes(esquemaRaw as esquema_pago_actividad)) {
     return { error: 'Esquema de pago inválido.' };
   }
-  const monto = Number(montoRaw.replace(/\./g, ''));
-  if (!Number.isFinite(monto) || monto < 0) {
-    return { error: 'Monto inválido.' };
+  const monto = parsearMontoCop(montoRaw);
+  if (monto === null) {
+    return { error: 'Escribí el monto de la tarifa.' };
+  }
+  if (monto <= 0) {
+    return { error: 'La tarifa debe ser mayor a 0.' };
   }
   if (!desdeRaw) return { error: 'Elegí la fecha desde la cual rige.' };
   const desde = new Date(`${desdeRaw}T00:00:00`);
@@ -107,9 +111,12 @@ export async function editarTarifa(_prev: EstadoTarifa, formData: FormData): Pro
   if (!ESQUEMAS_VALIDOS.includes(esquemaRaw as esquema_pago_actividad)) {
     return { error: 'Esquema de pago inválido.' };
   }
-  const monto = Number(montoRaw.replace(/\./g, ''));
-  if (!Number.isFinite(monto) || monto < 0) {
-    return { error: 'Monto inválido.' };
+  const monto = parsearMontoCop(montoRaw);
+  if (monto === null) {
+    return { error: 'Escribí el monto de la tarifa.' };
+  }
+  if (monto <= 0) {
+    return { error: 'La tarifa debe ser mayor a 0.' };
   }
   if (!desdeRaw) return { error: 'Elegí la fecha desde la cual rige.' };
   const desde = new Date(`${desdeRaw}T00:00:00`);
