@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { Hexagon, Map as MapIcon, Plus } from 'lucide-react';
+import { Map as MapIcon, Plus } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { obtenerGeoFinca } from '@/lib/geo-finca';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Badge } from '@/components/ui/Badge';
 import { formatearDecimal } from '@/lib/formatos';
+import { TarjetaApiario } from '@/components/jefe/TarjetaApiario';
 
 export const metadata = { title: 'Lotes' };
 
@@ -108,20 +109,15 @@ export default async function PaginaLotes() {
         </h2>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {apiariosParaMapa.map((a) => (
-            <Link
+            <TarjetaApiario
               key={a.id}
-              href={`/jefe/apiarios/${a.id}`}
-              className="block rounded-2xl border border-zelanda-beige-200 bg-white p-3.5 shadow-suave transition hover:border-zelanda-verde-300 hover:shadow-card"
-            >
-              <div className="flex items-center gap-2">
-                <Hexagon className="h-4 w-4 shrink-0 text-zelanda-ocre-500" />
-                <h3 className="font-serif text-lg text-zelanda-verde-900">{a.nombre}</h3>
-              </div>
-              <div className="mt-1 text-xs text-zelanda-verde-700">
-                {a.total_colmenas} colmenas
-                {a.ubicacion_descripcion ? ` · ${a.ubicacion_descripcion}` : ''}
-              </div>
-            </Link>
+              apiario={{
+                id: String(a.id),
+                nombre: a.nombre,
+                total_colmenas: a.total_colmenas,
+                ubicacion_descripcion: a.ubicacion_descripcion ?? null,
+              }}
+            />
           ))}
         </div>
       </section>
