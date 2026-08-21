@@ -211,6 +211,13 @@ export async function recolectarDatosFinca(): Promise<DatosInforme> {
     clima: clima
       ? {
           lluvia_7dias_mm: clima.lluvia_7dias_mm,
+          balance_agua: clima.balance
+            ? {
+                acumulado_mm: clima.balance.acumulado_mm,
+                estado: clima.balance.estado,
+                resumen: clima.balance.resumen,
+              }
+            : null,
           dias: clima.dias.map((d) => ({
             fecha: d.fecha,
             tmin: d.tmin,

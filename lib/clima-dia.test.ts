@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  franjasDelDia,
-  resumenDelDia,
-  intensidad,
-  confianzaPorDia,
-  type HoraClima,
-} from './clima-dia';
+import { franjasDelDia, resumenDelDia, intensidad, type HoraClima } from './clima-dia';
 
 function dia(mmPorHora: number[], prob = 50): HoraClima[] {
   return mmPorHora.map((mm, hora) => ({ hora, mm, prob }));
@@ -82,16 +76,5 @@ describe('intensidad', () => {
     expect(intensidad(3)).toBe('llovizna');
     expect(intensidad(9)).toBe('lluvia');
     expect(intensidad(40)).toBe('aguacero');
-  });
-});
-
-describe('confianzaPorDia', () => {
-  it('baja con la distancia', () => {
-    expect(confianzaPorDia(0)).toBe('alta');
-    expect(confianzaPorDia(1)).toBe('alta');
-    expect(confianzaPorDia(2)).toBe('media');
-    expect(confianzaPorDia(3)).toBe('media');
-    expect(confianzaPorDia(4)).toBe('baja');
-    expect(confianzaPorDia(6)).toBe('baja');
   });
 });

@@ -37,6 +37,12 @@ test.describe.serial('La foto se puede tomar sin señal', () => {
     await login(page);
     await page.goto('/trabajador/novedad/nueva', { waitUntil: 'domcontentloaded' });
 
+    // Esperar a que hidrate antes de cortar la señal. El aviso de "sin señal"
+    // lo pinta el cliente: en una máquina lenta el test alcanzaba a mirar el
+    // HTML del servidor, que todavía dice "la foto se sube ahora", y fallaba
+    // por una carrera suya y no por un fallo de la app.
+    await page.waitForLoadState('networkidle');
+
     // Se corta la señal ANTES de tocar el formulario: es el caso del lote.
     await ctx.setOffline(true);
     await page.waitForFunction(() => navigator.onLine === false, null, { timeout: 20_000 });

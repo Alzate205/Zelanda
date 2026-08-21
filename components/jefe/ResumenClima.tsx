@@ -29,6 +29,22 @@ export function ResumenClima({ clima }: { clima: ClimaFinca }) {
         </span>
       </div>
 
+      {clima.hongos?.pudricion_raiz || clima.hongos?.antracnosis ? (
+        <p className="m-0 mt-2 rounded-xl bg-estado-vencida/10 px-3 py-2 text-[13px] text-estado-vencida">
+          <strong className="font-semibold">Sanidad:</strong>{' '}
+          {clima.hongos.pudricion_raiz
+            ? 'suelo encharcado, riesgo de pudrición de raíz. Revisá drenajes antes de volver a regar.'
+            : 'follaje mojado y humedad alta, riesgo de antracnosis. Revisá la fruta próxima a cosecha.'}
+        </p>
+      ) : null}
+
+      {clima.balance ? (
+        <p className="m-0 mt-2 text-[13px] text-zelanda-verde-900">
+          <strong className="font-semibold">Agua del lote</strong>{' '}
+          <span className="text-zelanda-verde-700">(últimos 7 días):</span> {clima.balance.resumen}
+        </p>
+      ) : null}
+
       {clima.dias[0] ? (
         <p className="m-0 mt-2 text-[13px] text-zelanda-verde-900">
           <strong className="font-semibold">Hoy:</strong> {clima.dias[0].resumen}

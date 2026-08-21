@@ -54,6 +54,8 @@ export type FenologiaInforme = {
 
 export type ClimaInforme = {
   lluvia_7dias_mm: number;
+  /** Balance de agua de los últimos 7 días: lluvia menos lo que perdió el cultivo. */
+  balance_agua?: { acumulado_mm: number; estado: string; resumen: string } | null;
   dias: Array<{
     fecha: string;
     tmin: number;
@@ -297,6 +299,13 @@ function bloqueClima(d: DatosInforme): string[] {
   }
   const cuerpo: string[] = [
     `Lluvia acumulada últimos 7 días: ${num(d.clima.lluvia_7dias_mm, 1)} mm`,
+    ...(d.clima.balance_agua
+      ? [
+          `Balance de agua últimos 7 días: ${num(d.clima.balance_agua.acumulado_mm, 1)} mm (${
+            d.clima.balance_agua.estado
+          }). ${d.clima.balance_agua.resumen}`,
+        ]
+      : []),
     '',
     '| Fecha | Mín (°C) | Máx (°C) | Lluvia (mm) | Prob. lluvia |',
     '| --- | --- | --- | --- | --- |',
