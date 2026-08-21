@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requerirUsuario } from '@/lib/auth';
 import { sanitizarError } from '@/lib/errores';
+import { formatearCantidad } from '@/lib/formatos';
 
 export type EstadoEdicion = { error: string | null };
 
@@ -396,7 +397,7 @@ export async function ajustarStock(
     const stockResultante = Number(insumo.stock_actual) + cantidad;
     if (stockResultante < 0) {
       return {
-        error: `Stock quedaría negativo (${stockResultante.toFixed(3)} ${insumo.unidad}).`,
+        error: `Stock quedaría negativo (${formatearCantidad(stockResultante)} ${insumo.unidad}).`,
       };
     }
   }

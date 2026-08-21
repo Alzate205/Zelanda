@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enviarPushAUsuarios } from '@/lib/push/enviar';
 import { evaluarYEnviarAlertaClima } from '@/lib/push/alerta-clima';
+import { motivoRechazoCron } from '@/lib/cron';
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const rechazo = motivoRechazoCron(req);
+  if (rechazo) {
+    if (rechazo === 'sin-secreto') {
+      console.error('CRON_SECRET no está definida: se rechaza la llamada al cron.');
+    }
     return new NextResponse('Unauthorized', { status: 401 });
   }
 

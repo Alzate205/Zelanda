@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { obtenerUsuarioActual } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sanitizarError } from '@/lib/errores';
+import { formatearCantidad } from '@/lib/formatos';
 import { revalidarSnapshotAlmacen, revalidarDashboards } from '@/lib/revalidar';
 
 type Body = {
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
     const err = e as Error & { stock?: number };
     if (err.message === 'STOCK_INSUFICIENTE') {
       return NextResponse.json(
-        { error: `Stock insuficiente. Disponible: ${(err.stock ?? 0).toFixed(2)} kg` },
+        { error: `Stock insuficiente. Disponible: ${formatearCantidad(err.stock ?? 0)} kg` },
         { status: 409 }
       );
     }
