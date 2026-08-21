@@ -244,9 +244,21 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
               : 'Tu avance quedó registrado.'}
           </p>
         </div>
-        <Link href={`/trabajador/avance/${asignacion.id}`} className={botonPrimario}>
+        <button
+          type="button"
+          onClick={() => {
+            // Es la misma URL: un Link acá no hace nada porque el router no
+            // vuelve a montar el componente. Se limpia el estado a mano y se
+            // le pide al servidor los árboles ya trabajados.
+            setAvanceAnotado(false);
+            setUltimoLote(0);
+            setPaso('inicio');
+            router.refresh();
+          }}
+          className={botonPrimario}
+        >
           Seguir con esta tarea
-        </Link>
+        </button>
         <Link href="/trabajador" className={botonSecundario}>
           Volver a mis tareas
         </Link>

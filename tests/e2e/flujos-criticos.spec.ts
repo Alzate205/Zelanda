@@ -89,8 +89,7 @@ test.describe.serial('Flujos críticos', () => {
     await expect(pageTrab.getByText(/Llevás 5 de 50 árboles/)).toBeVisible();
 
     // Y al cerrar el lote entero sí aparece la pantalla de tarea cerrada.
-    await pageTrab.getByRole('link', { name: /Seguir con esta tarea/ }).click();
-    await expect(pageTrab).toHaveURL(/\/trabajador\/avance\//);
+    await pageTrab.getByRole('button', { name: /Seguir con esta tarea/ }).click();
     await pageTrab.getByRole('button', { name: /Terminé toda la tarea/ }).click();
     await pageTrab.getByRole('button', { name: /Sí, terminé/ }).click();
     await expect(pageTrab).toHaveURL(/\/trabajador\/exito\//);
