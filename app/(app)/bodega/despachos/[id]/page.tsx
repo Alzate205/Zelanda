@@ -21,7 +21,9 @@ export default async function PaginaDetalleDespacho({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requerirUsuario('BODEGA');
+  // El jefe entra también: sus alertas de stock y de despachos abiertos
+  // llevan acá, y sin esto lo devolvía al mapa sin decir nada.
+  await requerirUsuario(['BODEGA', 'JEFE']);
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
 

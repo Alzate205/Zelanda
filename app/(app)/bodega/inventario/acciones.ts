@@ -328,7 +328,10 @@ export async function ingresarStock(
   _prev: EstadoEdicion,
   formData: FormData
 ): Promise<EstadoEdicion> {
-  const usuario = await requerirUsuario('BODEGA');
+  // El jefe también: llega acá desde su alerta de stock bajo, y de nada sirve
+  // dejarlo ver el formulario si al enviarlo lo devuelve al mapa. El resto de
+  // las acciones de bodega siguen siendo sólo del bodeguero.
+  const usuario = await requerirUsuario(['BODEGA', 'JEFE']);
 
   const idRaw = String(formData.get('insumo_id') ?? '');
   if (!/^\d+$/.test(idRaw)) return { error: 'Insumo inválido.' };
