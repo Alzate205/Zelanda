@@ -1,6 +1,14 @@
 'use client';
 
-import { CloudRain, Wind, ThermometerSnowflake, CheckCircle2, Clock, Droplets } from 'lucide-react';
+import {
+  CloudRain,
+  Wind,
+  ThermometerSnowflake,
+  CheckCircle2,
+  Clock,
+  Droplets,
+  Sprout,
+} from 'lucide-react';
 import type { ClimaFinca } from '@/lib/jefe/clima';
 import { intensidad } from '@/lib/clima-dia';
 
@@ -36,7 +44,7 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
     );
   }
 
-  const { reglas, dias, lluvia_7dias_mm, balance } = clima;
+  const { reglas, dias, balance, hongos } = clima;
   const bannerClase = reglas.riesgo_helada
     ? 'bg-estado-vencida/15 text-estado-vencida'
     : reglas.ventana_fumigacion
@@ -63,10 +71,14 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
         <span>{reglas.riesgo_helada ? 'Riesgo de helada esta noche' : reglas.motivo}</span>
       </div>
 
-      {typeof lluvia_7dias_mm === 'number' ? (
-        <p className="m-0 mt-2 flex items-center gap-1.5 text-[12px] text-zelanda-verde-700">
-          <CloudRain className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Llovieron {lluvia_7dias_mm} mm en los últimos 7 días
+      {hongos?.pudricion_raiz || hongos?.antracnosis ? (
+        <p className="m-0 mt-1.5 flex items-start gap-1.5 rounded-xl bg-estado-vencida/10 px-3 py-2 text-[12.5px] text-estado-vencida">
+          <Sprout className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>
+            {hongos.pudricion_raiz
+              ? 'Suelo encharcado: riesgo de pudrición de raíz. Revisá drenajes antes de volver a regar.'
+              : 'Follaje mojado y humedad alta: riesgo de antracnosis. Revisá la fruta próxima a cosecha.'}
+          </span>
         </p>
       ) : null}
 
@@ -131,7 +143,7 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
       </div>
 
       <p className="m-0 mt-1.5 text-[10px] text-zelanda-verde-700/60">
-        Los días en gris están a más de 4 días: el pronóstico ahí es flojo.
+        Los días en gris son los que los modelos no ven igual: ahí el número no es firme.
       </p>
     </div>
   );

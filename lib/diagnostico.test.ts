@@ -47,6 +47,7 @@ const climaLimpio = (): ClimaFinca => ({
       bloques: franjasDelDia([]),
       resumen: 'Día seco',
       confianza: 'alta',
+      acuerdo: null,
     },
   ],
   balance: calcularBalance([]),

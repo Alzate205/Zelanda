@@ -88,16 +88,3 @@ export function resumenDelDia(bloques: BloqueLluvia[]): string {
   const secas = bloques.filter((b) => !b.mojada);
   return `Seco en ${listar(secas)}, llueve en ${listar(mojadas)} (${total} mm)`;
 }
-
-/**
- * Cuánto creerle al pronóstico según lo lejos que esté. En montaña tropical
- * el día 6 es poco más que una corazonada, y pintarlo igual que el de mañana
- * invita a confiar de más.
- */
-export type Confianza = 'alta' | 'media' | 'baja';
-
-export function confianzaPorDia(indice: number): Confianza {
-  if (indice <= 1) return 'alta';
-  if (indice <= 3) return 'media';
-  return 'baja';
-}

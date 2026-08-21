@@ -33,6 +33,9 @@ const MES_CORTO = [
   'dic',
 ];
 
+/** Lo máximo que la planificación espera por el pronóstico antes de seguir sin él. */
+const PRESUPUESTO_CLIMA_MS = 2500;
+
 /** Cuántas semanas se puede mirar hacia adelante o hacia atrás. */
 const TOPE_SEMANAS = 26;
 
@@ -121,15 +124,29 @@ export default async function PaginaSemana({
   });
 
   // El pronóstico solo alcanza unos días, así que solo se pinta en las semanas
-  // que lo cruzan. Si Open-Meteo falla, la planificación sigue igual: el clima
-  // es una ayuda, no un requisito para ver la semana.
+  // que lo cruzan.
+  //
+  // Va con presupuesto de tiempo: acá el jefe viene a ver sus tareas, y el
+  // clima es una ayuda. Si el pronóstico no está caliente en la caché, se
+  // renuncia a él en esta carga en vez de dejar la pantalla esperando a un
+  // servicio de afuera. En la siguiente ya estará.
   const climaPorFecha = new Map<string, DiaPronostico>();
   try {
-    const clima = await obtenerClimaFinca();
-    for (const d of clima.dias) climaPorFecha.set(d.fecha, d);
+    const clima = await Promise.race([
+      obtenerClimaFinca(),
+      new Promise<null>((r) => setTimeout(() => r(null), PRESUPUESTO_CLIMA_MS)),
+    ]);
+    if (clima) for (const d of clima.dias) climaPorFecha.set(d.fecha, d);
   } catch {
     // sin pronóstico: las etiquetas simplemente no salen
   }
+
+  // Si casi toda la semana está en duda, se avisa una vez acá arriba en vez de
+  // repetirlo en cada día.
+  const diasConPronostico = [...climaPorFecha.values()];
+  const climaDudoso =
+    diasConPronostico.length >= 3 &&
+    diasConPronostico.filter((d) => d.confianza === 'baja').length >= diasConPronostico.length / 2;
 
   const plan = construirPlanDeSemana({
     estados,
@@ -193,6 +210,16 @@ export default async function PaginaSemana({
       </div>
 
       <Atrasadas atrasadas={plan.atrasadas} sinEmpezar={plan.sinEmpezar} />
+
+      {climaDudoso ? (
+        <p className="m-0 flex items-start gap-2 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 py-2 text-[12.5px] text-zelanda-verde-700">
+          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>
+            Esta semana los modelos de clima no coinciden. Los días en beige pueden cambiar: volvé a
+            mirar antes de comprometer la cuadrilla.
+          </span>
+        </p>
+      ) : null}
 
       <div className="space-y-2">
         {plan.dias.map((d) => (

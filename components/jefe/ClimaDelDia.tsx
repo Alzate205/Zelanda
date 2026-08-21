@@ -40,14 +40,20 @@ export function ClimaDelDia({ dia }: { dia: DiaPronostico | undefined }) {
   if (!dia) return null;
   const { jornada, texto } = leerDia(dia);
   const Icono = ICONO[jornada];
+  // Cuando los modelos se contradicen el día se apaga, pero sin repetir "sin
+  // certeza" en cada fila: si todas las filas lo dicen deja de significar algo,
+  // que es el mismo defecto del "100 % de lluvia" que había antes. El aviso va
+  // una sola vez arriba de la semana.
+  const dudoso = dia.confianza === 'baja';
+  const detalle = dia.acuerdo
+    ? `${dia.acuerdo.modelos} modelos dan entre ${dia.acuerdo.min_mm} y ${dia.acuerdo.max_mm} mm`
+    : `${Math.round(dia.prob_lluvia)} % de probabilidad media`;
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium ${
-        ESTILO[jornada]
-      } ${dia.confianza === 'baja' ? 'opacity-75' : ''}`}
-      title={`${dia.resumen} · ${Math.round(dia.prob_lluvia)} % de probabilidad media${
-        dia.confianza === 'baja' ? ' · a esta distancia el pronóstico es flojo' : ''
+        dudoso ? 'bg-zelanda-beige-200 text-zelanda-verde-700' : ESTILO[jornada]
       }`}
+      title={`${dia.resumen} · ${detalle}`}
     >
       <Icono className="h-3 w-3 shrink-0" aria-hidden />
       {texto}
