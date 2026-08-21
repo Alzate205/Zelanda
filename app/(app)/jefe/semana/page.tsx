@@ -8,6 +8,8 @@ import { obtenerConfiguracion } from '@/lib/configuracion';
 import { hoyEnBogota } from '@/lib/fecha';
 import { construirPlanDeSemana, lunesDeLaSemana } from '@/lib/jefe/semana';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { ClimaDelDia } from '@/components/jefe/ClimaDelDia';
+import { obtenerClimaFinca, type DiaPronostico } from '@/lib/jefe/clima';
 import { Atrasadas } from './_atrasadas';
 
 export const metadata: Metadata = { title: 'La semana' };
@@ -118,6 +120,17 @@ export default async function PaginaSemana({
     diasAlerta: config.alerta_dias_anticipacion,
   });
 
+  // El pronóstico solo alcanza unos días, así que solo se pinta en las semanas
+  // que lo cruzan. Si Open-Meteo falla, la planificación sigue igual: el clima
+  // es una ayuda, no un requisito para ver la semana.
+  const climaPorFecha = new Map<string, DiaPronostico>();
+  try {
+    const clima = await obtenerClimaFinca();
+    for (const d of clima.dias) climaPorFecha.set(d.fecha, d);
+  } catch {
+    // sin pronóstico: las etiquetas simplemente no salen
+  }
+
   const plan = construirPlanDeSemana({
     estados,
     asignaciones: asignacionesSemana.map((a) => ({
@@ -191,7 +204,7 @@ export default async function PaginaSemana({
                 : 'border-zelanda-beige-200 bg-white'
             }`}
           >
-            <div className="flex items-baseline gap-2">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zelanda-verde-700">
                 {DIA_CORTO[d.fecha.getDay()]} {d.fecha.getDate()}
               </span>
@@ -200,6 +213,7 @@ export default async function PaginaSemana({
                   hoy
                 </span>
               ) : null}
+              <ClimaDelDia dia={climaPorFecha.get(aISO(d.fecha))} />
             </div>
 
             {d.tareas.length === 0 ? (
