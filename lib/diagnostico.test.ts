@@ -3,6 +3,7 @@ import { diagnosticar } from './diagnostico';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 import type { ClimaFinca } from '@/lib/jefe/clima';
 import { franjasDelDia } from './clima-dia';
+import { calcularBalance } from './balance-hidrico';
 
 /** Mediodía UTC = 7am Bogotá. Abril está en cosecha principal; agosto no. */
 const EN_COSECHA = new Date(Date.UTC(2026, 3, 15, 12));
@@ -48,6 +49,7 @@ const climaLimpio = (): ClimaFinca => ({
       confianza: 'alta',
     },
   ],
+  balance: calcularBalance([]),
   reglas: {
     ventana_fumigacion: false,
     motivo: 'Lluvia en las próximas horas',

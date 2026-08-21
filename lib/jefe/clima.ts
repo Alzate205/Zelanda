@@ -1,6 +1,7 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { calcularBalance, type BalanceHidrico } from '@/lib/balance-hidrico';
 import {
   franjasDelDia,
   resumenDelDia,
@@ -46,6 +47,12 @@ export type ClimaFinca = {
   lluvia_72h_mm: number;
   /** Humedad relativa media de las últimas 48 h (%). */
   humedad_media_48h: number;
+  /**
+   * Agua que entró contra agua que se fue en los últimos 7 días. Mira hacia
+   * atrás a propósito: lo que decide si hay que regar hoy es el agua que ya
+   * está (o no está) en el suelo, no la que el modelo cree que va a caer.
+   */
+  balance: BalanceHidrico;
   actualizado: string;
 };
 
@@ -70,7 +77,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&hourly=precipitation,precipitation_probability,relative_humidity_2m` +
-    `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_mean,precipitation_probability_max,wind_speed_10m_max` +
+    `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_mean,precipitation_probability_max,wind_speed_10m_max,et0_fao_evapotranspiration` +
     `&timezone=America%2FBogota&forecast_days=7&past_days=7`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Open-Meteo respondió ${res.status}`);
@@ -89,6 +96,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
       precipitation_probability_mean: number[];
       precipitation_probability_max: number[];
       wind_speed_10m_max: number[];
+      et0_fao_evapotranspiration: number[];
     };
   };
 
@@ -97,6 +105,17 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   const hoyBogota = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
     new Date()
   );
+  // Los 7 días ya pasados: lo que de verdad recibió y perdió el lote.
+  const balance = calcularBalance(
+    j.daily.time
+      .map((fecha, i) => ({
+        fecha,
+        lluvia_mm: j.daily.precipitation_sum[i] ?? 0,
+        et0_mm: j.daily.et0_fao_evapotranspiration[i] ?? 0,
+      }))
+      .filter((d) => d.fecha < hoyBogota)
+  );
+
   const lluvia7dias = j.daily.time.reduce(
     (acc, fecha, i) => (fecha < hoyBogota ? acc + (j.daily.precipitation_sum[i] ?? 0) : acc),
     0
@@ -168,6 +187,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
     dias,
     reglas,
     hongos,
+    balance,
     lluvia_7dias_mm: Math.round(lluvia7dias),
     lluvia_72h_mm: Math.round(lluvia72h),
     humedad_media_48h: Math.round(humedadMedia48h),
@@ -175,7 +195,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   };
 };
 
-/** Pronóstico cacheado 30 min. Clave versionada: v4 pasa a probabilidad media y franjas del día. */
-export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v4'], {
+/** Pronóstico cacheado 30 min. Clave versionada: v5 agrega el balance hídrico. */
+export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v5'], {
   revalidate: 1800,
 });

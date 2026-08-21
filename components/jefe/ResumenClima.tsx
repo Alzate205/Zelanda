@@ -29,6 +29,13 @@ export function ResumenClima({ clima }: { clima: ClimaFinca }) {
         </span>
       </div>
 
+      {clima.balance ? (
+        <p className="m-0 mt-2 text-[13px] text-zelanda-verde-900">
+          <strong className="font-semibold">Agua del lote</strong>{' '}
+          <span className="text-zelanda-verde-700">(últimos 7 días):</span> {clima.balance.resumen}
+        </p>
+      ) : null}
+
       {clima.dias[0] ? (
         <p className="m-0 mt-2 text-[13px] text-zelanda-verde-900">
           <strong className="font-semibold">Hoy:</strong> {clima.dias[0].resumen}
