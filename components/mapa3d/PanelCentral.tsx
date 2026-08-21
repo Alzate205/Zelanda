@@ -303,7 +303,7 @@ export function PanelCentral({
               titulo="Reportes"
               sub="Cosecha y lotes"
             />
-            <Atajo href="/jefe/apiarios/1" icono={Hexagon} titulo="Apiarios" sub="Visitas y miel" />
+            <Atajo href="/jefe/apiarios" icono={Hexagon} titulo="Apiarios" sub="Visitas y miel" />
             <Atajo
               href="/jefe/configuracion"
               icono={Settings}
