@@ -38,15 +38,25 @@ export const obtenerUsuarioActual = cache(async (): Promise<UsuarioActual | null
 
 /**
  * Para usar en layouts/páginas server-side: redirige a /login si no hay
- * sesión, y a la home del rol propio si el rol no coincide con el requerido.
+ * sesión, y a la home del rol propio si el rol no está entre los permitidos.
+ *
+ * Acepta varios roles porque hay pantallas que le sirven a más de uno. El caso
+ * que lo trajo: las alertas de stock del jefe llevaban a una pantalla de
+ * bodega, y como sólo se podía pedir un rol, al jefe lo devolvía al mapa. Desde
+ * afuera parecía que el aviso no hacía nada.
  */
-export async function requerirUsuario(rolRequerido?: RolUsuario): Promise<UsuarioActual> {
+export async function requerirUsuario(
+  rolRequerido?: RolUsuario | RolUsuario[]
+): Promise<UsuarioActual> {
   const usuario = await obtenerUsuarioActual();
   if (!usuario || !usuario.activo) {
     redirect('/login');
   }
-  if (rolRequerido && usuario.rol !== rolRequerido) {
-    redirect(RUTA_INICIO_POR_ROL[usuario.rol]);
+  if (rolRequerido) {
+    const permitidos = Array.isArray(rolRequerido) ? rolRequerido : [rolRequerido];
+    if (!permitidos.includes(usuario.rol)) {
+      redirect(RUTA_INICIO_POR_ROL[usuario.rol]);
+    }
   }
   return usuario;
 }

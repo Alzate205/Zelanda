@@ -28,8 +28,11 @@ function esUuid(s: unknown): s is string {
 }
 
 export async function POST(req: Request) {
+  // El jefe también puede cerrar: su alerta de "despacho abierto hace más de
+  // 24 horas" lleva a esa pantalla, y dejarlo entrar para que el botón falle
+  // sería peor que no dejarlo entrar.
   const usuario = await obtenerUsuarioActual();
-  if (!usuario || usuario.rol !== 'BODEGA') {
+  if (!usuario || (usuario.rol !== 'BODEGA' && usuario.rol !== 'JEFE')) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 

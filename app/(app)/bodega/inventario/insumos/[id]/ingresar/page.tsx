@@ -1,16 +1,14 @@
-import { notFound } from "next/navigation";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { FormularioIngresoStock } from "./_formulario";
+import { notFound } from 'next/navigation';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { FormularioIngresoStock } from './_formulario';
 
-export const metadata = { title: "Ingresar stock" };
+export const metadata = { title: 'Ingresar stock' };
 
-export default async function PaginaIngresarStock({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("BODEGA");
+export default async function PaginaIngresarStock({ params }: { params: Promise<{ id: string }> }) {
+  // El jefe entra también: sus alertas de stock y de despachos abiertos
+  // llevan acá, y sin esto lo devolvía al mapa sin decir nada.
+  await requerirUsuario(['BODEGA', 'JEFE']);
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
 
@@ -23,17 +21,12 @@ export default async function PaginaIngresarStock({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Inventario
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Ingresar stock
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Ingresar stock</h1>
         <p className="mt-1 text-sm text-zelanda-verde-700">
           {insumo.nombre} ({insumo.unidad})
         </p>
       </header>
-      <FormularioIngresoStock
-        insumoId={insumo.id.toString()}
-        unidad={insumo.unidad}
-      />
+      <FormularioIngresoStock insumoId={insumo.id.toString()} unidad={insumo.unidad} />
     </div>
   );
 }
