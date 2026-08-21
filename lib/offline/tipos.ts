@@ -45,7 +45,11 @@ export type ItemColaAvance = {
   arboles_lista: number[];
   observaciones: string | null;
   estado_apiario: EstadoApiario | null;
-  // Se sube aparte antes de encolar; sin señal queda en null (la foto no se difiere).
+  // La foto viaja con el item: el blob espera en IndexedDB hasta que haya señal
+  // y recién ahí se sube y se rellena foto_path. Así se puede tomar la foto sin
+  // conexión, que es la situación normal en el campo.
+  foto_blob?: Blob | null;
+  foto_nombre?: string | null;
   foto_path: string | null;
   estado: EstadoCola;
   intentos: number;
@@ -60,6 +64,9 @@ export type ItemColaNovedad = {
   numero_placa: number;
   tipo: TipoNovedad;
   descripcion: string;
+  foto_blob?: Blob | null;
+  foto_nombre?: string | null;
+  foto_path?: string | null;
   estado: EstadoCola;
   intentos: number;
   ultimo_error: string | null;

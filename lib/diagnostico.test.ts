@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { diagnosticar } from './diagnostico';
 import type { SnapshotJefe } from '@/lib/offline/tipos';
 import type { ClimaFinca } from '@/lib/jefe/clima';
+import { franjasDelDia } from './clima-dia';
 
 /** Mediodía UTC = 7am Bogotá. Abril está en cosecha principal; agosto no. */
 const EN_COSECHA = new Date(Date.UTC(2026, 3, 15, 12));
@@ -34,7 +35,19 @@ const snapshotLimpio = (): SnapshotJefe => ({
 });
 
 const climaLimpio = (): ClimaFinca => ({
-  dias: [{ fecha: '2026-04-15', tmin: 14, tmax: 26, lluvia_mm: 0, prob_lluvia: 5, viento_max: 8 }],
+  dias: [
+    {
+      fecha: '2026-04-15',
+      tmin: 14,
+      tmax: 26,
+      lluvia_mm: 0,
+      prob_lluvia: 5,
+      viento_max: 8,
+      bloques: franjasDelDia([]),
+      resumen: 'Día seco',
+      confianza: 'alta',
+    },
+  ],
   reglas: {
     ventana_fumigacion: false,
     motivo: 'Lluvia en las próximas horas',

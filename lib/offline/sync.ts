@@ -4,6 +4,8 @@ import {
   marcarSubido,
   marcarFallidoTemp,
   marcarErrorPermanente,
+  reclamarSubiendo,
+  TIPOS_COLA,
   type TipoCola,
 } from './cola';
 import type {
@@ -17,6 +19,7 @@ import type {
 import { captureException } from '@/lib/sentry';
 import { clasificarRespuesta } from './clasificar';
 import { esDeLaSesion, usuarioLocal } from './sesion';
+import { llevaFoto, resolverFotoDeItem } from './foto';
 
 /** Lo que pasó en una corrida, para poder decírselo al que apretó el botón. */
 export type ResumenSync = {
@@ -31,15 +34,6 @@ export type ResumenSync = {
 
 const MAX_INTENTOS = 5;
 const CONCURRENCIA_POR_TIPO = 3;
-
-const TIPOS: TipoCola[] = [
-  'avance',
-  'novedad',
-  'despacho_crear',
-  'despacho_cerrar',
-  'cosecha',
-  'salida',
-];
 
 async function procesarEnParalelo<T>(
   items: T[],
@@ -80,6 +74,7 @@ function payloadNovedad(i: ItemColaNovedad) {
     numero_placa: i.numero_placa,
     tipo: i.tipo,
     descripcion: i.descripcion,
+    foto_path: i.foto_path ?? null,
   };
 }
 
@@ -211,7 +206,10 @@ class SyncEngineImpl {
       resumen.sinSenal = true;
       return resumen;
     }
-    for (const tipo of TIPOS) {
+    // Lo que quedó a medio subir de una corrida anterior vuelve a la cola:
+    // si no, se queda en "subiendo" y no lo reintenta nadie.
+    await reclamarSubiendo();
+    for (const tipo of TIPOS_COLA) {
       await this.procesarTipo(tipo, resumen);
     }
     return resumen;
@@ -243,7 +241,20 @@ class SyncEngineImpl {
     }
     await marcarSubiendo(tipo, item.id_local);
     try {
-      const body = payloadDeItem(tipo, item);
+      // La foto va primero: el registro no se manda hasta que ella tenga path,
+      // porque mandarlo antes lo dejaría para siempre sin la foto que se tomó.
+      let conFoto: object = item;
+      if (llevaFoto(tipo)) {
+        const r = await resolverFotoDeItem(tipo, item.id_local);
+        if (!r.ok) {
+          await marcarFallidoTemp(tipo, item.id_local, r.error);
+          resumen.pendientes += 1;
+          resumen.ultimoError = r.error;
+          return;
+        }
+        conFoto = { ...item, foto_path: r.foto_path };
+      }
+      const body = payloadDeItem(tipo, conFoto);
       const res = await fetch(endpointPara(tipo), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -71,7 +71,6 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
-  const [fotoFallo, setFotoFallo] = useState(false);
   const [pendiente, startTransition] = useTransition();
   const esCultivo = asignacion.area === 'CULTIVO';
   const esCosechaMiel = asignacion.esCosechaMiel;
@@ -79,6 +78,9 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const [paso, setPaso] = useState<Paso>('inicio');
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
   const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
+  const [avanceAnotado, setAvanceAnotado] = useState(false);
+  /** Cuántos árboles entraron en el último registro, para poder contárselo. */
+  const [ultimoLote, setUltimoLote] = useState(0);
 
   const total = asignacion.totalArboles ?? 0;
   // El árbol donde arranca el tramo se calcula solo: el trabajador nunca lo escribe.
@@ -86,33 +88,13 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
 
   function irA(p: Paso) {
     setError(null);
-    setFotoFallo(false);
     setPaso(p);
-  }
-
-  /** Sube la foto si la hay. Devuelve el path, o `false` si falló el envío. */
-  async function resolverFoto(formData: FormData): Promise<string | null | false> {
-    const foto = formData.get('foto');
-    if (!(foto instanceof File) || foto.size === 0) return null;
-    if (!online) return false;
-    try {
-      const fd = new FormData();
-      fd.append('foto', foto);
-      const res = await fetch('/api/trabajador/foto-avance', { method: 'POST', body: fd });
-      if (!res.ok) return false;
-      const j = (await res.json()) as { path?: string };
-      return j.path ?? false;
-    } catch {
-      return false;
-    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
-    const sinFoto = submitter?.getAttribute('name') === 'sin_foto';
     const observaciones = String(formData.get('observaciones') ?? '').trim() || null;
 
     if (esCosechaMiel) {
@@ -132,6 +114,8 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           setError(j.error ?? `Error ${res.status}`);
           return;
         }
+        // La cosecha de miel cierra la tarea, así que la pantalla de éxito
+        // sí existe.
         router.push(`/trabajador/exito/${asignacion.id}`);
       });
       return;
@@ -192,15 +176,11 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
     }
 
     startTransition(async () => {
-      let foto_path: string | null = null;
-      if (!sinFoto) {
-        const resultadoFoto = await resolverFoto(formData);
-        if (resultadoFoto === false) {
-          setFotoFallo(true);
-          return;
-        }
-        foto_path = resultadoFoto;
-      }
+      // La foto viaja con el registro: se sube ahora si hay señal y si no
+      // espera en el celular. En el lote casi nunca hay señal, y exigirla
+      // obligaba a elegir entre la foto y el trabajo.
+      const foto = formData.get('foto');
+      const hayFoto = foto instanceof File && foto.size > 0;
 
       const r = await enviarAvance({
         asignacion_id: asignacion.id,
@@ -210,7 +190,9 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         arboles_lista,
         observaciones,
         estado_apiario: esVisitaApiario ? estadoApiario : null,
-        foto_path,
+        foto_blob: hayFoto ? (foto as File) : null,
+        foto_nombre: hayFoto ? (foto as File).name : null,
+        foto_path: null,
       });
       if (!r.ok) {
         setError(r.error);
@@ -223,13 +205,66 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         setGuardadoSinSenal(true);
         return;
       }
-      router.push(`/trabajador/exito/${asignacion.id}`);
+      // La pantalla de éxito solo existe si la tarea quedó cerrada. Mandarlo
+      // allá tras un avance parcial lo rebotaba al inicio sin decirle nada, y
+      // el trabajador se quedaba sin saber si su trabajo quedó anotado.
+      if (r.respuesta?.completada === true) {
+        router.push(`/trabajador/exito/${asignacion.id}`);
+        return;
+      }
+      setUltimoLote(
+        arboles_lista.length > 0
+          ? arboles_lista.length
+          : arbol_desde !== null && arbol_hasta !== null
+          ? arbol_hasta - arbol_desde + 1
+          : 0
+      );
+      setAvanceAnotado(true);
     });
   }
 
   const destino = esCultivo
     ? `Lote ${asignacion.loteNombre}`
     : `Apiario ${asignacion.apiarioNombre}`;
+
+  if (avanceAnotado) {
+    const total = asignacion.totalArboles ?? 0;
+    const hechos = Math.min(asignacion.arbolesCompletados + ultimoLote, total || Infinity);
+    const faltan = total > 0 ? Math.max(0, total - hechos) : null;
+    return (
+      <div className="space-y-6 pb-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-estado-aldia/15 text-estado-aldia">
+          <Check className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl text-zelanda-verde-900">Anotado</h1>
+          <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
+            {faltan !== null && faltan > 0
+              ? `Llevás ${hechos} de ${total} árboles. Te faltan ${faltan}.`
+              : 'Tu avance quedó registrado.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            // Es la misma URL: un Link acá no hace nada porque el router no
+            // vuelve a montar el componente. Se limpia el estado a mano y se
+            // le pide al servidor los árboles ya trabajados.
+            setAvanceAnotado(false);
+            setUltimoLote(0);
+            setPaso('inicio');
+            router.refresh();
+          }}
+          className={botonPrimario}
+        >
+          Seguir con esta tarea
+        </button>
+        <Link href="/trabajador" className={botonSecundario}>
+          Volver a mis tareas
+        </Link>
+      </div>
+    );
+  }
 
   if (guardadoSinSenal) {
     return (
@@ -493,23 +528,6 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
           <CloudOff className="h-5 w-5 shrink-0" />
           Sin señal. La cosecha de miel necesita señal para registrarse.
         </p>
-      ) : null}
-
-      {fotoFallo ? (
-        <div className="space-y-3 rounded-xl border-2 border-zelanda-ocre-300 bg-zelanda-ocre-50 p-4">
-          <p role="alert" className="text-sm text-zelanda-ocre-700">
-            No se pudo subir la foto. Intenta otra vez, o guarda el trabajo sin la foto.
-          </p>
-          <button
-            type="submit"
-            name="sin_foto"
-            value="1"
-            disabled={pendiente}
-            className={botonSecundario}
-          >
-            Guardar sin la foto
-          </button>
-        </div>
       ) : null}
 
       {error ? (

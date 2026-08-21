@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { requerirUsuario } from '@/lib/auth';
 import { sanitizarError } from '@/lib/errores';
 import type { tipo_pago } from '@prisma/client';
+import { parsearMontoCop } from '@/lib/monto';
 
 export type EstadoPago = { error: string | null };
 
@@ -48,9 +49,9 @@ export async function crearPago(_prev: EstadoPago, formData: FormData): Promise<
   }
   const tipo = tipoRaw as tipo_pago;
 
-  const monto = Number(montoRaw.replace(/\./g, ''));
-  if (!Number.isFinite(monto)) {
-    return { error: 'Monto inválido.' };
+  const monto = parsearMontoCop(montoRaw);
+  if (monto === null) {
+    return { error: 'Escribí el monto.' };
   }
   if (tipo !== 'AJUSTE' && monto <= 0) {
     return { error: 'El monto debe ser mayor a 0.' };
@@ -143,8 +144,8 @@ export async function editarPago(_prev: EstadoPago, formData: FormData): Promise
   }
   const tipo = tipoRaw as tipo_pago;
 
-  const monto = Number(montoRaw.replace(/\./g, ''));
-  if (!Number.isFinite(monto)) return { error: 'Monto inválido.' };
+  const monto = parsearMontoCop(montoRaw);
+  if (monto === null) return { error: 'Escribí el monto.' };
   if (tipo !== 'AJUSTE' && monto <= 0) return { error: 'El monto debe ser mayor a 0.' };
   if (tipo === 'AJUSTE' && monto === 0) return { error: 'Un ajuste no puede ser 0.' };
   if (Math.abs(monto) > 500_000_000)

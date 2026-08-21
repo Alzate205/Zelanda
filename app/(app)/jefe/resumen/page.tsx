@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { construirSnapshotJefe } from '@/lib/jefe/snapshot';
 import { obtenerClimaFinca, type ClimaFinca } from '@/lib/jefe/clima';
@@ -50,24 +50,6 @@ export default async function PaginaResumenJefe() {
         </div>
         <BotonImprimir etiqueta="Imprimir" />
       </header>
-
-      <Link
-        href="/jefe/informe-ia"
-        className="no-print flex items-center gap-3 rounded-2xl border border-zelanda-verde-300 bg-zelanda-verde-50 px-4 py-3.5 shadow-suave transition hover:border-zelanda-verde-400"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zelanda-verde-700 text-zelanda-beige-50">
-          <Sparkles className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-serif text-[15px] text-zelanda-verde-900">
-            Preguntarle a la IA
-          </span>
-          <span className="block text-[12.5px] text-zelanda-verde-700">
-            Copia el estado de la finca y pégalo en tu chat de Claude
-          </span>
-        </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-zelanda-verde-700/50" />
-      </Link>
 
       <PanelDiagnostico alertas={alertas} />
       <ResumenEjecutivo snapshot={snapshot} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Trash2, Camera } from 'lucide-react';
 import { listarTodosDeLaSesion, borrarItem, reintentar } from '@/lib/offline/cola';
 import { SyncEngine } from '@/lib/offline/sync';
 import { BotonSincronizar } from '@/components/shared/BotonSincronizar';
@@ -88,6 +88,8 @@ export function ListaPendientesCliente() {
                   : 'Visita al apiario'
                 : `Árbol ${it.numero_placa} · ${it.descripcion.slice(0, 60)}`;
             const fecha = new Date(it.creado_en).toLocaleString('es-CO');
+            // El trabajador tomó la foto sin señal y necesita ver que sigue ahí.
+            const conFoto = Boolean(it.foto_blob || it.foto_path);
             return (
               <li
                 key={it.id_local}
@@ -98,6 +100,12 @@ export function ListaPendientesCliente() {
                     <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">{titulo}</p>
                     <p className="m-0 mt-0.5 text-[12.5px] text-zelanda-verde-700">{detalle}</p>
                     <p className="m-0 mt-0.5 text-[11px] text-zelanda-verde-700/70">{fecha}</p>
+                    {conFoto ? (
+                      <p className="m-0 mt-1 inline-flex items-center gap-1 rounded-full bg-zelanda-beige-100 px-2 py-0.5 text-[11px] text-zelanda-verde-700">
+                        <Camera className="h-3 w-3" />
+                        {it.foto_path ? 'Foto subida' : 'Foto guardada en el celular'}
+                      </p>
+                    ) : null}
                     {esError ? (
                       <p className="mt-1.5 flex items-center gap-1 text-[11.5px] text-estado-vencida">
                         <AlertTriangle className="h-3 w-3" />
@@ -106,7 +114,15 @@ export function ListaPendientesCliente() {
                     ) : subiendo ? (
                       <p className="mt-1 text-[11.5px] text-zelanda-verde-700">Subiendo…</p>
                     ) : (
-                      <p className="mt-1 text-[11.5px] text-zelanda-verde-700">Pendiente</p>
+                      <>
+                        <p className="mt-1 text-[11.5px] text-zelanda-verde-700">Pendiente</p>
+                        {it.ultimo_error ? (
+                          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-zelanda-ocre-700">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            {it.ultimo_error}
+                          </p>
+                        ) : null}
+                      </>
                     )}
                   </div>
                   {esError ? (

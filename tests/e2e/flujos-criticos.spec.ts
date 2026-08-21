@@ -30,7 +30,7 @@ test.describe.serial('Flujos críticos', () => {
   test('login → asignar tarea → registrar avance', async ({ browser }) => {
     // El flujo encadena varios server actions/redirects en frío (login,
     // crear asignación, registrar avance), así que damos margen al test entero.
-    test.setTimeout(300_000);
+    test.setTimeout(600_000);
 
     // ── Paso 1: login jefe ───────────────────────────────────────────────
     const ctxJefe = await browser.newContext();
@@ -62,7 +62,7 @@ test.describe.serial('Flujos críticos', () => {
 
     // Paso 4 wizard: confirmar.
     await pageJefe.getByRole('button', { name: 'Crear asignación' }).click();
-    await expect(pageJefe).toHaveURL(/\/jefe\/asignaciones$/);
+    await expect(pageJefe).toHaveURL(/\/jefe\/asignaciones$/, { timeout: 60_000 });
     await expect(pageJefe.getByText(E2E_TRABAJADOR.nombre).first()).toBeVisible();
 
     // ── Paso 3: registrar avance (contexto/sesión nuevos) ────────────────
@@ -79,10 +79,19 @@ test.describe.serial('Flujos críticos', () => {
     await expect(pageTrab).toHaveURL(/\/trabajador\/avance\//);
 
     // Avance parcial: el "desde" lo calcula la app, sólo se escribe el "hasta".
-    // Lote real con miles de árboles → la asignación queda EN_CURSO.
+    // 5 de 50 árboles deja la asignación EN_CURSO, así que NO hay pantalla de
+    // éxito: el trabajador tiene que ver acá mismo que su trabajo quedó
+    // anotado y cuánto le falta.
     await pageTrab.getByRole('button', { name: /Avancé hasta un árbol/ }).click();
     await pageTrab.locator('#hasta').fill('5');
     await pageTrab.getByRole('button', { name: /Registrar/ }).click();
+    await expect(pageTrab.getByRole('heading', { name: 'Anotado' })).toBeVisible();
+    await expect(pageTrab.getByText(/Llevás 5 de 50 árboles/)).toBeVisible();
+
+    // Y al cerrar el lote entero sí aparece la pantalla de tarea cerrada.
+    await pageTrab.getByRole('button', { name: /Seguir con esta tarea/ }).click();
+    await pageTrab.getByRole('button', { name: /Terminé toda la tarea/ }).click();
+    await pageTrab.getByRole('button', { name: /Sí, terminé/ }).click();
     await expect(pageTrab).toHaveURL(/\/trabajador\/exito\//);
 
     await ctxJefe.close();

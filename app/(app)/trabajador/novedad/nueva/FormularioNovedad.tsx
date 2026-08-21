@@ -1,16 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronLeft, CloudOff } from "lucide-react";
-import { SubirFoto } from "@/components/shared/SubirFoto";
-import { enviarNovedad } from "@/lib/offline/api-cliente";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, CloudOff } from 'lucide-react';
+import { SubirFoto } from '@/components/shared/SubirFoto';
+import { enviarNovedad } from '@/lib/offline/api-cliente';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
+const labelBase =
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
 type Lote = { id: string; nombre: string; totalArboles: number };
 
@@ -26,60 +27,47 @@ export function FormularioNovedad({
   const router = useRouter();
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
+  const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
   const [pendiente, startTransition] = useTransition();
-  const [loteId, setLoteId] = useState<string>(loteInicial ?? "");
+  const [loteId, setLoteId] = useState<string>(loteInicial ?? '');
   const loteSeleccionado = lotes.find((l) => l.id === loteId);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    const lote = String(formData.get("lote_id") ?? "");
-    const placa = parseInt(String(formData.get("numero_placa") ?? ""), 10);
-    const tipo = String(formData.get("tipo") ?? "") as
-      | "PLAGA" | "DANO_FISICO" | "ENFERMEDAD" | "OBSERVACION" | "OTRO";
-    const descripcion = String(formData.get("descripcion") ?? "").trim();
+    const lote = String(formData.get('lote_id') ?? '');
+    const placa = parseInt(String(formData.get('numero_placa') ?? ''), 10);
+    const tipo = String(formData.get('tipo') ?? '') as
+      | 'PLAGA'
+      | 'DANO_FISICO'
+      | 'ENFERMEDAD'
+      | 'OBSERVACION'
+      | 'OTRO';
+    const descripcion = String(formData.get('descripcion') ?? '').trim();
 
     if (!lote || !/^\d+$/.test(lote)) {
-      setError("Selecciona un lote.");
+      setError('Selecciona un lote.');
       return;
     }
     if (!Number.isInteger(placa) || placa < 1) {
-      setError("Número de árbol inválido.");
+      setError('Número de árbol inválido.');
       return;
     }
     if (!tipo) {
-      setError("Selecciona tipo de novedad.");
+      setError('Selecciona tipo de novedad.');
       return;
     }
     if (!descripcion) {
-      setError("Descripción obligatoria.");
+      setError('Descripción obligatoria.');
       return;
     }
 
-    const foto = formData.get("foto");
+    // La foto se guarda junto a la novedad en la cola y se sube cuando haya
+    // señal. Antes exigía conexión en el momento, y en el lote no la hay: la
+    // foto que se acababa de tomar se perdía.
+    const foto = formData.get('foto');
     const hayFoto = foto instanceof File && foto.size > 0;
-
-    if (hayFoto && online) {
-      // Path con foto: POST multipart directo (sin cola; requiere señal)
-      startTransition(async () => {
-        try {
-          const res = await fetch("/api/trabajador/novedad-con-foto", {
-            method: "POST",
-            body: formData,
-          });
-          if (!res.ok) {
-            const j = await res.json().catch(() => ({}) as { error?: string });
-            setError(j.error ?? "No se pudo reportar la novedad.");
-            return;
-          }
-          router.push("/trabajador");
-        } catch {
-          setError("No se pudo enviar. Revisá la conexión.");
-        }
-      });
-      return;
-    }
 
     startTransition(async () => {
       const r = await enviarNovedad({
@@ -87,13 +75,51 @@ export function FormularioNovedad({
         numero_placa: placa,
         tipo,
         descripcion,
+        foto_blob: hayFoto ? (foto as File) : null,
+        foto_nombre: hayFoto ? (foto as File).name : null,
+        foto_path: null,
       });
       if (!r.ok) {
         setError(r.error);
         return;
       }
-      router.push("/trabajador");
+      if (r.offline) {
+        // /trabajador lo arma el servidor, y sin señal esa navegación termina
+        // en la pantalla de error del navegador. El aviso se da acá mismo.
+        setGuardadoSinSenal(true);
+        return;
+      }
+      router.push('/trabajador');
     });
+  }
+
+  if (guardadoSinSenal) {
+    return (
+      <div className="space-y-6 pb-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zelanda-ocre-600/15 text-zelanda-ocre-700">
+          <CloudOff className="h-8 w-8" />
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl text-zelanda-verde-900">Guardado en el celular</h1>
+          <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
+            No hay señal, así que la novedad —y la foto, si tomaste una— quedó anotada acá y se
+            envía sola apenas vuelva internet. No hace falta que la repitas.
+          </p>
+        </div>
+        <Link
+          href="/trabajador"
+          className="block min-h-touch rounded-xl bg-zelanda-verde-700 px-4 py-3 font-semibold text-zelanda-beige-50 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
+        >
+          Volver a mis tareas
+        </Link>
+        <Link
+          href="/trabajador/pendientes"
+          className="block min-h-touch rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-4 py-3 font-semibold text-zelanda-verde-800"
+        >
+          Ver lo que falta enviar
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -113,7 +139,9 @@ export function FormularioNovedad({
 
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <div>
-          <label htmlFor="lote_id" className={labelBase}>Lote</label>
+          <label htmlFor="lote_id" className={labelBase}>
+            Lote
+          </label>
           <select
             id="lote_id"
             name="lote_id"
@@ -131,14 +159,17 @@ export function FormularioNovedad({
           </select>
           {lotes.length === 0 ? (
             <p className="mt-1 text-xs text-zelanda-ocre-600">
-              No hay lotes con árboles cargados. Pídele al jefe que cargue árboles antes de reportar novedades.
+              No hay lotes con árboles cargados. Pídele al jefe que cargue árboles antes de reportar
+              novedades.
             </p>
           ) : null}
         </div>
 
         <div>
           <div className="flex items-center justify-between gap-2">
-            <label htmlFor="numero_placa" className={labelBase}>Número de árbol</label>
+            <label htmlFor="numero_placa" className={labelBase}>
+              Número de árbol
+            </label>
             {loteSeleccionado && numeroInicial ? (
               <Link
                 href={`/trabajador/arbol/${loteSeleccionado.id}/${numeroInicial}`}
@@ -158,14 +189,18 @@ export function FormularioNovedad({
             max={loteSeleccionado?.totalArboles ?? undefined}
             required
             disabled={!loteSeleccionado}
-            defaultValue={numeroInicial ?? ""}
+            defaultValue={numeroInicial ?? ''}
             className={inputBase}
-            placeholder={loteSeleccionado ? `1 a ${loteSeleccionado.totalArboles}` : "Elige lote primero"}
+            placeholder={
+              loteSeleccionado ? `1 a ${loteSeleccionado.totalArboles}` : 'Elige lote primero'
+            }
           />
         </div>
 
         <div>
-          <label htmlFor="tipo" className={labelBase}>Tipo de novedad</label>
+          <label htmlFor="tipo" className={labelBase}>
+            Tipo de novedad
+          </label>
           <select id="tipo" name="tipo" required defaultValue="" className={inputBase}>
             <option value="">Selecciona…</option>
             <option value="PLAGA">Plaga</option>
@@ -177,7 +212,9 @@ export function FormularioNovedad({
         </div>
 
         <div>
-          <label htmlFor="descripcion" className={labelBase}>Descripción</label>
+          <label htmlFor="descripcion" className={labelBase}>
+            Descripción
+          </label>
           <textarea
             id="descripcion"
             name="descripcion"
@@ -188,21 +225,17 @@ export function FormularioNovedad({
           />
         </div>
 
-        {online ? (
-          <div>
-            <label className={labelBase}>Foto (opcional)</label>
-            <div className="mt-1.5">
-              <SubirFoto name="foto" />
-            </div>
-            <p className="mt-1 text-xs text-zelanda-verde-700/70">
-              La foto se subirá ahora si hay señal.
-            </p>
+        <div>
+          <label className={labelBase}>Foto (opcional)</label>
+          <div className="mt-1.5">
+            <SubirFoto name="foto" />
           </div>
-        ) : (
-          <p className="rounded-md border border-zelanda-beige-300 bg-zelanda-beige-50 px-3 py-2 text-xs text-zelanda-verde-700">
-            Sin señal — la foto solo se puede adjuntar con conexión. Podés reportar la novedad ahora; la foto la sumás después si la necesitás.
+          <p className="mt-1 text-xs text-zelanda-verde-700/70">
+            {online
+              ? 'La foto se sube ahora.'
+              : 'Sin señal: la foto se guarda en el celular y sube sola cuando vuelva la conexión.'}
           </p>
-        )}
+        </div>
       </section>
 
       {!online ? (
@@ -213,7 +246,10 @@ export function FormularioNovedad({
       ) : null}
 
       {error ? (
-        <p role="alert" className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
+        <p
+          role="alert"
+          className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida"
+        >
           {error}
         </p>
       ) : null}
@@ -230,7 +266,7 @@ export function FormularioNovedad({
           disabled={pendiente || lotes.length === 0}
           className="flex-1 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pendiente ? "Reportando…" : "Reportar"}
+          {pendiente ? 'Reportando…' : 'Reportar'}
         </button>
       </div>
     </form>

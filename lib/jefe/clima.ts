@@ -2,6 +2,13 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import {
+  franjasDelDia,
+  resumenDelDia,
+  confianzaPorDia,
+  type BloqueLluvia,
+  type Confianza,
+} from '@/lib/clima-dia';
+import {
   evaluarReglasAgro,
   evaluarRiesgoHongos,
   type ReglasAgro,
@@ -13,8 +20,19 @@ export type DiaPronostico = {
   tmin: number;
   tmax: number;
   lluvia_mm: number;
+  /**
+   * Probabilidad MEDIA del día. Antes acá iba la máxima horaria, que en el
+   * trópico andino da 100 % casi todos los días: era una constante disfrazada
+   * de dato, y el jefe dejó de creerle al pronóstico por eso.
+   */
   prob_lluvia: number;
   viento_max: number;
+  /** Cómo se reparte la lluvia en el día. Es lo que decide si se puede trabajar. */
+  bloques: BloqueLluvia[];
+  /** Frase corta y accionable: "Seco en la mañana, llueve en la tarde (18 mm)". */
+  resumen: string;
+  /** Cuánto creerle: a 6 días en montaña tropical, poco. */
+  confianza: Confianza;
 };
 
 export type ClimaFinca = {
@@ -52,7 +70,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
     `&hourly=precipitation,precipitation_probability,relative_humidity_2m` +
-    `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max` +
+    `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum,precipitation_probability_mean,precipitation_probability_max,wind_speed_10m_max` +
     `&timezone=America%2FBogota&forecast_days=7&past_days=7`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Open-Meteo respondió ${res.status}`);
@@ -68,6 +86,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
       temperature_2m_min: number[];
       temperature_2m_max: number[];
       precipitation_sum: number[];
+      precipitation_probability_mean: number[];
       precipitation_probability_max: number[];
       wind_speed_10m_max: number[];
     };
@@ -83,16 +102,36 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
     0
   );
 
+  // Las horas de cada día, para poder decir a qué hora llueve y no solo cuánto.
+  const horasPorFecha = new Map<string, { hora: number; mm: number; prob: number }[]>();
+  j.hourly.time.forEach((t, i) => {
+    const [fecha, hhmm] = t.split('T');
+    const lista = horasPorFecha.get(fecha) ?? [];
+    lista.push({
+      hora: Number(hhmm.slice(0, 2)),
+      mm: j.hourly.precipitation[i] ?? 0,
+      prob: j.hourly.precipitation_probability[i] ?? 0,
+    });
+    horasPorFecha.set(fecha, lista);
+  });
+
   const dias: DiaPronostico[] = j.daily.time
-    .map((fecha, i) => ({
-      fecha,
-      tmin: j.daily.temperature_2m_min[i],
-      tmax: j.daily.temperature_2m_max[i],
-      lluvia_mm: j.daily.precipitation_sum[i],
-      prob_lluvia: j.daily.precipitation_probability_max[i],
-      viento_max: j.daily.wind_speed_10m_max[i],
-    }))
-    .filter((d) => d.fecha >= hoyBogota);
+    .map((fecha, i) => ({ fecha, i }))
+    .filter(({ fecha }) => fecha >= hoyBogota)
+    .map(({ fecha, i }, indiceDesdeHoy) => {
+      const bloques = franjasDelDia(horasPorFecha.get(fecha) ?? []);
+      return {
+        fecha,
+        tmin: j.daily.temperature_2m_min[i],
+        tmax: j.daily.temperature_2m_max[i],
+        lluvia_mm: j.daily.precipitation_sum[i],
+        prob_lluvia: j.daily.precipitation_probability_mean[i] ?? 0,
+        viento_max: j.daily.wind_speed_10m_max[i],
+        bloques,
+        resumen: resumenDelDia(bloques),
+        confianza: confianzaPorDia(indiceDesdeHoy),
+      };
+    });
 
   // Próximas 6 horas desde ahora. Las horas vienen en hora de Bogotá SIN
   // offset ("2026-06-12T14:00"): hay que anclarlas a -05:00 o el servidor
@@ -136,7 +175,7 @@ const obtenerClimaUncached = async (): Promise<ClimaFinca> => {
   };
 };
 
-/** Pronóstico cacheado 30 min. Clave versionada: v3 agrega humedad y riesgo de hongos. */
-export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v3'], {
+/** Pronóstico cacheado 30 min. Clave versionada: v4 pasa a probabilidad media y franjas del día. */
+export const obtenerClimaFinca = unstable_cache(obtenerClimaUncached, ['clima-finca', 'v4'], {
   revalidate: 1800,
 });
