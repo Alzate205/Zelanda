@@ -7,6 +7,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { Card } from '@/components/ui/Card';
 import { FormularioCosechaWrapper } from './FormularioCosechaWrapper';
+import { SincronizarSnapshot } from '@/components/shared/SincronizarSnapshot';
+import { PrecargarOffline } from '@/components/shared/PrecargarOffline';
 
 export const metadata = { title: 'Almacén' };
 
@@ -138,6 +140,12 @@ export default async function PaginaInicioAlmacen() {
 
   return (
     <div className="space-y-5">
+      {/* Las pantallas donde de verdad se registra, guardadas para el campo. */}
+      <SincronizarSnapshot rol="almacen" />
+      <PrecargarOffline
+        urls={['/almacen/cosecha/nueva', '/almacen/salidas/nueva', '/almacen/pendientes']}
+      />
+
       <header>
         <Eyebrow>Almacén · {usuario.nombre_completo.split(' ')[0]}</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Cosecha entrante</h1>
