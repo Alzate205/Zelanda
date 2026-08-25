@@ -7,6 +7,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { KPI } from '@/components/ui/KPI';
 import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { formatearCantidad } from '@/lib/formatos';
+import { SincronizarSnapshot } from '@/components/shared/SincronizarSnapshot';
+import { PrecargarOffline } from '@/components/shared/PrecargarOffline';
 
 export const metadata = { title: 'Bodega' };
 
@@ -98,6 +100,17 @@ export default async function PaginaInicioBodega() {
 
   return (
     <div className="space-y-5">
+      {/* Las pantallas donde de verdad se registra, guardadas para el campo. */}
+      <SincronizarSnapshot rol="bodega" />
+      <PrecargarOffline
+        urls={[
+          '/bodega/inventario',
+          '/bodega/despachos',
+          '/bodega/despachos/nuevo',
+          '/bodega/pendientes',
+        ]}
+      />
+
       <header>
         <Eyebrow>Bodega · {usuario.nombre_completo.split(' ')[0]}</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Despachos del día</h1>

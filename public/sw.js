@@ -4,7 +4,7 @@
 // La versión se sube a mano en cada cambio de este archivo. Al activarse borra
 // las cachés de versiones viejas: es la vía para invalidar contenido que quedó
 // mal guardado en los celulares (por ejemplo, páginas de otra cuenta).
-const VERSION = 'b2-3';
+const VERSION = 'b2-4';
 const CACHE_SHELL = `zelanda-shell-${VERSION}`;
 const CACHE_DATOS = `zelanda-datos-${VERSION}`;
 const CACHE_BALDOSAS = `zelanda-baldosas-${VERSION}`;
@@ -30,7 +30,12 @@ const HOSTS_BALDOSAS = [
 ];
 const MAX_BALDOSAS = 300;
 
-const SHELL_URLS = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+const SHELL_URLS = [
+  '/manifest.webmanifest',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/badge-96.png',
+];
 
 const RUTAS_NAVEGABLES = ['/trabajador', '/bodega', '/almacen', '/jefe', '/mi-perfil'];
 
@@ -466,7 +471,10 @@ self.addEventListener('push', (event) => {
   const opciones = {
     body: payload.cuerpo || '',
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    // El badge es la silueta chiquita de la barra de estado: Android solo lee su
+    // canal alfa, así que tiene que ser blanco sobre transparente. Con un icono
+    // opaco (como icon-192) sale un cuadrado blanco.
+    badge: '/icons/badge-96.png',
     data: { url: payload.url || '/' },
     tag: payload.tag || undefined,
     requireInteraction: false,
