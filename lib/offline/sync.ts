@@ -30,6 +30,12 @@ export type ResumenSync = {
   sinSenal: boolean;
   /** Items encolados por otra cuenta en este mismo celular: no se tocan. */
   ajenos: number;
+  /**
+   * Registros que subieron pero cuya foto el servidor rechazó de forma
+   * definitiva. Se cuentan aparte de `subidos` porque para el trabajador no es
+   * lo mismo: la novedad llegó, la evidencia de la plaga no.
+   */
+  sinFoto: number;
 };
 
 const MAX_INTENTOS = 5;
@@ -201,6 +207,7 @@ class SyncEngineImpl {
       ultimoError: null,
       sinSenal: false,
       ajenos: 0,
+      sinFoto: 0,
     };
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       resumen.sinSenal = true;
@@ -252,6 +259,7 @@ class SyncEngineImpl {
           resumen.ultimoError = r.error;
           return;
         }
+        if (r.fotoPerdida) resumen.sinFoto += 1;
         conFoto = { ...item, foto_path: r.foto_path };
       }
       const body = payloadDeItem(tipo, conFoto);

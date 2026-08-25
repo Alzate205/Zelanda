@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, CloudOff, Check, ListPlus } from 'lucide-react';
 import { enviarAvance } from '@/lib/offline/api-cliente';
+import { AvisoFotoPerdida } from '@/components/shared/AvisoFotoPerdida';
 import { parsearDecimal } from '@/lib/formatos';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { SubirFoto } from '@/components/shared/SubirFoto';
@@ -79,6 +80,7 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const [estadoApiario, setEstadoApiario] = useState<EstadoApiario | null>(null);
   const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
   const [avanceAnotado, setAvanceAnotado] = useState(false);
+  const [fotoPerdida, setFotoPerdida] = useState(false);
   /** Cuántos árboles entraron en el último registro, para poder contárselo. */
   const [ultimoLote, setUltimoLote] = useState(0);
 
@@ -205,6 +207,12 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
         setGuardadoSinSenal(true);
         return;
       }
+      // El aviso de la foto va antes que las dos salidas de abajo: las dos
+      // navegan o cambian de pantalla, y el mensaje se perdería.
+      if (r.fotoPerdida) {
+        setFotoPerdida(true);
+        return;
+      }
       // La pantalla de éxito solo existe si la tarea quedó cerrada. Mandarlo
       // allá tras un avance parcial lo rebotaba al inicio sin decirle nada, y
       // el trabajador se quedaba sin saber si su trabajo quedó anotado.
@@ -226,6 +234,10 @@ export function FormAvance({ asignacion }: { asignacion: Asignacion }) {
   const destino = esCultivo
     ? `Lote ${asignacion.loteNombre}`
     : `Apiario ${asignacion.apiarioNombre}`;
+
+  if (fotoPerdida) {
+    return <AvisoFotoPerdida que="Avance anotado" volverA="/trabajador" />;
+  }
 
   if (avanceAnotado) {
     const total = asignacion.totalArboles ?? 0;
