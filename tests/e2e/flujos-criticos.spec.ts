@@ -26,6 +26,25 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click();
 }
 
+/**
+ * Sin service worker, y no por comodidad.
+ *
+ * Al confirmar la asignación el servidor responde 303. Sobre `http://localhost`
+ * y con el service worker controlando la página, el navegador recibe ese 303 y
+ * no continúa: no pide el destino, no da error, y el botón se queda en
+ * "Creando…" para siempre. La asignación sí quedó creada.
+ *
+ * Es un artefacto de localhost, no un fallo de la aplicación: el mismo
+ * recorrido contra https://zelanda.vercel.app pasa. Se comprobó además que no
+ * es el handler `fetch` del worker —con el handler inerte falla igual—, ni
+ * React 19.2.6, ni `revalidatePath`, ni los prefetch RSC abortados.
+ *
+ * Este test prueba el flujo de negocio, no el modo sin conexión. Lo offline lo
+ * cubren `bodega-sin-senal` y `foto-sin-senal`, que sí necesitan el worker y lo
+ * conservan.
+ */
+test.use({ serviceWorkers: 'block' });
+
 test.describe.serial('Flujos críticos', () => {
   test('login → asignar tarea → registrar avance', async ({ browser }) => {
     // El flujo encadena varios server actions/redirects en frío (login,
