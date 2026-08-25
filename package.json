@@ -33,6 +33,7 @@
     "check:types": "tsc --noEmit",
     "probar:push": "node --env-file=.env.local --env-file=.env scripts/probar-push.mjs",
     "barrido": "node scripts/barrido-pantallas.mjs",
+    "barrido:completo": "node --env-file=.env.local --env-file=.env scripts/barrido-completo.mjs",
     "capturas": "node scripts/capturas-pantallas.mjs",
     "tarifas:iniciales": "node --env-file=.env.local --env-file=.env scripts/tarifas-iniciales.mjs",
     "iconos": "node scripts/generar-iconos.mjs"

@@ -70,3 +70,6 @@ Desktop.ini
 
 # Superpowers (mockups de brainstorming, locales)
 .superpowers/
+
+# Salidas de los barridos: resultados de una corrida, no código.
+barrido-*.md
