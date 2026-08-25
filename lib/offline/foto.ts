@@ -19,7 +19,14 @@ export function llevaFoto(tipo: TipoCola): tipo is TipoConFoto {
   return tipo === 'avance' || tipo === 'novedad';
 }
 
-export type ResultadoFoto = { ok: true; foto_path: string | null } | { ok: false; error: string };
+export type ResultadoFoto =
+  /**
+   * `fotoPerdida` separa dos casos que antes se veían iguales desde afuera:
+   * el registro que nunca llevó foto y el que la llevaba y hubo que soltarla.
+   * Sin esa diferencia, la sincronización anunciaba "registro subido" en los
+   * dos casos y el trabajador creía que había mandado la evidencia.
+   */
+  { ok: true; foto_path: string | null; fotoPerdida: boolean } | { ok: false; error: string };
 
 /**
  * Sube la foto que quedó guardada junto al registro, si todavía no está subida.
@@ -40,10 +47,10 @@ export async function resolverFotoDeItem(
 ): Promise<ResultadoFoto> {
   const db = await abrirDb();
   const item = await db.get(STORE[tipo], id_local);
-  if (!item) return { ok: true, foto_path: null };
-  if (item.foto_path) return { ok: true, foto_path: item.foto_path };
+  if (!item) return { ok: true, foto_path: null, fotoPerdida: false };
+  if (item.foto_path) return { ok: true, foto_path: item.foto_path, fotoPerdida: false };
   const blob = item.foto_blob;
-  if (!blob) return { ok: true, foto_path: null };
+  if (!blob) return { ok: true, foto_path: null, fotoPerdida: false };
 
   const fd = new FormData();
   fd.append('carpeta', CARPETA[tipo]);
@@ -61,7 +68,7 @@ export async function resolverFotoDeItem(
     const j = (await res.json().catch(() => ({}))) as { path?: string };
     if (!j.path) return { ok: false, error: 'No se pudo subir la foto todavía.' };
     await parchearItem(tipo, id_local, { foto_path: j.path, foto_blob: null });
-    return { ok: true, foto_path: j.path };
+    return { ok: true, foto_path: j.path, fotoPerdida: false };
   }
 
   if (clase === 'permanente') {
@@ -72,7 +79,7 @@ export async function resolverFotoDeItem(
         j.error ?? `HTTP ${res.status}`
       }). El registro sube sin foto.`,
     });
-    return { ok: true, foto_path: null };
+    return { ok: true, foto_path: null, fotoPerdida: true };
   }
 
   return { ok: false, error: `No se pudo subir la foto (HTTP ${res.status}).` };

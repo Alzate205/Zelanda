@@ -45,10 +45,21 @@ export function BotonSincronizar() {
           texto: `No se pudo ahora (${r.ultimoError ?? 'falló el servidor'}). Sigue pendiente.`,
         });
       } else if (r.subidos > 0) {
-        setAviso({
-          tono: 'bien',
-          texto: `${r.subidos} ${r.subidos === 1 ? 'registro subido' : 'registros subidos'}.`,
-        });
+        const cuantos = `${r.subidos} ${r.subidos === 1 ? 'registro subido' : 'registros subidos'}`;
+        // Decir sólo "subido" cuando la foto se perdió es mentir: el trabajador
+        // se va convencido de que mandó la evidencia. El registro sí subió, así
+        // que no es un error, pero tiene que enterarse.
+        if (r.sinFoto > 0) {
+          setAviso({
+            tono: 'espera',
+            texto:
+              r.sinFoto === 1
+                ? `${cuantos}, pero una foto no se pudo guardar.`
+                : `${cuantos}, pero ${r.sinFoto} fotos no se pudieron guardar.`,
+          });
+        } else {
+          setAviso({ tono: 'bien', texto: `${cuantos}.` });
+        }
       } else {
         setAviso({ tono: 'bien', texto: 'No había nada pendiente.' });
       }

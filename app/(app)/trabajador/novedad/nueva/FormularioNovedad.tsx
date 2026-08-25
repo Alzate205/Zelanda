@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, CloudOff } from 'lucide-react';
 import { SubirFoto } from '@/components/shared/SubirFoto';
 import { enviarNovedad } from '@/lib/offline/api-cliente';
+import { AvisoFotoPerdida } from '@/components/shared/AvisoFotoPerdida';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 const inputBase =
@@ -28,6 +29,7 @@ export function FormularioNovedad({
   const online = useOnlineStatus();
   const [error, setError] = useState<string | null>(null);
   const [guardadoSinSenal, setGuardadoSinSenal] = useState(false);
+  const [fotoPerdida, setFotoPerdida] = useState(false);
   const [pendiente, startTransition] = useTransition();
   const [loteId, setLoteId] = useState<string>(loteInicial ?? '');
   const loteSeleccionado = lotes.find((l) => l.id === loteId);
@@ -89,8 +91,16 @@ export function FormularioNovedad({
         setGuardadoSinSenal(true);
         return;
       }
+      if (r.fotoPerdida) {
+        setFotoPerdida(true);
+        return;
+      }
       router.push('/trabajador');
     });
+  }
+
+  if (fotoPerdida) {
+    return <AvisoFotoPerdida que="Novedad enviada" volverA="/trabajador" />;
   }
 
   if (guardadoSinSenal) {

@@ -28,6 +28,12 @@ type Resultado =
       id_local: string;
       /** Lo que contestó el servidor, cuando hubo servidor. Sin señal va vacío. */
       respuesta?: Record<string, unknown>;
+      /**
+       * El registro subió, pero el servidor rechazó la foto de forma definitiva
+       * y hubo que soltarla. Quien llame tiene que decirlo: si no, la pantalla
+       * sigue de largo y el trabajador se va creyendo que mandó la evidencia.
+       */
+      fotoPerdida?: boolean;
     }
   | { ok: false; error: string; enCola: boolean };
 
@@ -186,11 +192,13 @@ async function intentarSubirGenerico(
     return { ok: true, offline: true, id_local };
   }
   let cuerpo = body;
+  let fotoPerdida = false;
   if (llevaFoto(tipo)) {
     // Si la foto no sube ahora, el registro entero espera en la cola con ella:
     // así el trabajador nunca queda con un reporte sin la foto que tomó.
     const r = await resolverFotoDeItem(tipo, id_local);
     if (!r.ok) return { ok: true, offline: true, id_local };
+    fotoPerdida = r.fotoPerdida;
     cuerpo = { ...(body as object), foto_path: r.foto_path };
   }
   try {
@@ -203,7 +211,7 @@ async function intentarSubirGenerico(
     if (clase === 'ok') {
       await marcarSubido(tipo, id_local);
       const respuesta = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      return { ok: true, offline: false, id_local, respuesta };
+      return { ok: true, offline: false, id_local, respuesta, fotoPerdida };
     }
     if (clase === 'permanente') {
       const j = await res.json().catch(() => ({} as { error?: string }));
