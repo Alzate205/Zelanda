@@ -27,7 +27,32 @@ test.describe.serial('Bodega sin señal', () => {
     // Que el service worker tome el control y corran la sincronización y la
     // precarga, que es justo lo que antes no pasaba.
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(9000);
+
+    // Antes acá había un `waitForTimeout(9000)`. Una espera fija apuesta a que
+    // nueve segundos alcanzan: si el runner va cargado no alcanzan y el test
+    // falla sin que nada esté roto, y si sobran se regalan nueve segundos en
+    // cada corrida. Se espera por la condición: que el snapshot esté escrito.
+    await page.waitForFunction(
+      async () => {
+        const db = await new Promise<IDBDatabase | null>((res) => {
+          const r = indexedDB.open('zelanda-offline-v1');
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => res(null);
+        });
+        if (!db || !db.objectStoreNames.contains('cache_bodega')) return false;
+        const fila = await new Promise<{ data?: Record<string, unknown> } | undefined>((res) => {
+          const r = db.transaction('cache_bodega').objectStore('cache_bodega').get('snapshot');
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => res(undefined);
+        });
+        // Cerrar siempre: el sondeo corre decenas de veces y cada conexión que
+        // queda abierta se acumula hasta que la lectura de después falla.
+        db.close();
+        return Boolean(fila?.data);
+      },
+      null,
+      { timeout: 60_000, polling: 500 }
+    );
 
     const guardado = await page.evaluate(async () => {
       const db = await new Promise<IDBDatabase>((res, rej) => {

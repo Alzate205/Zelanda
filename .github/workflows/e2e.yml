@@ -47,6 +47,20 @@ jobs:
         # Es una descarga, y las descargas se cuelgan. Normalmente toma 1-2 min.
         timeout-minutes: 8
         run: npx playwright install --with-deps chromium
+      # La suite corre contra este build, no contra `next dev`. Con dev, cada
+      # ruta se compilaba en el primer acceso y ese costo caía dentro del test
+      # que llegara primero: tres corridas del mismo commit fallaron en tres
+      # tests distintos.
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+
       - name: Run Playwright tests
         timeout-minutes: 12
         run: npx playwright test --config=playwright.config.ts --reporter=list
