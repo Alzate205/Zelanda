@@ -1,13 +1,26 @@
 name: E2E Tests
 
+# El e2e siembra y borra datos en la MISMA base que usa la finca: no hay
+# proyecto de Supabase aparte para CI. Mientras corre, el lote "E2E Lote Test"
+# con sus 50 árboles y cuatro usuarios de prueba están visibles en la app real,
+# y si el jefe la abre en ese momento ve datos que no existen.
+#
+# Por eso no corre solo en cada push. Se pide a mano desde la pestaña Actions,
+# o se le pone la etiqueta `e2e` a la PR que se quiera probar. El día que haya
+# una base aparte para CI, esto vuelve a `push` sin más.
 on:
-  push:
-    branches: [main, 'mejoras/*']
+  workflow_dispatch:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
 
 jobs:
   e2e:
+    # En las PR sólo corre si alguien pidió el e2e con la etiqueta. A mano
+    # (`workflow_dispatch`) corre siempre.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'e2e')
     runs-on: ubuntu-latest
     # Sin esto rige el default de GitHub: 6 horas. Un paso colgado se queda
     # ocupando un runner toda la tarde y el PR se ve "en progreso" como si
