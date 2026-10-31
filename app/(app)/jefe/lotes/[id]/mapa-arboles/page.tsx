@@ -171,7 +171,7 @@ export default async function MapaArbolesLote({ params }: { params: Promise<{ id
               ))}
             </div>
             <p className="mt-3 text-[11.5px] text-zelanda-verde-700">
-              Tocá un árbol para abrir su Pokédex completo.
+              Toca un árbol para abrir su Pokédex completo.
             </p>
           </section>
         )}

@@ -102,7 +102,8 @@ export type DatosInforme = {
     meses: Array<{ mes: string; ingresos: number; costos: number }>;
     ventas_por_cliente: Array<{ cliente: string; kg: number; ingresos: number }>;
     compras_por_proveedor: Array<{ proveedor: string; total: number }>;
-    nomina: {
+    /** Ausente cuando el módulo de nómina está apagado (lib/modulos.ts). */
+    nomina?: {
       devengado: number;
       pagado: number;
       /** Los nombres entran aquí y NO salen en el texto: se numeran. */
@@ -391,22 +392,24 @@ function bloqueFinanzas(d: DatosInforme): string[] {
       : f.compras_por_proveedor.map((c) => `- ${c.proveedor}: ${pesos(c.total)}`))
   );
 
-  const pendiente = f.nomina.devengado - f.nomina.pagado;
+  if (!f.nomina) return seccion('Finanzas', cuerpo);
+  const nomina = f.nomina;
+  const pendiente = nomina.devengado - nomina.pagado;
   cuerpo.push(
     '',
     '**Nómina del mes en curso:**',
-    `Devengado ${pesos(f.nomina.devengado)} · pagado ${pesos(f.nomina.pagado)} · pendiente ${pesos(
+    `Devengado ${pesos(nomina.devengado)} · pagado ${pesos(nomina.pagado)} · pendiente ${pesos(
       pendiente
     )}`,
     ''
   );
-  if (f.nomina.personas.length === 0) {
+  if (nomina.personas.length === 0) {
     cuerpo.push('Sin personas con movimientos este mes.');
   } else {
     // Los nombres reales no salen del sistema: solo el patrón de pagos importa
     // para las preguntas de costo laboral.
     cuerpo.push('Por persona (anonimizado):');
-    f.nomina.personas.forEach((p, i) => {
+    nomina.personas.forEach((p, i) => {
       cuerpo.push(
         `- Trabajador ${i + 1}: devengado ${pesos(p.devengado)} · pagado ${pesos(p.pagado)} · ` +
           `pendiente ${pesos(p.devengado - p.pagado)}`

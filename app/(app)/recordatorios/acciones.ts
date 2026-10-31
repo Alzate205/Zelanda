@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import { sanitizarError } from "@/lib/errores";
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import { sanitizarError } from '@/lib/errores';
 
 export type EstadoRecordatorio = {
   error: string | null;
@@ -22,40 +22,37 @@ function parsearId(raw: string | null): bigint | null {
 
 export async function crearRecordatorio(
   _prev: EstadoRecordatorio,
-  formData: FormData,
+  formData: FormData
 ): Promise<EstadoRecordatorio> {
   const usuario = await requerirUsuario();
   if (usuario.persona_id === null) {
     return {
-      error: "Tu usuario no está vinculado a una persona.",
+      error: 'Tu usuario no está vinculado a una persona.',
       exito: null,
     };
   }
 
-  const titulo = String(formData.get("titulo") ?? "").trim();
-  const descripcion = String(formData.get("descripcion") ?? "").trim();
-  const fechaRaw = String(formData.get("fecha") ?? "").trim();
-  const asignadoRaw = String(formData.get("asignado_a_persona_id") ?? "").trim();
+  const titulo = String(formData.get('titulo') ?? '').trim();
+  const descripcion = String(formData.get('descripcion') ?? '').trim();
+  const fechaRaw = String(formData.get('fecha') ?? '').trim();
+  const asignadoRaw = String(formData.get('asignado_a_persona_id') ?? '').trim();
 
-  if (!titulo) return { error: "Escribí un título.", exito: null };
-  if (!fechaRaw) return { error: "Elegí una fecha.", exito: null };
+  if (!titulo) return { error: 'Escribe un título.', exito: null };
+  if (!fechaRaw) return { error: 'Elige una fecha.', exito: null };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
-    return { error: "Fecha inválida.", exito: null };
+    return { error: 'Fecha inválida.', exito: null };
   }
 
   // Asignado: si no se manda, es para uno mismo
   let asignadoId = BigInt(usuario.persona_id);
   if (asignadoRaw) {
     const parsed = parsearId(asignadoRaw);
-    if (!parsed) return { error: "Persona inválida.", exito: null };
+    if (!parsed) return { error: 'Persona inválida.', exito: null };
     // Solo el JEFE puede asignar a otra persona
-    if (
-      parsed !== BigInt(usuario.persona_id) &&
-      usuario.rol !== "JEFE"
-    ) {
+    if (parsed !== BigInt(usuario.persona_id) && usuario.rol !== 'JEFE') {
       return {
-        error: "Solo el jefe puede asignar recordatorios a otra persona.",
+        error: 'Solo el jefe puede asignar recordatorios a otra persona.',
         exito: null,
       };
     }
@@ -88,11 +85,11 @@ export async function crearRecordatorio(
             select: { id: true },
           });
           if (destinatario) {
-            const { enviarPushAUsuarios } = await import("@/lib/push/enviar");
+            const { enviarPushAUsuarios } = await import('@/lib/push/enviar');
             await enviarPushAUsuarios([destinatario.id], {
-              titulo: "Recordatorio para hoy",
+              titulo: 'Recordatorio para hoy',
               cuerpo: titulo,
-              url: "/recordatorios",
+              url: '/recordatorios',
               tag: `recordatorio-${r.id}`,
             });
             await prisma.recordatorios.update({
@@ -103,25 +100,25 @@ export async function crearRecordatorio(
         }
       }
     } catch (e) {
-      console.warn("Push recordatorio falló:", e);
+      console.warn('Push recordatorio falló:', e);
     }
   } catch (e) {
-    return { error: sanitizarError(e, "recordatorios/crear"), exito: null };
+    return { error: sanitizarError(e, 'recordatorios/crear'), exito: null };
   }
 
-  revalidatePath("/recordatorios");
-  revalidatePath("/jefe");
-  revalidatePath("/trabajador");
-  redirect("/recordatorios");
+  revalidatePath('/recordatorios');
+  revalidatePath('/jefe');
+  revalidatePath('/trabajador');
+  redirect('/recordatorios');
 }
 
 export async function marcarRecordatorioHecho(formData: FormData) {
   const usuario = await requerirUsuario();
   if (usuario.persona_id === null) return;
 
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
-  const notas = String(formData.get("notas") ?? "").trim() || null;
+  const notas = String(formData.get('notas') ?? '').trim() || null;
 
   const rec = await prisma.recordatorios.findUnique({
     where: { id },
@@ -136,7 +133,7 @@ export async function marcarRecordatorioHecho(formData: FormData) {
   // Puede marcarlo: el asignado, el creador, o el jefe
   const personaId = BigInt(usuario.persona_id);
   const autorizado =
-    usuario.rol === "JEFE" ||
+    usuario.rol === 'JEFE' ||
     rec.asignado_a_persona_id === personaId ||
     rec.creado_por_persona_id === personaId;
   if (!autorizado) return;
@@ -150,16 +147,16 @@ export async function marcarRecordatorioHecho(formData: FormData) {
     },
   });
 
-  revalidatePath("/recordatorios");
-  revalidatePath("/jefe");
-  revalidatePath("/trabajador");
+  revalidatePath('/recordatorios');
+  revalidatePath('/jefe');
+  revalidatePath('/trabajador');
 }
 
 export async function reabrirRecordatorio(formData: FormData) {
   const usuario = await requerirUsuario();
   if (usuario.persona_id === null) return;
 
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
 
   const rec = await prisma.recordatorios.findUnique({
@@ -173,7 +170,7 @@ export async function reabrirRecordatorio(formData: FormData) {
 
   const personaId = BigInt(usuario.persona_id);
   const autorizado =
-    usuario.rol === "JEFE" ||
+    usuario.rol === 'JEFE' ||
     rec.asignado_a_persona_id === personaId ||
     rec.creado_por_persona_id === personaId;
   if (!autorizado) return;
@@ -187,16 +184,16 @@ export async function reabrirRecordatorio(formData: FormData) {
     },
   });
 
-  revalidatePath("/recordatorios");
-  revalidatePath("/jefe");
-  revalidatePath("/trabajador");
+  revalidatePath('/recordatorios');
+  revalidatePath('/jefe');
+  revalidatePath('/trabajador');
 }
 
 export async function borrarRecordatorio(formData: FormData) {
   const usuario = await requerirUsuario();
   if (usuario.persona_id === null) return;
 
-  const id = parsearId(String(formData.get("id") ?? ""));
+  const id = parsearId(String(formData.get('id') ?? ''));
   if (!id) return;
 
   const rec = await prisma.recordatorios.findUnique({
@@ -206,13 +203,12 @@ export async function borrarRecordatorio(formData: FormData) {
   if (!rec) return;
 
   const personaId = BigInt(usuario.persona_id);
-  const autorizado =
-    usuario.rol === "JEFE" || rec.creado_por_persona_id === personaId;
+  const autorizado = usuario.rol === 'JEFE' || rec.creado_por_persona_id === personaId;
   if (!autorizado) return;
 
   await prisma.recordatorios.delete({ where: { id } });
 
-  revalidatePath("/recordatorios");
-  revalidatePath("/jefe");
-  revalidatePath("/trabajador");
+  revalidatePath('/recordatorios');
+  revalidatePath('/jefe');
+  revalidatePath('/trabajador');
 }

@@ -51,7 +51,7 @@ export async function crearPago(_prev: EstadoPago, formData: FormData): Promise<
 
   const monto = parsearMontoCop(montoRaw);
   if (monto === null) {
-    return { error: 'Escribí el monto.' };
+    return { error: 'Escribe el monto.' };
   }
   if (tipo !== 'AJUSTE' && monto <= 0) {
     return { error: 'El monto debe ser mayor a 0.' };
@@ -63,7 +63,7 @@ export async function crearPago(_prev: EstadoPago, formData: FormData): Promise<
     return { error: 'Monto fuera de rango (máximo 500.000.000 COP).' };
   }
 
-  if (!fechaRaw) return { error: 'Elegí la fecha del pago.' };
+  if (!fechaRaw) return { error: 'Elige la fecha del pago.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
     return { error: 'Fecha inválida.' };
@@ -93,7 +93,7 @@ export async function crearPago(_prev: EstadoPago, formData: FormData): Promise<
   if (tipo === 'SERVICIO') {
     servicioId = parsearId(servicioIdRaw);
     if (!servicioId) {
-      return { error: 'Para un pago de SERVICIO, elegí el contrato al que aplica.' };
+      return { error: 'Para un pago de SERVICIO, elige el contrato al que aplica.' };
     }
   } else if (servicioIdRaw) {
     // Si vino servicio_id pero el tipo no es SERVICIO, lo aceptamos como referencia.
@@ -145,13 +145,13 @@ export async function editarPago(_prev: EstadoPago, formData: FormData): Promise
   const tipo = tipoRaw as tipo_pago;
 
   const monto = parsearMontoCop(montoRaw);
-  if (monto === null) return { error: 'Escribí el monto.' };
+  if (monto === null) return { error: 'Escribe el monto.' };
   if (tipo !== 'AJUSTE' && monto <= 0) return { error: 'El monto debe ser mayor a 0.' };
   if (tipo === 'AJUSTE' && monto === 0) return { error: 'Un ajuste no puede ser 0.' };
   if (Math.abs(monto) > 500_000_000)
     return { error: 'Monto fuera de rango (máximo 500.000.000 COP).' };
 
-  if (!fechaRaw) return { error: 'Elegí la fecha del pago.' };
+  if (!fechaRaw) return { error: 'Elige la fecha del pago.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) return { error: 'Fecha inválida.' };
 

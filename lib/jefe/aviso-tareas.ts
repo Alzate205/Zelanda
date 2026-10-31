@@ -93,7 +93,7 @@ export function construirAvisoTareas(
     hayAlgoQueDecir: true,
     titulo,
     // Sin nada más que agregar, el cuerpo invita a mirar en vez de repetir.
-    cuerpo: partes.length > 0 ? partes.join(' · ') : 'Tocá para ver cuáles.',
+    cuerpo: partes.length > 0 ? partes.join(' · ') : 'Toca para ver cuáles.',
     vencidas: vencidas.length,
     nuncaHechas: nuncaHechas.length,
     proximas: proximas.length,

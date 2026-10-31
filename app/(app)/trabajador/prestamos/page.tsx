@@ -20,7 +20,7 @@ export default async function PaginaPrestamos() {
           <h1 className="font-serif text-2xl text-zelanda-verde-900">Bodega</h1>
         </header>
         <p className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
-          Tu usuario no tiene persona vinculada. Pedile al jefe que la asigne.
+          Tu usuario no tiene persona vinculada. Pídele al jefe que la asigne.
         </p>
       </div>
     );
@@ -62,11 +62,11 @@ export default async function PaginaPrestamos() {
       </Link>
 
       <header>
-        <Eyebrow>Lo que tenés prestado</Eyebrow>
+        <Eyebrow>Lo que tienes prestado</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Bodega</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
           {despachos.length === 0
-            ? 'No tenés despachos abiertos.'
+            ? 'No tienes despachos abiertos.'
             : `${despachos.length} ${
                 despachos.length === 1 ? 'despacho' : 'despachos'
               } · ${totalItems} ${totalItems === 1 ? 'item' : 'items'}`}

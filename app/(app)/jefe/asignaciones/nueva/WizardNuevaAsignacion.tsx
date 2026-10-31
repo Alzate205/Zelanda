@@ -377,7 +377,7 @@ function Paso1({
 
   return (
     <div>
-      <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">Elegí dónde se hará la tarea.</p>
+      <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">Elige dónde se hará la tarea.</p>
 
       <Segmented
         opciones={[
@@ -673,7 +673,7 @@ function Paso3({
   return (
     <div>
       <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">
-        Asigná a una persona.{' '}
+        Asigna a una persona.{' '}
         {tipo?.area === 'APICULTURA' ? 'Cualquier persona disponible puede ir al apiario.' : ''}
       </p>
 

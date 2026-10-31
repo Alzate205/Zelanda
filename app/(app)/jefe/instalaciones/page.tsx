@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { Home, PackageOpen, Warehouse, MapPin, Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import Link from 'next/link';
+import { Home, PackageOpen, Warehouse, MapPin, Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export const metadata = { title: "Instalaciones" };
+export const metadata = { title: 'Instalaciones' };
 
 type LucideIcon = typeof Home;
 
@@ -15,14 +15,14 @@ const ICONO: Record<string, LucideIcon> = {
 };
 
 const ETIQUETA: Record<string, string> = {
-  CASA: "Casa",
-  BODEGA: "Bodega",
-  ALMACEN: "Almacén",
-  OTRO: "Otro",
+  CASA: 'Casa',
+  BODEGA: 'Bodega',
+  ALMACEN: 'Almacén',
+  OTRO: 'Otro',
 };
 
 export default async function PaginaInstalaciones() {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
   const [instalaciones, fincaRows] = await Promise.all([
     prisma.$queryRaw<
@@ -47,15 +47,10 @@ export default async function PaginaInstalaciones() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Mapa
-        </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Instalaciones y borde
-        </h1>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Mapa</p>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Instalaciones y borde</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          Capturá una sola vez la ubicación de cada elemento. Podés editar si
-          hace falta.
+          Captura una sola vez la ubicación de cada elemento. Puedes editar si hace falta.
         </p>
       </header>
 
@@ -68,15 +63,13 @@ export default async function PaginaInstalaciones() {
             <p className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
               Borde de la finca
             </p>
-            <p className="mt-1 font-serif text-lg text-zelanda-verde-900">
-              Hacienda La Zelanda
-            </p>
+            <p className="mt-1 font-serif text-lg text-zelanda-verde-900">Hacienda La Zelanda</p>
             <p className="mt-1 text-xs text-zelanda-verde-700">
-              {fincaTieneBorde ? "Capturado" : "Pendiente de capturar"}
+              {fincaTieneBorde ? 'Capturado' : 'Pendiente de capturar'}
             </p>
           </div>
           <span className="text-sm text-zelanda-verde-700">
-            {fincaTieneBorde ? "Editar →" : "Capturar →"}
+            {fincaTieneBorde ? 'Editar →' : 'Capturar →'}
           </span>
         </div>
       </Link>
@@ -94,9 +87,7 @@ export default async function PaginaInstalaciones() {
           </Link>
         </div>
         {instalaciones.length === 0 ? (
-          <p className="text-sm text-zelanda-verde-700/70">
-            Sin instalaciones registradas.
-          </p>
+          <p className="text-sm text-zelanda-verde-700/70">Sin instalaciones registradas.</p>
         ) : (
           <ul className="space-y-2">
             {instalaciones.map((i) => {
@@ -112,17 +103,15 @@ export default async function PaginaInstalaciones() {
                         <Icono className="h-4 w-4" />
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-zelanda-verde-900">
-                          {i.nombre}
-                        </p>
+                        <p className="truncate font-medium text-zelanda-verde-900">{i.nombre}</p>
                         <p className="text-xs text-zelanda-verde-700">
-                          {ETIQUETA[i.tipo] ?? i.tipo} ·{" "}
-                          {i.tiene_coords ? "Capturado" : "Pendiente"}
+                          {ETIQUETA[i.tipo] ?? i.tipo} ·{' '}
+                          {i.tiene_coords ? 'Capturado' : 'Pendiente'}
                         </p>
                       </div>
                     </div>
                     <span className="text-xs text-zelanda-verde-700">
-                      {i.tiene_coords ? "Editar →" : "Capturar →"}
+                      {i.tiene_coords ? 'Editar →' : 'Capturar →'}
                     </span>
                   </Link>
                 </li>

@@ -50,9 +50,9 @@ const OBJETOS_VEDADOS = [
   { patron: /\busuarios\b/i, nombre: 'la tabla usuarios' },
   { patron: /\bpush_subscriptions\b/i, nombre: 'la tabla push_subscriptions' },
   // Las tablas crudas con datos personales: existen vistas v_ia_* para eso.
-  { patron: /\bpersonas\b/i, nombre: 'la tabla personas (usá v_ia_personas)' },
-  { patron: /\bclientes\b/i, nombre: 'la tabla clientes (usá v_ia_clientes)' },
-  { patron: /\bproveedores\b/i, nombre: 'la tabla proveedores (usá v_ia_proveedores)' },
+  { patron: /\bpersonas\b/i, nombre: 'la tabla personas (usa v_ia_personas)' },
+  { patron: /\bclientes\b/i, nombre: 'la tabla clientes (usa v_ia_clientes)' },
+  { patron: /\bproveedores\b/i, nombre: 'la tabla proveedores (usa v_ia_proveedores)' },
 ];
 
 export function validarSql(sqlCrudo: string): ResultadoValidacion {

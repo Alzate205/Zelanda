@@ -10,6 +10,7 @@ import { obtenerPredicciones } from '@/lib/jefe/prediccion';
 import { obtenerAplicaciones } from '@/lib/jefe/aplicaciones';
 import { agruparCostoPorLote } from '@/lib/aplicaciones';
 import { formatearDecimal } from '@/lib/formatos';
+import { MODULO_NOMINA } from '@/lib/modulos';
 
 export const metadata = { title: 'Reportes avanzados' };
 const MESES = [
@@ -101,16 +102,18 @@ export default async function PaginaReportesAvanzados({
     }),
     // Costos de compras del mes
     prisma.compras.aggregate({
-      where: { fecha: { gte: desdeDate, lte: hastaDate } },
+      where: { borrado_en: null, fecha: { gte: desdeDate, lte: hastaDate } },
       _sum: { total: true },
       _count: { _all: true },
     }),
-    // Costos de pagos a personas del mes
-    prisma.pagos.aggregate({
-      where: { fecha: { gte: desdeDate, lte: hastaDate } },
-      _sum: { monto: true },
-      _count: { _all: true },
-    }),
+    // Costos de pagos a personas del mes (solo con la nómina prendida)
+    MODULO_NOMINA
+      ? prisma.pagos.aggregate({
+          where: { borrado_en: null, fecha: { gte: desdeDate, lte: hastaDate } },
+          _sum: { monto: true },
+          _count: { _all: true },
+        })
+      : Promise.resolve({ _sum: { monto: 0 }, _count: { _all: 0 } }),
     // Cosecha año actual (mes a mes)
     prisma.$queryRaw<{ m: number; total_kg: string }[]>`
       SELECT
@@ -282,7 +285,11 @@ export default async function PaginaReportesAvanzados({
           <KPI
             etiqueta="Costos"
             valor={fmtMonto(costosTotal)}
-            pie={`${comprasMes._count._all} compras · ${pagosMes._count._all} pagos`}
+            pie={
+              MODULO_NOMINA
+                ? `${comprasMes._count._all} compras · ${pagosMes._count._all} pagos`
+                : `${comprasMes._count._all} compras`
+            }
           />
           <KPI
             etiqueta="Margen"
@@ -302,13 +309,15 @@ export default async function PaginaReportesAvanzados({
             <span className="font-semibold">{fmtMonto(ingresos)}</span>
           </div>
           <div className="flex justify-between gap-2 text-zelanda-verde-800">
-            <span>− Compras de insumos</span>
+            <span>− Compras</span>
             <span className="font-semibold">{fmtMonto(costoCompras)}</span>
           </div>
-          <div className="flex justify-between gap-2 text-zelanda-verde-800">
-            <span>− Pagos a personas</span>
-            <span className="font-semibold">{fmtMonto(costoPagos)}</span>
-          </div>
+          {MODULO_NOMINA ? (
+            <div className="flex justify-between gap-2 text-zelanda-verde-800">
+              <span>− Pagos a personas</span>
+              <span className="font-semibold">{fmtMonto(costoPagos)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between border-t border-zelanda-beige-300 pt-2 font-serif text-[14px]">
             <span className="text-zelanda-verde-900">Margen del mes</span>
             <span className={margen >= 0 ? 'text-zelanda-verde-900' : 'text-estado-vencida'}>
@@ -318,9 +327,9 @@ export default async function PaginaReportesAvanzados({
         </div>
 
         <p className="mt-2 text-[11px] text-zelanda-verde-700/70">
-          Margen aproximado. Ventas: salidas tipo VENTA con precio. Costos: compras de insumos +
-          suma de todos los pagos a personas (salarios, jornales, servicios, bonos, adelantos,
-          ajustes).
+          {MODULO_NOMINA
+            ? 'Margen aproximado. Ventas: salidas tipo VENTA con precio. Costos: compras de insumos + suma de todos los pagos a personas (salarios, jornales, servicios, bonos, adelantos, ajustes).'
+            : 'Ventas: aguacate vendido con precio. Costos: compras registradas del mes.'}
         </p>
       </section>
 

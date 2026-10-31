@@ -1,21 +1,27 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { actualizarPersonaYVinculacion, type EstadoEdicion } from "../acciones";
-import { ETIQUETA_TIPO_VINCULACION } from "@/lib/constantes";
-import type { TipoVinculacion } from "@/types";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { actualizarPersonaYVinculacion, type EstadoEdicion } from '../acciones';
+import { ETIQUETA_TIPO_VINCULACION } from '@/lib/constantes';
+import type { TipoVinculacion } from '@/types';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+import { MODULO_NOMINA } from '@/lib/modulos';
+
+// Con la nómina apagada, salario, tarifa y destajo no se ven pero siguen en el
+// formulario: así viajan los valores actuales y "Editar la activa" no los pisa.
+const NOMINA = MODULO_NOMINA ? '' : 'hidden ';
 
 const ESTADO_INICIAL: EstadoEdicion = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+const labelBase =
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-type ModoVinculacion = "dejar" | "editar" | "cambiar" | "cerrar";
+type ModoVinculacion = 'dejar' | 'editar' | 'cambiar' | 'cerrar';
 
 type Persona = {
   id: string;
@@ -42,19 +48,16 @@ export function FormularioEditarMiembro({
   persona: Persona;
   vincActiva: VinculacionActiva;
 }) {
-  const [estado, accion, pendiente] = useActionState(
-    actualizarPersonaYVinculacion,
-    ESTADO_INICIAL,
-  );
-  const [modo, setModo] = useState<ModoVinculacion>("dejar");
-  const [nuevoTipo, setNuevoTipo] = useState<TipoVinculacion>("FIJO");
-  const [nuevoSalario, setNuevoSalario] = useState("");
-  const [nuevoTarifaJornal, setNuevoTarifaJornal] = useState("");
+  const [estado, accion, pendiente] = useActionState(actualizarPersonaYVinculacion, ESTADO_INICIAL);
+  const [modo, setModo] = useState<ModoVinculacion>('dejar');
+  const [nuevoTipo, setNuevoTipo] = useState<TipoVinculacion>('FIJO');
+  const [nuevoSalario, setNuevoSalario] = useState('');
+  const [nuevoTarifaJornal, setNuevoTarifaJornal] = useState('');
   const [editSalario, setEditSalario] = useState(
-    vincActiva?.salario_base != null ? String(vincActiva.salario_base) : "",
+    vincActiva?.salario_base != null ? String(vincActiva.salario_base) : ''
   );
   const [editTarifaJornal, setEditTarifaJornal] = useState(
-    vincActiva?.tarifa_jornal != null ? String(vincActiva.tarifa_jornal) : "",
+    vincActiva?.tarifa_jornal != null ? String(vincActiva.tarifa_jornal) : ''
   );
 
   return (
@@ -71,9 +74,7 @@ export function FormularioEditarMiembro({
       </Link>
 
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Editar
-        </p>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Editar</p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
           {persona.nombre_completo}
         </h1>
@@ -81,9 +82,7 @@ export function FormularioEditarMiembro({
 
       {/* Datos */}
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Datos personales
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Datos personales</h2>
         <div>
           <label htmlFor="nombre_completo" className={labelBase}>
             Nombre completo
@@ -99,22 +98,26 @@ export function FormularioEditarMiembro({
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="cedula" className={labelBase}>Cédula</label>
+            <label htmlFor="cedula" className={labelBase}>
+              Cédula
+            </label>
             <input
               id="cedula"
               name="cedula"
               type="text"
-              defaultValue={persona.cedula ?? ""}
+              defaultValue={persona.cedula ?? ''}
               className={inputBase}
             />
           </div>
           <div>
-            <label htmlFor="telefono" className={labelBase}>Teléfono</label>
+            <label htmlFor="telefono" className={labelBase}>
+              Teléfono
+            </label>
             <input
               id="telefono"
               name="telefono"
               type="tel"
-              defaultValue={persona.telefono ?? ""}
+              defaultValue={persona.telefono ?? ''}
               className={inputBase}
             />
           </div>
@@ -127,18 +130,20 @@ export function FormularioEditarMiembro({
             id="fecha_nacimiento"
             name="fecha_nacimiento"
             type="date"
-            defaultValue={persona.fecha_nacimiento ?? ""}
+            defaultValue={persona.fecha_nacimiento ?? ''}
             autoComplete="bday"
             className={inputBase}
           />
         </div>
         <div>
-          <label htmlFor="notas" className={labelBase}>Notas</label>
+          <label htmlFor="notas" className={labelBase}>
+            Notas
+          </label>
           <textarea
             id="notas"
             name="notas"
             rows={2}
-            defaultValue={persona.notas ?? ""}
+            defaultValue={persona.notas ?? ''}
             className={`${inputBase} min-h-[60px] resize-y`}
           />
         </div>
@@ -146,16 +151,14 @@ export function FormularioEditarMiembro({
 
       {/* Vinculación */}
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-        <h2 className="font-serif text-base text-zelanda-verde-900">
-          Vinculación
-        </h2>
+        <h2 className="font-serif text-base text-zelanda-verde-900">Vinculación</h2>
         <p className="text-sm text-zelanda-verde-700">
-          Activa actualmente:{" "}
+          Activa actualmente:{' '}
           <span className="font-medium text-zelanda-verde-900">
             {vincActiva
               ? ETIQUETA_TIPO_VINCULACION[vincActiva.tipo] +
-                (vincActiva.rol_finca ? ` (${vincActiva.rol_finca})` : "")
-              : "Sin vinculación"}
+                (vincActiva.rol_finca ? ` (${vincActiva.rol_finca})` : '')
+              : 'Sin vinculación'}
           </span>
         </p>
 
@@ -167,14 +170,12 @@ export function FormularioEditarMiembro({
               type="radio"
               name="modo_visible"
               value="dejar"
-              checked={modo === "dejar"}
-              onChange={() => setModo("dejar")}
+              checked={modo === 'dejar'}
+              onChange={() => setModo('dejar')}
               className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
             />
             <span className="text-sm">
-              <span className="font-medium text-zelanda-verde-900">
-                Dejarla como está
-              </span>
+              <span className="font-medium text-zelanda-verde-900">Dejarla como está</span>
               <span className="mt-0.5 block text-xs text-zelanda-verde-700">
                 Solo edito los datos personales.
               </span>
@@ -186,18 +187,18 @@ export function FormularioEditarMiembro({
               type="radio"
               name="modo_visible"
               value="editar"
-              checked={modo === "editar"}
-              onChange={() => setModo("editar")}
+              checked={modo === 'editar'}
+              onChange={() => setModo('editar')}
               disabled={!vincActiva}
               className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
             />
             <span className="text-sm">
-              <span className="font-medium text-zelanda-verde-900">
-                Editar la activa
-              </span>
+              <span className="font-medium text-zelanda-verde-900">Editar la activa</span>
               <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-                Corrige rol, salario o tarifa sin tocar histórico. No cambia el
-                tipo (para eso usa &ldquo;Cambiar a otro tipo&rdquo;).
+                {MODULO_NOMINA
+                  ? 'Corrige rol, salario o tarifa sin tocar histórico.'
+                  : 'Corrige el rol en la finca sin tocar histórico.'}{' '}
+                No cambia el tipo (para eso usa &ldquo;Cambiar a otro tipo&rdquo;).
               </span>
             </span>
           </label>
@@ -207,18 +208,16 @@ export function FormularioEditarMiembro({
               type="radio"
               name="modo_visible"
               value="cambiar"
-              checked={modo === "cambiar"}
-              onChange={() => setModo("cambiar")}
+              checked={modo === 'cambiar'}
+              onChange={() => setModo('cambiar')}
               disabled={!vincActiva}
               className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
             />
             <span className="text-sm">
-              <span className="font-medium text-zelanda-verde-900">
-                Cambiar a otro tipo
-              </span>
+              <span className="font-medium text-zelanda-verde-900">Cambiar a otro tipo</span>
               <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-                Cierra la vinculación activa con la fecha de hoy y abre una
-                nueva. El histórico queda preservado.
+                Cierra la vinculación activa con la fecha de hoy y abre una nueva. El histórico
+                queda preservado.
               </span>
             </span>
           </label>
@@ -228,24 +227,22 @@ export function FormularioEditarMiembro({
               type="radio"
               name="modo_visible"
               value="cerrar"
-              checked={modo === "cerrar"}
-              onChange={() => setModo("cerrar")}
+              checked={modo === 'cerrar'}
+              onChange={() => setModo('cerrar')}
               disabled={!vincActiva}
               className="mt-0.5 h-4 w-4 border-zelanda-beige-300 text-zelanda-verde-700"
             />
             <span className="text-sm">
-              <span className="font-medium text-zelanda-verde-900">
-                Cerrarla (sin abrir nueva)
-              </span>
+              <span className="font-medium text-zelanda-verde-900">Cerrarla (sin abrir nueva)</span>
               <span className="mt-0.5 block text-xs text-zelanda-verde-700">
-                Esta persona quedará sin vinculación activa. Útil cuando se va
-                y no se sabe si vuelve.
+                Esta persona quedará sin vinculación activa. Útil cuando se va y no se sabe si
+                vuelve.
               </span>
             </span>
           </label>
         </fieldset>
 
-        {modo === "cambiar" ? (
+        {modo === 'cambiar' ? (
           <div className="space-y-4 border-t border-zelanda-beige-200 pt-4">
             <div>
               <label htmlFor="nueva_tipo_vinculacion" className={labelBase}>
@@ -275,8 +272,8 @@ export function FormularioEditarMiembro({
                 className={inputBase}
               />
             </div>
-            {nuevoTipo === "FIJO" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {nuevoTipo === 'FIJO' ? (
+              <div className={`${NOMINA}grid grid-cols-1 gap-4 sm:grid-cols-2`}>
                 <div>
                   <label htmlFor="nueva_salario_base" className={labelBase}>
                     Salario base
@@ -286,12 +283,10 @@ export function FormularioEditarMiembro({
                     name="nueva_salario_base"
                     type="text"
                     inputMode="numeric"
-                    required={nuevoTipo === "FIJO"}
+                    required={nuevoTipo === 'FIJO'}
                     placeholder="Ej. 1.300.000"
                     value={formatearMiles(nuevoSalario)}
-                    onChange={(e) =>
-                      setNuevoSalario(normalizarEntradaNumerica(e.target.value))
-                    }
+                    onChange={(e) => setNuevoSalario(normalizarEntradaNumerica(e.target.value))}
                     className={inputBase}
                   />
                 </div>
@@ -303,7 +298,7 @@ export function FormularioEditarMiembro({
                     id="nueva_periodo_pago"
                     name="nueva_periodo_pago"
                     defaultValue="QUINCENAL"
-                    required={nuevoTipo === "FIJO"}
+                    required={nuevoTipo === 'FIJO'}
                     className={inputBase}
                   >
                     <option value="MENSUAL">Mensual</option>
@@ -313,8 +308,8 @@ export function FormularioEditarMiembro({
                 </div>
               </div>
             ) : null}
-            {nuevoTipo === "JORNALERO" ? (
-              <div>
+            {nuevoTipo === 'JORNALERO' ? (
+              <div className={NOMINA}>
                 <label htmlFor="nueva_tarifa_jornal" className={labelBase}>
                   Tarifa por jornal
                 </label>
@@ -323,18 +318,16 @@ export function FormularioEditarMiembro({
                   name="nueva_tarifa_jornal"
                   type="text"
                   inputMode="numeric"
-                  required={nuevoTipo === "JORNALERO"}
+                  required={nuevoTipo === 'JORNALERO'}
                   placeholder="Ej. 50.000"
                   value={formatearMiles(nuevoTarifaJornal)}
-                  onChange={(e) =>
-                    setNuevoTarifaJornal(normalizarEntradaNumerica(e.target.value))
-                  }
+                  onChange={(e) => setNuevoTarifaJornal(normalizarEntradaNumerica(e.target.value))}
                   className={inputBase}
                 />
               </div>
             ) : null}
-            {nuevoTipo === "FIJO" || nuevoTipo === "JORNALERO" ? (
-              <div>
+            {nuevoTipo === 'FIJO' || nuevoTipo === 'JORNALERO' ? (
+              <div className={NOMINA}>
                 <label htmlFor="nueva_esquema_pago_destajo" className={labelBase}>
                   Destajo (extras por kg / árbol)
                 </label>
@@ -346,9 +339,7 @@ export function FormularioEditarMiembro({
                 >
                   <option value="NUNCA">No cobra destajo</option>
                   <option value="ADICIONAL">Adicional al salario</option>
-                  <option value="REEMPLAZA_DIA">
-                    Reemplaza el día (cuando hace destajo)
-                  </option>
+                  <option value="REEMPLAZA_DIA">Reemplaza el día (cuando hace destajo)</option>
                   <option value="SOLO_DESTAJO">Solo cobra destajo</option>
                 </select>
               </div>
@@ -356,7 +347,7 @@ export function FormularioEditarMiembro({
           </div>
         ) : null}
 
-        {modo === "editar" && vincActiva ? (
+        {modo === 'editar' && vincActiva ? (
           <div className="space-y-4 border-t border-zelanda-beige-200 pt-4">
             <div>
               <label htmlFor="edit_rol_finca" className={labelBase}>
@@ -366,12 +357,12 @@ export function FormularioEditarMiembro({
                 id="edit_rol_finca"
                 name="edit_rol_finca"
                 type="text"
-                defaultValue={vincActiva.rol_finca ?? ""}
+                defaultValue={vincActiva.rol_finca ?? ''}
                 className={inputBase}
               />
             </div>
-            {vincActiva.tipo === "FIJO" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {vincActiva.tipo === 'FIJO' ? (
+              <div className={`${NOMINA}grid grid-cols-1 gap-4 sm:grid-cols-2`}>
                 <div>
                   <label htmlFor="edit_salario_base" className={labelBase}>
                     Salario base
@@ -383,9 +374,7 @@ export function FormularioEditarMiembro({
                     inputMode="numeric"
                     required
                     value={formatearMiles(editSalario)}
-                    onChange={(e) =>
-                      setEditSalario(normalizarEntradaNumerica(e.target.value))
-                    }
+                    onChange={(e) => setEditSalario(normalizarEntradaNumerica(e.target.value))}
                     className={inputBase}
                   />
                 </div>
@@ -397,7 +386,7 @@ export function FormularioEditarMiembro({
                     id="edit_periodo_pago"
                     name="edit_periodo_pago"
                     required
-                    defaultValue={vincActiva.periodo_pago ?? "QUINCENAL"}
+                    defaultValue={vincActiva.periodo_pago ?? 'QUINCENAL'}
                     className={inputBase}
                   >
                     <option value="MENSUAL">Mensual</option>
@@ -407,8 +396,8 @@ export function FormularioEditarMiembro({
                 </div>
               </div>
             ) : null}
-            {vincActiva.tipo === "JORNALERO" ? (
-              <div>
+            {vincActiva.tipo === 'JORNALERO' ? (
+              <div className={NOMINA}>
                 <label htmlFor="edit_tarifa_jornal" className={labelBase}>
                   Tarifa por jornal
                 </label>
@@ -419,47 +408,42 @@ export function FormularioEditarMiembro({
                   inputMode="numeric"
                   required
                   value={formatearMiles(editTarifaJornal)}
-                  onChange={(e) =>
-                    setEditTarifaJornal(normalizarEntradaNumerica(e.target.value))
-                  }
+                  onChange={(e) => setEditTarifaJornal(normalizarEntradaNumerica(e.target.value))}
                   className={inputBase}
                 />
               </div>
             ) : null}
-            {vincActiva.tipo === "FIJO" || vincActiva.tipo === "JORNALERO" ? (
-              <div>
+            {vincActiva.tipo === 'FIJO' || vincActiva.tipo === 'JORNALERO' ? (
+              <div className={NOMINA}>
                 <label htmlFor="edit_esquema_pago_destajo" className={labelBase}>
                   Destajo (extras por kg / árbol)
                 </label>
                 <select
                   id="edit_esquema_pago_destajo"
                   name="edit_esquema_pago_destajo"
-                  defaultValue={vincActiva.esquema_pago_destajo ?? "NUNCA"}
+                  defaultValue={vincActiva.esquema_pago_destajo ?? 'NUNCA'}
                   className={inputBase}
                 >
                   <option value="NUNCA">No cobra destajo</option>
                   <option value="ADICIONAL">Adicional al salario</option>
-                  <option value="REEMPLAZA_DIA">
-                    Reemplaza el día (cuando hace destajo)
-                  </option>
+                  <option value="REEMPLAZA_DIA">Reemplaza el día (cuando hace destajo)</option>
                   <option value="SOLO_DESTAJO">Solo cobra destajo</option>
                 </select>
               </div>
             ) : null}
-            {vincActiva.tipo === "CONTRATISTA" || vincActiva.tipo === "FAMILIAR" ? (
-              <p className="text-xs text-zelanda-verde-700">
-                Este tipo de vinculación no tiene salario ni tarifa configurable.
-                Solo puedes actualizar el rol en la finca.
+            {vincActiva.tipo === 'CONTRATISTA' || vincActiva.tipo === 'FAMILIAR' ? (
+              <p className={`${NOMINA}text-xs text-zelanda-verde-700`}>
+                Este tipo de vinculación no tiene salario ni tarifa configurable. Solo puedes
+                actualizar el rol en la finca.
               </p>
             ) : null}
           </div>
         ) : null}
 
-        {modo === "cerrar" ? (
+        {modo === 'cerrar' ? (
           <p className="rounded-md border border-estado-vencida/20 bg-estado-vencida/10 px-3 py-2 text-sm text-estado-vencida">
-            Al guardar, la vinculación activa quedará cerrada con la fecha de
-            hoy y la persona aparecerá como &ldquo;Sin vinculación&rdquo; hasta que se
-            le asigne una nueva.
+            Al guardar, la vinculación activa quedará cerrada con la fecha de hoy y la persona
+            aparecerá como &ldquo;Sin vinculación&rdquo; hasta que se le asigne una nueva.
           </p>
         ) : null}
       </section>
@@ -485,7 +469,7 @@ export function FormularioEditarMiembro({
           disabled={pendiente}
           className="flex-1 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pendiente ? "Guardando…" : "Guardar"}
+          {pendiente ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
     </form>

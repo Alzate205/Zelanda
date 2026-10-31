@@ -47,12 +47,12 @@ export async function crearTarifa(_prev: EstadoTarifa, formData: FormData): Prom
   }
   const monto = parsearMontoCop(montoRaw);
   if (monto === null) {
-    return { error: 'Escribí el monto de la tarifa.' };
+    return { error: 'Escribe el monto de la tarifa.' };
   }
   if (monto <= 0) {
     return { error: 'La tarifa debe ser mayor a 0.' };
   }
-  if (!desdeRaw) return { error: 'Elegí la fecha desde la cual rige.' };
+  if (!desdeRaw) return { error: 'Elige la fecha desde la cual rige.' };
   const desde = new Date(`${desdeRaw}T00:00:00`);
   if (Number.isNaN(desde.getTime())) {
     return { error: 'Fecha desde inválida.' };
@@ -113,12 +113,12 @@ export async function editarTarifa(_prev: EstadoTarifa, formData: FormData): Pro
   }
   const monto = parsearMontoCop(montoRaw);
   if (monto === null) {
-    return { error: 'Escribí el monto de la tarifa.' };
+    return { error: 'Escribe el monto de la tarifa.' };
   }
   if (monto <= 0) {
     return { error: 'La tarifa debe ser mayor a 0.' };
   }
-  if (!desdeRaw) return { error: 'Elegí la fecha desde la cual rige.' };
+  if (!desdeRaw) return { error: 'Elige la fecha desde la cual rige.' };
   const desde = new Date(`${desdeRaw}T00:00:00`);
   if (Number.isNaN(desde.getTime())) {
     return { error: 'Fecha desde inválida.' };

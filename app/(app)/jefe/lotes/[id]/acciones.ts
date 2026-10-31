@@ -64,7 +64,7 @@ export async function aplicarFechaSiembraArboles(
   const desdeRaw = String(formData.get('desde') ?? '').trim();
   const hastaRaw = String(formData.get('hasta') ?? '').trim();
   if (!desdeRaw || !hastaRaw) {
-    return { error: 'Ingresá ambas fechas (desde y hasta).', aviso: null };
+    return { error: 'Ingresa ambas fechas (desde y hasta).', aviso: null };
   }
   const desde = new Date(desdeRaw);
   const hasta = new Date(hastaRaw);

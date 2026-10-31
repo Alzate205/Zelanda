@@ -76,7 +76,7 @@ export function FormularioEditarTarifa({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Editar</p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Editar tarifa</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          Modificá los campos y guardá para actualizar.
+          Modifica los campos y guarda para actualizar.
         </p>
       </header>
 

@@ -572,7 +572,7 @@ model asignaciones {
   lotes                  lotes?             @relation(fields: [lote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   persona                personas           @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tipos_tarea            tipos_tarea        @relation(fields: [tipo_tarea_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  cosechas                  cosechas[]
+  cosechas               cosechas[]
   cosechas_miel          cosechas_miel[]
   despachos              despachos[]
   registros_avance       registros_avance[]
@@ -612,20 +612,20 @@ model cosechas {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model despacho_items {
-  id                   BigInt               @id @default(autoincrement())
-  despacho_id          BigInt
-  tipo_item            tipo_item
-  herramienta_id       BigInt?
-  insumo_id            BigInt?
-  cantidad             Decimal              @db.Decimal(12, 3)
-  cantidad_consumida   Decimal?             @db.Decimal(12, 3)
-  devuelto             Boolean              @default(false)
-  condicion_devolucion       String?
-  costo_unitario_snapshot    Decimal?             @db.Decimal(12, 2)
-  despachos            despachos            @relation(fields: [despacho_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  herramientas         herramientas?        @relation(fields: [herramienta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  insumos              insumos?             @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  movimientos_insumo   movimientos_insumo[]
+  id                      BigInt               @id @default(autoincrement())
+  despacho_id             BigInt
+  tipo_item               tipo_item
+  herramienta_id          BigInt?
+  insumo_id               BigInt?
+  cantidad                Decimal              @db.Decimal(12, 3)
+  cantidad_consumida      Decimal?             @db.Decimal(12, 3)
+  devuelto                Boolean              @default(false)
+  condicion_devolucion    String?
+  costo_unitario_snapshot Decimal?             @db.Decimal(12, 2)
+  despachos               despachos            @relation(fields: [despacho_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  herramientas            herramientas?        @relation(fields: [herramienta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  insumos                 insumos?             @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  movimientos_insumo      movimientos_insumo[]
 
   @@schema("public")
 }
@@ -675,28 +675,29 @@ model herramientas {
   total          Int              @default(0)
   activo         Boolean          @default(true)
   despacho_items despacho_items[]
+  compras_items  compras_items[]
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model insumos {
-  id                 BigInt               @id @default(autoincrement())
-  nombre             String               @unique
-  categoria          categoria_item
-  unidad             String
-  stock_actual       Decimal              @default(0) @db.Decimal(12, 3)
-  stock_reservado    Decimal              @default(0) @db.Decimal(12, 3)
-  stock_minimo       Decimal              @default(0) @db.Decimal(12, 3)
+  id                      BigInt               @id @default(autoincrement())
+  nombre                  String               @unique
+  categoria               categoria_item
+  unidad                  String
+  stock_actual            Decimal              @default(0) @db.Decimal(12, 3)
+  stock_reservado         Decimal              @default(0) @db.Decimal(12, 3)
+  stock_minimo            Decimal              @default(0) @db.Decimal(12, 3)
   costo_unitario          Decimal?             @db.Decimal(12, 2)
   ingrediente_activo      String?
   registro_ica            String?
   periodo_carencia_dias   Int?
   periodo_reingreso_horas Int?
-  activo             Boolean              @default(true)
-  compras_items      compras_items[]
-  despacho_items     despacho_items[]
-  movimientos_insumo movimientos_insumo[]
+  activo                  Boolean              @default(true)
+  compras_items           compras_items[]
+  despacho_items          despacho_items[]
+  movimientos_insumo      movimientos_insumo[]
 
   @@schema("public")
 }
@@ -886,18 +887,21 @@ model compras {
 }
 
 model compras_items {
-  id             BigInt   @id @default(autoincrement())
+  id             BigInt        @id @default(autoincrement())
   compra_id      BigInt
-  insumo_id      BigInt
-  cantidad       Decimal  @db.Decimal(12, 3)
-  costo_unitario Decimal  @db.Decimal(12, 2)
-  subtotal       Decimal? @default(dbgenerated("(cantidad * costo_unitario)")) @db.Decimal(12, 2)
+  insumo_id      BigInt?
+  herramienta_id BigInt?
+  cantidad       Decimal       @db.Decimal(12, 3)
+  costo_unitario Decimal       @db.Decimal(12, 2)
+  subtotal       Decimal?      @default(dbgenerated("(cantidad * costo_unitario)")) @db.Decimal(12, 2)
   notas          String?
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
-  compra         compras  @relation(fields: [compra_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  insumo         insumos  @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  compra         compras       @relation(fields: [compra_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  insumo         insumos?      @relation(fields: [insumo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  herramienta    herramientas? @relation(fields: [herramienta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([compra_id], map: "idx_compras_items_compra")
+  @@index([herramienta_id], map: "idx_compras_items_herramienta")
   @@index([insumo_id], map: "idx_compras_items_insumo")
   @@schema("public")
 }
@@ -1068,21 +1072,21 @@ model servicios_contratados {
 }
 
 model jornales {
-  id                        BigInt   @id @default(autoincrement())
+  id                        BigInt    @id @default(autoincrement())
   persona_id                BigInt
-  fecha                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  tarifa_aplicada           Decimal  @db.Decimal(12, 2)
+  fecha                     DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  tarifa_aplicada           Decimal   @db.Decimal(12, 2)
   lote_id                   BigInt?
   descripcion_actividad     String?
   notas                     String?
-  registrado_por_usuario_id String   @db.Uuid
+  registrado_por_usuario_id String    @db.Uuid
   borrado_en                DateTime? @db.Timestamptz(6)
   borrado_por               String?   @db.Uuid
-  created_at                DateTime @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime @default(now()) @db.Timestamptz(6)
-  lotes                     lotes?   @relation(fields: [lote_id], references: [id], onUpdate: NoAction)
-  persona                   personas @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuarios                  usuarios @relation("jornales_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
+  lotes                     lotes?    @relation(fields: [lote_id], references: [id], onUpdate: NoAction)
+  persona                   personas  @relation(fields: [persona_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                  usuarios  @relation("jornales_registrado_por", fields: [registrado_por_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   borrado_por_u             usuarios? @relation("jornales_borrado_por", fields: [borrado_por], references: [id], onUpdate: NoAction)
 
   @@unique([persona_id, fecha])

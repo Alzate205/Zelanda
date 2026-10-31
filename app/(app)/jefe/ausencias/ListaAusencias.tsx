@@ -64,7 +64,7 @@ export function ListaAusencias({ ausencias, totalMes }: Props) {
           Sin ausencias registradas
         </p>
         <p className="mt-1 text-sm text-zelanda-verde-700">
-          Registrá días no trabajados para que el cálculo de saldos de los fijos descuente los días
+          Registra días no trabajados para que el cálculo de saldos de los fijos descuente los días
           que correspondan.
         </p>
         <Link

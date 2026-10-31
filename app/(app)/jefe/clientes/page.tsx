@@ -134,7 +134,7 @@ export default async function PaginaClientes() {
             Sin clientes registrados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá a quién le vendés la cosecha. Cada venta queda asociada a su cliente y permite
+            Registra a quién le vendés la cosecha. Cada venta queda asociada a su cliente y permite
             ver ingresos por comprador.
           </p>
           <Link

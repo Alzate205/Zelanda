@@ -4,7 +4,13 @@ import { useActionState, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Check, Plus, X } from 'lucide-react';
 import { crearCompra, type EstadoCompra } from '../acciones';
-import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
+import {
+  formatearEntradaDecimal,
+  formatearMiles,
+  normalizarEntradaDecimal,
+  normalizarEntradaNumerica,
+  parsearDecimal,
+} from '@/lib/formatos';
 
 const ESTADO_INICIAL: EstadoCompra = { error: null };
 
@@ -22,15 +28,22 @@ type Insumo = {
   costo_unitario: number | null;
 };
 
+type Herramienta = { id: string; nombre: string };
+
+/**
+ * `ref` dice qué se compra: "i:<id>" para un insumo, "h:<id>" para una
+ * herramienta. Un solo select con los dos grupos es más simple en el celular
+ * que un selector de tipo y otro de item.
+ */
 type Item = {
-  insumo_id: string;
+  ref: string;
   cantidad: string;
   costo_unitario: string;
   notas: string;
 };
 
 function nuevoItem(): Item {
-  return { insumo_id: '', cantidad: '', costo_unitario: '', notas: '' };
+  return { ref: '', cantidad: '', costo_unitario: '', notas: '' };
 }
 
 function fmtMonto(n: number): string {
@@ -44,9 +57,11 @@ function fmtMonto(n: number): string {
 export function FormularioCompra({
   proveedores,
   insumos,
+  herramientas,
 }: {
   proveedores: Proveedor[];
   insumos: Insumo[];
+  herramientas: Herramienta[];
 }) {
   const [estado, accion, pendiente] = useActionState(crearCompra, ESTADO_INICIAL);
   const [modoProveedor, setModoProveedor] = useState<'existente' | 'nuevo'>(
@@ -58,7 +73,7 @@ export function FormularioCompra({
 
   const total = useMemo(() => {
     return items.reduce((acc, it) => {
-      const c = Number(it.cantidad.replace(/\./g, ''));
+      const c = parsearDecimal(it.cantidad);
       const cu = Number(it.costo_unitario.replace(/\./g, ''));
       if (!Number.isFinite(c) || !Number.isFinite(cu)) return acc;
       return acc + c * cu;
@@ -77,10 +92,10 @@ export function FormularioCompra({
     setItems((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  function elegirInsumo(idx: number, insumoId: string) {
-    const insumo = insumos.find((i) => i.id === insumoId);
+  function elegirItem(idx: number, ref: string) {
+    const insumo = ref.startsWith('i:') ? insumos.find((i) => i.id === ref.slice(2)) : undefined;
     actualizarItem(idx, {
-      insumo_id: insumoId,
+      ref,
       // Pre-llenar costo si el insumo tiene uno registrado
       costo_unitario:
         items[idx].costo_unitario === '' && insumo?.costo_unitario != null
@@ -92,10 +107,12 @@ export function FormularioCompra({
   // Payload JSON para el server
   const itemsJson = JSON.stringify(
     items
-      .filter((it) => it.insumo_id && it.cantidad && it.costo_unitario)
+      .filter((it) => it.ref && it.cantidad && it.costo_unitario)
       .map((it) => ({
-        insumo_id: it.insumo_id,
-        cantidad: Number(it.cantidad.replace(/\./g, '')),
+        ...(it.ref.startsWith('h:')
+          ? { herramienta_id: it.ref.slice(2) }
+          : { insumo_id: it.ref.slice(2) }),
+        cantidad: parsearDecimal(it.cantidad),
         costo_unitario: Number(it.costo_unitario.replace(/\./g, '')),
         notas: it.notas || undefined,
       }))
@@ -117,7 +134,8 @@ export function FormularioCompra({
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nueva compra</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          El stock de los insumos se actualiza automáticamente al guardar.
+          Al guardar se suma solo al inventario: el stock de los insumos y la cantidad de
+          herramientas.
         </p>
       </header>
 
@@ -212,8 +230,11 @@ export function FormularioCompra({
         </div>
 
         {items.map((it, idx) => {
-          const insumo = insumos.find((i) => i.id === it.insumo_id);
-          const c = Number(it.cantidad.replace(/\./g, ''));
+          const insumo = it.ref.startsWith('i:')
+            ? insumos.find((i) => i.id === it.ref.slice(2))
+            : undefined;
+          const esHerramienta = it.ref.startsWith('h:');
+          const c = parsearDecimal(it.cantidad);
           const cu = Number(it.costo_unitario.replace(/\./g, ''));
           const subtotal = Number.isFinite(c) && Number.isFinite(cu) ? c * cu : 0;
           return (
@@ -237,31 +258,47 @@ export function FormularioCompra({
               </div>
 
               <select
-                value={it.insumo_id}
-                onChange={(e) => elegirInsumo(idx, e.target.value)}
+                value={it.ref}
+                onChange={(e) => elegirItem(idx, e.target.value)}
                 className={`${inputBase} mt-1.5`}
                 required
               >
-                <option value="">Selecciona insumo…</option>
-                {insumos.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nombre} ({i.unidad})
-                  </option>
-                ))}
+                <option value="">Selecciona qué se compró…</option>
+                {insumos.length > 0 ? (
+                  <optgroup label="Insumos">
+                    {insumos.map((i) => (
+                      <option key={i.id} value={`i:${i.id}`}>
+                        {i.nombre} ({i.unidad})
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+                {herramientas.length > 0 ? (
+                  <optgroup label="Herramientas">
+                    {herramientas.map((h) => (
+                      <option key={h.id} value={`h:${h.id}`}>
+                        {h.nombre}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
               </select>
 
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700">
-                    Cantidad {insumo ? `(${insumo.unidad})` : ''}
+                    Cantidad {insumo ? `(${insumo.unidad})` : esHerramienta ? '(unidades)' : ''}
                   </label>
                   <input
                     type="text"
-                    inputMode="decimal"
-                    value={formatearMiles(it.cantidad)}
+                    inputMode={esHerramienta ? 'numeric' : 'decimal'}
+                    value={formatearEntradaDecimal(it.cantidad)}
                     onChange={(e) =>
                       actualizarItem(idx, {
-                        cantidad: normalizarEntradaNumerica(e.target.value),
+                        // Las herramientas van por unidad: sin coma decimal.
+                        cantidad: esHerramienta
+                          ? normalizarEntradaDecimal(e.target.value).replace(/,.*$/, '')
+                          : normalizarEntradaDecimal(e.target.value),
                       })
                     }
                     placeholder="10"

@@ -1,31 +1,20 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import { Sprout } from "lucide-react";
-import {
-  aplicarFechaSiembraArboles,
-  type EstadoSiembra,
-} from "../acciones";
+import { useActionState, useState } from 'react';
+import { Sprout } from 'lucide-react';
+import { aplicarFechaSiembraArboles, type EstadoSiembra } from '../acciones';
 
 const ESTADO_INICIAL: EstadoSiembra = { error: null, aviso: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
-const labelBase = "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+const labelBase =
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-export function FormSiembra({
-  loteId,
-  fechaLote,
-}: {
-  loteId: string;
-  fechaLote: string | null;
-}) {
-  const [estado, accion, pendiente] = useActionState(
-    aplicarFechaSiembraArboles,
-    ESTADO_INICIAL,
-  );
-  const [modo, setModo] = useState<"lote" | "lapso">("lote");
+export function FormSiembra({ loteId, fechaLote }: { loteId: string; fechaLote: string | null }) {
+  const [estado, accion, pendiente] = useActionState(aplicarFechaSiembraArboles, ESTADO_INICIAL);
+  const [modo, setModo] = useState<'lote' | 'lapso'>('lote');
 
   return (
     <form
@@ -41,41 +30,41 @@ export function FormSiembra({
           Aplicar fecha de siembra a árboles
         </h2>
         <p className="mt-1 text-xs text-zelanda-verde-700">
-          Definí cuándo se sembraron los árboles del lote. La edad en la ficha
-          de cada árbol se calcula desde esta fecha.
+          Define cuándo se sembraron los árboles del lote. La edad en la ficha de cada árbol se
+          calcula desde esta fecha.
         </p>
       </div>
 
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setModo("lote")}
+          onClick={() => setModo('lote')}
           className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-            modo === "lote"
-              ? "border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900"
-              : "border-zelanda-beige-300 text-zelanda-verde-700"
+            modo === 'lote'
+              ? 'border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900'
+              : 'border-zelanda-beige-300 text-zelanda-verde-700'
           }`}
         >
           Misma fecha
         </button>
         <button
           type="button"
-          onClick={() => setModo("lapso")}
+          onClick={() => setModo('lapso')}
           className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-            modo === "lapso"
-              ? "border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900"
-              : "border-zelanda-beige-300 text-zelanda-verde-700"
+            modo === 'lapso'
+              ? 'border-zelanda-verde-600 bg-zelanda-verde-50 text-zelanda-verde-900'
+              : 'border-zelanda-beige-300 text-zelanda-verde-700'
           }`}
         >
           Lapso entre fechas
         </button>
       </div>
 
-      {modo === "lote" ? (
+      {modo === 'lote' ? (
         <p className="rounded-md bg-zelanda-beige-100 px-3 py-2 text-xs text-zelanda-verde-800">
           {fechaLote
             ? `Se usará la fecha de siembra del lote: ${fechaLote}.`
-            : "Primero guardá una fecha de siembra del lote arriba."}
+            : 'Primero guarda una fecha de siembra del lote arriba.'}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -83,38 +72,22 @@ export function FormSiembra({
             <label htmlFor="desde" className={labelBase}>
               Desde
             </label>
-            <input
-              id="desde"
-              name="desde"
-              type="date"
-              required
-              className={inputBase}
-            />
+            <input id="desde" name="desde" type="date" required className={inputBase} />
           </div>
           <div>
             <label htmlFor="hasta" className={labelBase}>
               Hasta
             </label>
-            <input
-              id="hasta"
-              name="hasta"
-              type="date"
-              required
-              className={inputBase}
-            />
+            <input id="hasta" name="hasta" type="date" required className={inputBase} />
           </div>
         </div>
       )}
 
       <label className="flex items-start gap-2 text-xs text-zelanda-verde-800">
-        <input
-          type="checkbox"
-          name="sobrescribir"
-          className="mt-0.5 h-4 w-4"
-        />
+        <input type="checkbox" name="sobrescribir" className="mt-0.5 h-4 w-4" />
         <span>
-          Sobrescribir árboles que ya tengan fecha. Si no marcás esto, solo se
-          actualizan los árboles sin fecha.
+          Sobrescribir árboles que ya tengan fecha. Si no marcás esto, solo se actualizan los
+          árboles sin fecha.
         </span>
       </label>
 
@@ -138,10 +111,10 @@ export function FormSiembra({
 
       <button
         type="submit"
-        disabled={pendiente || (modo === "lote" && !fechaLote)}
+        disabled={pendiente || (modo === 'lote' && !fechaLote)}
         className="min-h-touch w-full rounded-lg bg-zelanda-verde-700 px-4 py-2 text-base font-medium text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60"
       >
-        {pendiente ? "Aplicando..." : "Aplicar a árboles"}
+        {pendiente ? 'Aplicando...' : 'Aplicar a árboles'}
       </button>
     </form>
   );

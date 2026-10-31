@@ -70,7 +70,7 @@ export function ListaJornales({ jornales }: Props) {
         <CalendarCheck className="mx-auto h-8 w-8 text-zelanda-verde-700/40" />
         <p className="mt-3 font-serif text-base text-zelanda-verde-900">Sin jornales registrados</p>
         <p className="mt-1 text-sm text-zelanda-verde-700">
-          Registrá cada día trabajado de un jornalero. La tarifa queda congelada al momento de
+          Registra cada día trabajado de un jornalero. La tarifa queda congelada al momento de
           registrar; si cambia después, los registros anteriores no se ven afectados.
         </p>
         <Link

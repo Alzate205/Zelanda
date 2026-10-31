@@ -3,6 +3,7 @@ import { ChevronLeft, FilePlus2, Ban } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { MODULO_NOMINA } from '@/lib/modulos';
 
 export const metadata = { title: 'Movimientos' };
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ function fmtFechaHora(d: Date): string {
 
 type Evento = {
   fecha: Date;
-  accion: 'creó' | 'anuló';
+  accion: 'creó' | 'registró' | 'anuló';
   modulo: string;
   detalle: string;
   actor: string;
@@ -37,41 +38,70 @@ type Evento = {
 export default async function PaginaMovimientos() {
   await requerirUsuario('JEFE');
 
-  const [pagos, jornales, ausencias, servicios] = await Promise.all([
-    prisma.pagos.findMany({
+  // Con la nómina apagada (lib/modulos.ts) no se consultan pagos, jornales,
+  // ausencias ni servicios: solo compras y ventas.
+  const nada = Promise.resolve([] as never[]);
+  const [pagos, jornales, ausencias, servicios, compras, ventas] = await Promise.all([
+    !MODULO_NOMINA
+      ? nada
+      : prisma.pagos.findMany({
+          include: {
+            persona: { select: { nombre_completo: true } },
+            usuarios: { select: { nombre_completo: true } },
+            borrado_por_u: { select: { nombre_completo: true } },
+          },
+          orderBy: { created_at: 'desc' },
+          take: 120,
+        }),
+    !MODULO_NOMINA
+      ? nada
+      : prisma.jornales.findMany({
+          include: {
+            persona: { select: { nombre_completo: true } },
+            usuarios: { select: { nombre_completo: true } },
+            borrado_por_u: { select: { nombre_completo: true } },
+          },
+          orderBy: { created_at: 'desc' },
+          take: 120,
+        }),
+    !MODULO_NOMINA
+      ? nada
+      : prisma.ausencias.findMany({
+          include: {
+            persona: { select: { nombre_completo: true } },
+            usuarios: { select: { nombre_completo: true } },
+            borrado_por_u: { select: { nombre_completo: true } },
+          },
+          orderBy: { created_at: 'desc' },
+          take: 120,
+        }),
+    !MODULO_NOMINA
+      ? nada
+      : prisma.servicios_contratados.findMany({
+          include: {
+            persona: { select: { nombre_completo: true } },
+            usuarios: { select: { nombre_completo: true } },
+            borrado_por_u: { select: { nombre_completo: true } },
+          },
+          orderBy: { created_at: 'desc' },
+          take: 120,
+        }),
+    prisma.compras.findMany({
       include: {
-        persona: { select: { nombre_completo: true } },
+        proveedor: { select: { nombre: true } },
         usuarios: { select: { nombre_completo: true } },
         borrado_por_u: { select: { nombre_completo: true } },
       },
       orderBy: { created_at: 'desc' },
       take: 120,
     }),
-    prisma.jornales.findMany({
+    prisma.salidas_cosecha.findMany({
+      where: { tipo: 'VENTA' },
       include: {
-        persona: { select: { nombre_completo: true } },
+        clientes: { select: { nombre: true } },
         usuarios: { select: { nombre_completo: true } },
-        borrado_por_u: { select: { nombre_completo: true } },
       },
-      orderBy: { created_at: 'desc' },
-      take: 120,
-    }),
-    prisma.ausencias.findMany({
-      include: {
-        persona: { select: { nombre_completo: true } },
-        usuarios: { select: { nombre_completo: true } },
-        borrado_por_u: { select: { nombre_completo: true } },
-      },
-      orderBy: { created_at: 'desc' },
-      take: 120,
-    }),
-    prisma.servicios_contratados.findMany({
-      include: {
-        persona: { select: { nombre_completo: true } },
-        usuarios: { select: { nombre_completo: true } },
-        borrado_por_u: { select: { nombre_completo: true } },
-      },
-      orderBy: { created_at: 'desc' },
+      orderBy: { fecha: 'desc' },
       take: 120,
     }),
   ]);
@@ -158,6 +188,41 @@ export default async function PaginaMovimientos() {
         actor: s.borrado_por_u?.nombre_completo ?? '—',
       });
     }
+  }
+
+  for (const c of compras) {
+    const detalle = `${fmtMonto(Number(c.total))} a ${
+      c.proveedor?.nombre ?? c.proveedor_detalle ?? 'proveedor sin nombre'
+    }`;
+    eventos.push({
+      fecha: c.created_at,
+      accion: 'creó',
+      modulo: 'Compra',
+      detalle,
+      actor: c.usuarios?.nombre_completo ?? '—',
+    });
+    if (c.borrado_en) {
+      eventos.push({
+        fecha: c.borrado_en,
+        accion: 'anuló',
+        modulo: 'Compra',
+        detalle,
+        actor: c.borrado_por_u?.nombre_completo ?? '—',
+      });
+    }
+  }
+
+  for (const v of ventas) {
+    const precio = v.precio_total !== null ? ` por ${fmtMonto(Number(v.precio_total))}` : '';
+    eventos.push({
+      fecha: v.fecha,
+      accion: 'registró',
+      modulo: 'Venta',
+      detalle: `${Number(v.cantidad_kg).toLocaleString('es-CO')} kg${precio} a ${
+        v.clientes?.nombre ?? v.cliente_detalle ?? 'cliente sin nombre'
+      }`,
+      actor: v.usuarios?.nombre_completo ?? '—',
+    });
   }
 
   eventos.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());

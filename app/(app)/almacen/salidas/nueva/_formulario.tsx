@@ -57,7 +57,7 @@ export function FormularioSalida({
     const clienteFinal = usaIdExistente ? null : cliente.trim() || null;
     const clienteIdFinal = usaIdExistente ? clienteId : null;
     if (tipo === 'VENTA' && !clienteFinal && !clienteIdFinal) {
-      setError('Para ventas, elegí o escribí el cliente.');
+      setError('Para ventas, elige o escribe el cliente.');
       return;
     }
 

@@ -1,55 +1,40 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, Check } from "lucide-react";
-import { crearTarifa, type EstadoTarifa } from "../acciones";
-import { formatearMiles, normalizarEntradaNumerica } from "@/lib/formatos";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Check } from 'lucide-react';
+import { crearTarifa, type EstadoTarifa } from '../acciones';
+import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
 
 const ESTADO_INICIAL: EstadoTarifa = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
 const labelBase =
-  "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
-type Tipo = { id: string; nombre: string; area: "CULTIVO" | "APICULTURA" };
+type Tipo = { id: string; nombre: string; area: 'CULTIVO' | 'APICULTURA' };
 type Lote = { id: string; nombre: string };
 
-type Esquema =
-  | "POR_JORNAL"
-  | "POR_KG"
-  | "POR_ARBOL"
-  | "POR_HECTAREA"
-  | "POR_HORA"
-  | "OTRO";
+type Esquema = 'POR_JORNAL' | 'POR_KG' | 'POR_ARBOL' | 'POR_HECTAREA' | 'POR_HORA' | 'OTRO';
 
 const ESQUEMAS: { id: Esquema; etiqueta: string; unidad: string }[] = [
-  { id: "POR_JORNAL", etiqueta: "Por jornal", unidad: "día" },
-  { id: "POR_KG", etiqueta: "Por kg", unidad: "kg" },
-  { id: "POR_ARBOL", etiqueta: "Por árbol", unidad: "árbol" },
-  { id: "POR_HECTAREA", etiqueta: "Por hectárea", unidad: "ha" },
-  { id: "POR_HORA", etiqueta: "Por hora", unidad: "hora" },
-  { id: "OTRO", etiqueta: "Otro", unidad: "" },
+  { id: 'POR_JORNAL', etiqueta: 'Por jornal', unidad: 'día' },
+  { id: 'POR_KG', etiqueta: 'Por kg', unidad: 'kg' },
+  { id: 'POR_ARBOL', etiqueta: 'Por árbol', unidad: 'árbol' },
+  { id: 'POR_HECTAREA', etiqueta: 'Por hectárea', unidad: 'ha' },
+  { id: 'POR_HORA', etiqueta: 'Por hora', unidad: 'hora' },
+  { id: 'OTRO', etiqueta: 'Otro', unidad: '' },
 ];
 
-export function FormularioTarifa({
-  tipos,
-  lotes,
-}: {
-  tipos: Tipo[];
-  lotes: Lote[];
-}) {
-  const [estado, accion, pendiente] = useActionState(
-    crearTarifa,
-    ESTADO_INICIAL,
-  );
-  const [esquema, setEsquema] = useState<Esquema>("POR_JORNAL");
+export function FormularioTarifa({ tipos, lotes }: { tipos: Tipo[]; lotes: Lote[] }) {
+  const [estado, accion, pendiente] = useActionState(crearTarifa, ESTADO_INICIAL);
+  const [esquema, setEsquema] = useState<Esquema>('POR_JORNAL');
   const [aplicaALote, setAplicaALote] = useState(false);
-  const [monto, setMonto] = useState("");
+  const [monto, setMonto] = useState('');
 
-  const unidadSugerida = ESQUEMAS.find((e) => e.id === esquema)?.unidad ?? "";
+  const unidadSugerida = ESQUEMAS.find((e) => e.id === esquema)?.unidad ?? '';
   const hoy = new Date().toISOString().slice(0, 10);
 
   return (
@@ -63,14 +48,10 @@ export function FormularioTarifa({
       </Link>
 
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Crear
-        </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Nueva tarifa
-        </h1>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Crear</p>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nueva tarifa</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          Definí cuánto se paga por una tarea y desde cuándo rige.
+          Define cuánto se paga por una tarea y desde cuándo rige.
         </p>
       </header>
 
@@ -89,7 +70,7 @@ export function FormularioTarifa({
             <option value="">Selecciona…</option>
             <optgroup label="Cultivo">
               {tipos
-                .filter((t) => t.area === "CULTIVO")
+                .filter((t) => t.area === 'CULTIVO')
                 .map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.nombre}
@@ -98,7 +79,7 @@ export function FormularioTarifa({
             </optgroup>
             <optgroup label="Apicultura">
               {tipos
-                .filter((t) => t.area === "APICULTURA")
+                .filter((t) => t.area === 'APICULTURA')
                 .map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.nombre}
@@ -116,8 +97,8 @@ export function FormularioTarifa({
                 key={e.id}
                 className={`flex cursor-pointer items-center justify-center rounded-[10px] border px-2 py-2 text-[12.5px] font-semibold transition ${
                   esquema === e.id
-                    ? "border-zelanda-verde-700 bg-zelanda-verde-50 text-zelanda-verde-900"
-                    : "border-zelanda-beige-300 bg-white text-zelanda-verde-700 hover:bg-zelanda-beige-50"
+                    ? 'border-zelanda-verde-700 bg-zelanda-verde-50 text-zelanda-verde-900'
+                    : 'border-zelanda-beige-300 bg-white text-zelanda-verde-700 hover:bg-zelanda-beige-50'
                 }`}
               >
                 <input
@@ -160,7 +141,7 @@ export function FormularioTarifa({
               name="unidad"
               type="text"
               defaultValue={unidadSugerida}
-              placeholder={unidadSugerida || "ej. servicio"}
+              placeholder={unidadSugerida || 'ej. servicio'}
               className={inputBase}
             />
           </div>
@@ -184,12 +165,7 @@ export function FormularioTarifa({
             <label htmlFor="vigente_hasta" className={labelBase}>
               Hasta (opcional)
             </label>
-            <input
-              id="vigente_hasta"
-              name="vigente_hasta"
-              type="date"
-              className={inputBase}
-            />
+            <input id="vigente_hasta" name="vigente_hasta" type="date" className={inputBase} />
           </div>
         </div>
 
@@ -201,8 +177,8 @@ export function FormularioTarifa({
               onClick={() => setAplicaALote(false)}
               className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
                 !aplicaALote
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700"
+                  ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                  : 'text-zelanda-verde-700'
               }`}
             >
               Toda la finca
@@ -212,8 +188,8 @@ export function FormularioTarifa({
               onClick={() => setAplicaALote(true)}
               className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
                 aplicaALote
-                  ? "bg-white text-zelanda-verde-900 shadow-suave"
-                  : "text-zelanda-verde-700"
+                  ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                  : 'text-zelanda-verde-700'
               }`}
             >
               Solo un lote
@@ -238,8 +214,8 @@ export function FormularioTarifa({
           )}
           <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
             {aplicaALote
-              ? "Esta tarifa solo aplica en el lote elegido; sobreescribe la tarifa general."
-              : "Aplica a todos los lotes a menos que haya un override específico."}
+              ? 'Esta tarifa solo aplica en el lote elegido; sobreescribe la tarifa general.'
+              : 'Aplica a todos los lotes a menos que haya un override específico.'}
           </p>
         </div>
 
@@ -268,7 +244,7 @@ export function FormularioTarifa({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <Link
@@ -283,7 +259,7 @@ export function FormularioTarifa({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente ? "Creando…" : "Crear tarifa"}
+            {pendiente ? 'Creando…' : 'Crear tarifa'}
           </button>
         </div>
       </div>

@@ -39,15 +39,15 @@ export default async function PaginaInformeIA() {
         <Eyebrow>Jefe · Informe</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Preguntarle a la IA</h1>
         <p className="mt-1.5 text-sm text-zelanda-verde-700">
-          Elegí qué llevar, copialo y pegalo en tu conversación de Claude. Va el estado de la finca,
-          así podés preguntar lo que quieras sin explicarle nada.
+          Elige qué llevar, cópialo y pégalo en tu conversación de Claude. Va el estado de la finca,
+          así puedes preguntar lo que quieras sin explicarle nada.
         </p>
       </header>
 
       <ol className="space-y-1.5 rounded-2xl border border-zelanda-beige-200 bg-white p-4 text-sm text-zelanda-verde-800 shadow-suave">
-        <li>1. Marcá lo que quieras incluir.</li>
-        <li>2. Tocá “Copiar informe”.</li>
-        <li>3. Abrí tu proyecto de Claude, pegá y preguntá.</li>
+        <li>1. Marca lo que quieras incluir.</li>
+        <li>2. Toca “Copiar informe”.</li>
+        <li>3. Abre tu proyecto de Claude, pega y pregunta.</li>
       </ol>
 
       <ArmadorInforme partes={partes} generadoEn={generadoEn} />

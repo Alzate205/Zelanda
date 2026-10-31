@@ -169,11 +169,11 @@ export function motivo(e: unknown): string {
     return (
       `El motor de la app no arrancó en ${location.host}. ` +
       'Si esa no es la dirección de siempre, la app quedó instalada desde un enlace ' +
-      'de prueba: borrala de la pantalla de inicio e instalala de nuevo desde la buena.'
+      'de prueba: bórrala de la pantalla de inicio e instálala de nuevo desde la buena.'
     );
   }
   if (texto.includes('registro en el servidor')) {
-    return 'El permiso quedó dado pero no se pudo guardar en el servidor. Probá de nuevo con señal.';
+    return 'El permiso quedó dado pero no se pudo guardar en el servidor. Prueba de nuevo con señal.';
   }
   if (esIPhone() && !estaInstalada()) {
     return 'En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio.';
@@ -186,7 +186,7 @@ export function motivo(e: unknown): string {
   // Se probó de todo del lado del código y nada cambió el resultado, así que
   // apunta a que iOS no completa el registro con el servicio de Apple. Lo único
   // honesto que se puede hacer acá es no mandar a buscar el problema donde no
-  // está: "probá con mejor señal" con señal perfecta es una pista falsa que hace
+  // está: "prueba con mejor señal" con señal perfecta es una pista falsa que hace
   // perder el tiempo. Se dice lo que se sabe y lo que se puede intentar.
   if (
     e instanceof ErrorTope &&
@@ -198,7 +198,7 @@ export function motivo(e: unknown): string {
   ) {
     return (
       'iOS aceptó el permiso pero no está completando el registro de avisos, y no es ' +
-      'la señal: la app tiene internet. Podés intentar, en este orden: apagar el Modo ' +
+      'la señal: la app tiene internet. Puedes intentar, en este orden: apagar el Modo ' +
       'de bajo consumo; reiniciar el iPhone; y si sigue igual, borrar La Zelanda de la ' +
       'pantalla de inicio, borrar los datos del sitio en Ajustes → Safari → Avanzado → ' +
       'Datos de sitios web, reiniciar y volver a instalarla. Si después de todo eso ' +
@@ -213,15 +213,15 @@ export function motivo(e: unknown): string {
   if (e instanceof ErrorTope) {
     return (
       'El servicio de avisos del celular no contestó. Casi siempre es la señal: ' +
-      'probá con wifi o en un punto con mejor cobertura y volvé a intentar. ' +
+      'prueba con wifi o en un punto con mejor cobertura y vuelve a intentar. ' +
       'Si igual no contesta, mostrale esto al jefe: ' +
       `sin respuesta de ${e.que} en ${location.host}.`
     );
   }
   if (e instanceof Error && e.name === 'AbortError') {
     return (
-      'El servicio de avisos de Apple rechazó el registro. Revisá que el Modo de ' +
-      'bajo consumo esté apagado y que haya internet estable, y probá de nuevo. ' +
+      'El servicio de avisos de Apple rechazó el registro. Revisa que el Modo de ' +
+      'bajo consumo esté apagado y que haya internet estable, y prueba de nuevo. ' +
       'Si La Zelanda no aparece en Ajustes → Notificaciones, es que iOS nunca ' +
       'llegó a registrarla.'
     );

@@ -21,7 +21,7 @@ export function AvisoFotoPerdida({ que, volverA }: { que: string; volverA: strin
         <h1 className="font-serif text-2xl text-zelanda-verde-900">{que} sin la foto</h1>
         <p className="mx-auto mt-2 max-w-[34ch] text-base text-zelanda-verde-700">
           Quedó registrado, pero la foto no se pudo guardar y ya no está en el celular. Si la
-          evidencia hace falta, tomala de nuevo desde el árbol.
+          evidencia hace falta, tómala de nuevo desde el árbol.
         </p>
       </div>
       <Link

@@ -56,7 +56,7 @@ export function ArmadorInforme({
           </button>
         </div>
         <p className="mt-1 text-xs text-zelanda-verde-700/70">
-          Quitá lo que no venga al caso y el informe queda más corto y más al grano.
+          Quita lo que no venga al caso y el informe queda más corto y más al grano.
         </p>
 
         <ul className="mt-3 space-y-1.5">

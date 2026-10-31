@@ -1,25 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Sprout } from "lucide-react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Sprout } from 'lucide-react';
 
-export function BuscadorArbol({
-  loteId,
-  totalArboles,
-}: {
-  loteId: string;
-  totalArboles: number;
-}) {
+export function BuscadorArbol({ loteId, totalArboles }: { loteId: string; totalArboles: number }) {
   const router = useRouter();
-  const [num, setNum] = useState("");
+  const [num, setNum] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     if (!/^\d+$/.test(num)) {
-      setError("Ingresá un número entero.");
+      setError('Ingresa un número entero.');
       return;
     }
     const n = parseInt(num, 10);
@@ -40,7 +34,7 @@ export function BuscadorArbol({
         Ficha de árbol
       </h2>
       <p className="mt-1 text-xs text-zelanda-verde-700">
-        Consultá el historial completo de un árbol específico.
+        Consulta el historial completo de un árbol específico.
       </p>
       <div className="mt-3 flex gap-2">
         <input
@@ -60,9 +54,7 @@ export function BuscadorArbol({
           Ver
         </button>
       </div>
-      {error ? (
-        <p className="mt-2 text-xs text-estado-vencida">{error}</p>
-      ) : null}
+      {error ? <p className="mt-2 text-xs text-estado-vencida">{error}</p> : null}
     </form>
   );
 }

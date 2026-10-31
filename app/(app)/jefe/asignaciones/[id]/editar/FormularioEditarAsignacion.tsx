@@ -99,7 +99,7 @@ export function FormularioEditarAsignacion({
               <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
                 <p className="text-[12px] text-amber-700">
-                  Ya hay avances registrados. No es posible reasignar. Cancelá y creá una nueva
+                  Ya hay avances registrados. No es posible reasignar. Cancela y crea una nueva
                   asignación si es necesario.
                 </p>
               </div>

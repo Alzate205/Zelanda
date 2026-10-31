@@ -1,37 +1,37 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import Image from "next/image";
-import { notFound } from "next/navigation";
-import { ChevronLeft, ClipboardCheck, Plus } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { urlFotoFirmada } from "@/lib/supabase/storage";
-import { BadgeBase } from "@/components/shared/BadgeRol";
-import { formatearFechaCorta } from "@/lib/utils";
-import { reabrirNovedad } from "./acciones";
-import { FormularioResolverNovedad } from "./_resolver";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import { ChevronLeft, ClipboardCheck, Plus } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { urlFotoFirmada } from '@/lib/supabase/storage';
+import { BadgeBase } from '@/components/shared/BadgeRol';
+import { formatearFechaCorta } from '@/lib/utils';
+import { reabrirNovedad } from './acciones';
+import { FormularioResolverNovedad } from './_resolver';
 
-export const metadata: Metadata = { title: "Novedad" };
+export const metadata: Metadata = { title: 'Novedad' };
 
 function parsearId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw)) return null;
-  try { return BigInt(raw); } catch { return null; }
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
 }
 
 const ETIQUETA_NOVEDAD: Record<string, string> = {
-  PLAGA: "Plaga",
-  DANO_FISICO: "Daño físico",
-  ENFERMEDAD: "Enfermedad",
-  OBSERVACION: "Observación",
-  OTRO: "Otro",
+  PLAGA: 'Plaga',
+  DANO_FISICO: 'Daño físico',
+  ENFERMEDAD: 'Enfermedad',
+  OBSERVACION: 'Observación',
+  OTRO: 'Otro',
 };
 
-export default async function DetalleNovedad({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function DetalleNovedad({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   const idBig = parsearId(id);
   if (!idBig) notFound();
@@ -146,11 +146,9 @@ export default async function DetalleNovedad({
             Crear asignación para atender en el lote
           </Link>
           <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
-            <h2 className="font-serif text-base text-zelanda-verde-900">
-              Marcar como resuelta
-            </h2>
+            <h2 className="font-serif text-base text-zelanda-verde-900">Marcar como resuelta</h2>
             <p className="mt-1 text-xs text-zelanda-verde-700">
-              Dejá nota de qué se hizo para que el histórico quede claro.
+              Deja nota de qué se hizo para que el histórico quede claro.
             </p>
             <div className="mt-3">
               <FormularioResolverNovedad novedadId={String(n.id)} />

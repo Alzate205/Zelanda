@@ -173,7 +173,7 @@ export default function EditorPoligono({
         <span className="text-zelanda-verde-700">
           Vértices: <strong>{vertices.length}</strong>
           {vertices.length > 0 && vertices.length < 3 && (
-            <span className="ml-1 text-estado-vencida">(necesitás al menos 3)</span>
+            <span className="ml-1 text-estado-vencida">(necesitas al menos 3)</span>
           )}
         </span>
         <div className="flex gap-2">

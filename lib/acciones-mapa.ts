@@ -28,7 +28,7 @@ export async function guardarCoordsApiario(
   const idRaw = String(formData.get('apiario_id') ?? '');
   if (!/^\d+$/.test(idRaw)) return { error: 'Apiario inválido.' };
   const pto = parsePunto(String(formData.get('punto') ?? ''));
-  if (!pto) return { error: 'Tocá la ubicación en el mapa antes de guardar.' };
+  if (!pto) return { error: 'Toca la ubicación en el mapa antes de guardar.' };
   const wkt = puntoAWkt(pto[0], pto[1]);
   await prisma.$executeRawUnsafe(
     `UPDATE apiarios SET coordenadas = ST_GeomFromText($1, 4326)::geography WHERE id = $2`,
@@ -49,7 +49,7 @@ export async function guardarCoordsInstalacion(
   const idRaw = String(formData.get('instalacion_id') ?? '');
   if (!/^\d+$/.test(idRaw)) return { error: 'Instalación inválida.' };
   const pto = parsePunto(String(formData.get('punto') ?? ''));
-  if (!pto) return { error: 'Tocá la ubicación en el mapa antes de guardar.' };
+  if (!pto) return { error: 'Toca la ubicación en el mapa antes de guardar.' };
   const wkt = puntoAWkt(pto[0], pto[1]);
   await prisma.$executeRawUnsafe(
     `UPDATE instalaciones SET coordenadas = ST_GeomFromText($1, 4326)::geography WHERE id = $2`,

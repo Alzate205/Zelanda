@@ -372,6 +372,8 @@ Pasos:
 - **Vista de saldos** ✅ (`/jefe/saldos` — calcula devengado – pagado por persona y mes, con navegación mes a mes; detalle por persona con desglose completo de jornales, contratos, ausencias y pagos del mes)
 - **Separador de miles** ✅ (util `lib/formatos.ts` aplicado a todos los inputs de plata: pagos, tarifas, salario_base, tarifa_jornal, monto_pactado de servicios, tarifa de jornales)
 
+> **Nómina apagada (2026-10-30).** `lib/modulos.ts` → `MODULO_NOMINA = false`. Pagos, tarifas, jornales, servicios, ausencias y el saldo por persona responden 404 y no tienen atajos; salario/tarifa/destajo no se muestran en Equipo ni en Configuración (viajan ocultos para cumplir `chk_vinc_campos_por_tipo`). `/jefe/saldos` pasó a ser **ventas de aguacate − compras** del mes y del año. Las tablas y los datos siguen intactos: para volver, poner `true`.
+
 ### ✅ Fase 7 paso 1 — Destajo en saldos (COMPLETADA)
 
 - **Cálculo de destajo extra** ✅ (`lib/saldos.ts` ahora recorre `registros_avance` y `cosechas` en el período, busca la `tarifas_tarea` vigente al momento del evento — preferencia: tarifa específica por lote, luego global — y suma los extras al saldo)

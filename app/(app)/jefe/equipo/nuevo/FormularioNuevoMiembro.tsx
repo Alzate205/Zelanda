@@ -7,6 +7,7 @@ import type { TipoPeriodoPago } from '@prisma/client';
 import { crearMiembro, type EstadoFormulario } from '../acciones';
 import { formatearMiles, normalizarEntradaNumerica } from '@/lib/formatos';
 import { MIN_CLAVE, sugerirUsername } from '@/lib/acceso';
+import { MODULO_NOMINA } from '@/lib/modulos';
 
 interface Props {
   jornalTarifaDefault: number | null;
@@ -165,9 +166,13 @@ export function FormularioNuevoMiembro({
             }
             className={inputBase}
           >
-            <option value="FIJO">Fijo (sueldo periódico)</option>
-            <option value="JORNALERO">Jornalero (por días)</option>
-            <option value="CONTRATISTA">Contratista (por servicio)</option>
+            <option value="FIJO">{MODULO_NOMINA ? 'Fijo (sueldo periódico)' : 'Fijo'}</option>
+            <option value="JORNALERO">
+              {MODULO_NOMINA ? 'Jornalero (por días)' : 'Jornalero'}
+            </option>
+            <option value="CONTRATISTA">
+              {MODULO_NOMINA ? 'Contratista (por servicio)' : 'Contratista'}
+            </option>
             <option value="FAMILIAR">Familia / propietario</option>
           </select>
         </div>
@@ -194,7 +199,19 @@ export function FormularioNuevoMiembro({
           </p>
         </div>
 
-        {tipoVinculacion === 'FIJO' ? (
+        {!MODULO_NOMINA ? (
+          // Nómina apagada: los campos de plata no se muestran. La base exige
+          // salario (FIJO) o tarifa (JORNALERO), así que viajan los valores por
+          // defecto de Configuración; si no hay, el servidor guarda 0.
+          <>
+            <input type="hidden" name="salario_base" value={salarioBase} />
+            <input type="hidden" name="periodo_pago" value={fijoPeriodoPagoDefault ?? 'MENSUAL'} />
+            <input type="hidden" name="tarifa_jornal" value={tarifaJornal} />
+            <input type="hidden" name="esquema_pago_destajo" value="NUNCA" />
+          </>
+        ) : null}
+
+        {MODULO_NOMINA && tipoVinculacion === 'FIJO' ? (
           <div className="grid grid-cols-1 gap-4 border-t border-zelanda-beige-200 pt-4 sm:grid-cols-2">
             <div>
               <label htmlFor="salario_base" className={labelBase}>
@@ -231,7 +248,7 @@ export function FormularioNuevoMiembro({
           </div>
         ) : null}
 
-        {tipoVinculacion === 'JORNALERO' ? (
+        {MODULO_NOMINA && tipoVinculacion === 'JORNALERO' ? (
           <div className="border-t border-zelanda-beige-200 pt-4">
             <label htmlFor="tarifa_jornal" className={labelBase}>
               Tarifa por jornal <span className="text-estado-vencida">*</span>
@@ -253,7 +270,7 @@ export function FormularioNuevoMiembro({
           </div>
         ) : null}
 
-        {tipoVinculacion === 'FIJO' || tipoVinculacion === 'JORNALERO' ? (
+        {MODULO_NOMINA && (tipoVinculacion === 'FIJO' || tipoVinculacion === 'JORNALERO') ? (
           <div className="border-t border-zelanda-beige-200 pt-4">
             <label htmlFor="esquema_pago_destajo" className={labelBase}>
               Destajo (extras por kg / árbol)

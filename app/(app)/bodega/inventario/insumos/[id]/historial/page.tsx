@@ -155,7 +155,7 @@ export default async function PaginaHistorialInsumo({
       <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
         <h2 className="font-serif text-lg text-zelanda-verde-900">Ajustar stock</h2>
         <p className="mt-1 text-xs text-zelanda-verde-700/70">
-          Sumá (positivo) o restá (negativo) cuando un insumo se rompe, se pierde, o el conteo
+          Suma (positivo) o resta (negativo) cuando un insumo se rompe, se pierde, o el conteo
           físico no coincide.
         </p>
         <div className="mt-3">

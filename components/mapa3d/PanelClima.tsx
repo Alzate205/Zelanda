@@ -39,7 +39,7 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
   if (clima === 'error') {
     return (
       <div className="rounded-2xl border border-white/60 bg-zelanda-beige-50/95 p-4 text-center text-sm text-zelanda-verde-700 shadow-card backdrop-blur-md">
-        Pronóstico no disponible. Reintentá con señal.
+        Pronóstico no disponible. Intenta de nuevo con señal.
       </div>
     );
   }
@@ -76,8 +76,8 @@ export function PanelClima({ clima }: { clima: ClimaFinca | 'error' | null }) {
           <Sprout className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>
             {hongos.pudricion_raiz
-              ? 'Suelo encharcado: riesgo de pudrición de raíz. Revisá drenajes antes de volver a regar.'
-              : 'Follaje mojado y humedad alta: riesgo de antracnosis. Revisá la fruta próxima a cosecha.'}
+              ? 'Suelo encharcado: riesgo de pudrición de raíz. Revisa drenajes antes de volver a regar.'
+              : 'Follaje mojado y humedad alta: riesgo de antracnosis. Revisa la fruta próxima a cosecha.'}
           </span>
         </p>
       ) : null}

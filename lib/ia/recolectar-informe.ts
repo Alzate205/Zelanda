@@ -5,6 +5,7 @@ import { diagnosticar } from '@/lib/diagnostico';
 import { faseDelMes } from '@/lib/fenologia';
 import { hoyEnBogota, mesBogota, periodoMesBogota } from '@/lib/fecha';
 import { calcularSaldosPeriodo } from '@/lib/saldos';
+import { MODULO_NOMINA } from '@/lib/modulos';
 import type { DatosInforme } from './informe-finca';
 
 /**
@@ -111,10 +112,13 @@ export async function recolectarDatosFinca(): Promise<DatosInforme> {
       where: { borrado_en: null, fecha: { gte: desdeFinanzas, lte: hastaFinanzas } },
       select: { fecha: true, total: true },
     }),
-    prisma.pagos.findMany({
-      where: { borrado_en: null, fecha: { gte: desdeFinanzas, lte: hastaFinanzas } },
-      select: { fecha: true, monto: true },
-    }),
+    // Con la nómina apagada, los costos son solo compras.
+    MODULO_NOMINA
+      ? prisma.pagos.findMany({
+          where: { borrado_en: null, fecha: { gte: desdeFinanzas, lte: hastaFinanzas } },
+          select: { fecha: true, monto: true },
+        })
+      : Promise.resolve([] as { fecha: Date; monto: unknown }[]),
     prisma.$queryRaw<{ cliente: string; kg: string; ingresos: string }[]>`
         SELECT COALESCE(c.nombre, s.cliente_detalle, 'Sin identificar') AS cliente,
                SUM(s.cantidad_kg)::text AS kg,
@@ -157,7 +161,9 @@ export async function recolectarDatosFinca(): Promise<DatosInforme> {
   });
 
   // Nómina del mes en curso. Los nombres se pasan al redactor, que los anonimiza.
-  const saldos = await calcularSaldosPeriodo(periodoMesBogota(anioMes, mesActual));
+  const saldos = MODULO_NOMINA
+    ? await calcularSaldosPeriodo(periodoMesBogota(anioMes, mesActual))
+    : [];
   const conMovimiento = saldos.filter((s) => s.devengado > 0 || s.pagado > 0);
 
   return {
@@ -246,15 +252,17 @@ export async function recolectarDatosFinca(): Promise<DatosInforme> {
         proveedor: c.proveedor,
         total: Number(c.total),
       })),
-      nomina: {
-        devengado: conMovimiento.reduce((acc, s) => acc + s.devengado, 0),
-        pagado: conMovimiento.reduce((acc, s) => acc + s.pagado, 0),
-        personas: conMovimiento.map((s) => ({
-          nombre: s.nombre,
-          devengado: s.devengado,
-          pagado: s.pagado,
-        })),
-      },
+      nomina: MODULO_NOMINA
+        ? {
+            devengado: conMovimiento.reduce((acc, s) => acc + s.devengado, 0),
+            pagado: conMovimiento.reduce((acc, s) => acc + s.pagado, 0),
+            personas: conMovimiento.map((s) => ({
+              nombre: s.nombre,
+              devengado: s.devengado,
+              pagado: s.pagado,
+            })),
+          }
+        : undefined,
     },
   };
 }

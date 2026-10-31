@@ -215,8 +215,8 @@ export default async function PaginaSemana({
         <p className="m-0 flex items-start gap-2 rounded-xl border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 py-2 text-[12.5px] text-zelanda-verde-700">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>
-            Esta semana los modelos de clima no coinciden. Los días en beige pueden cambiar: volvé a
-            mirar antes de comprometer la cuadrilla.
+            Esta semana los modelos de clima no coinciden. Los días en beige pueden cambiar: vuelve
+            a mirar antes de comprometer la cuadrilla.
           </span>
         </p>
       ) : null}
@@ -294,7 +294,7 @@ export default async function PaginaSemana({
 
       <p className="flex items-start gap-2 px-1 text-[11.5px] text-zelanda-verde-700/70">
         <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-        Las tareas sin asignar salen del ciclo de cada lote. Tocá una para crear la asignación.
+        Las tareas sin asignar salen del ciclo de cada lote. Toca una para crear la asignación.
       </p>
     </div>
   );

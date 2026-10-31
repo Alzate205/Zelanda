@@ -7,6 +7,7 @@ import { requerirUsuario } from '@/lib/auth';
 import { crearClienteSupabaseAdmin } from '@/lib/supabase/admin';
 import { sanitizarError } from '@/lib/errores';
 import { validarUsername, validarClave, emailDesdeUsername } from '@/lib/acceso';
+import { MODULO_NOMINA } from '@/lib/modulos';
 import type { RolUsuario, TipoVinculacion, TipoPeriodoPago, EsquemaPagoDestajo } from '@/types';
 
 const ESQUEMAS_DESTAJO_VALIDOS = ['NUNCA', 'ADICIONAL', 'REEMPLAZA_DIA', 'SOLO_DESTAJO'] as const;
@@ -92,12 +93,16 @@ export async function crearMiembro(
   let periodo_pago: TipoPeriodoPago | null = null;
   let tarifa_jornal: number | null = null;
 
+  // Con la nómina apagada el formulario no muestra salario ni tarifa: vacío
+  // vale 0 (la base exige el campo según el tipo, no que sea positivo).
+  const minimoMonto = MODULO_NOMINA ? 1 : 0;
+
   if (tipo === 'FIJO') {
-    if (!salarioRaw) {
+    if (!salarioRaw && MODULO_NOMINA) {
       return { ...ESTADO_INICIAL, error: 'Salario base obligatorio para tipo FIJO.' };
     }
-    const s = Number(salarioRaw.replace(/\./g, ''));
-    if (!Number.isFinite(s) || s <= 0) {
+    const s = salarioRaw ? Number(salarioRaw.replace(/\./g, '')) : 0;
+    if (!Number.isFinite(s) || s < minimoMonto) {
       return { ...ESTADO_INICIAL, error: 'Salario base debe ser un número positivo.' };
     }
     salario_base = s;
@@ -106,11 +111,11 @@ export async function crearMiembro(
     }
     periodo_pago = periodoPagoRaw;
   } else if (tipo === 'JORNALERO') {
-    if (!tarifaJornalRaw) {
+    if (!tarifaJornalRaw && MODULO_NOMINA) {
       return { ...ESTADO_INICIAL, error: 'Tarifa por jornal obligatoria para tipo JORNALERO.' };
     }
-    const t = Number(tarifaJornalRaw.replace(/\./g, ''));
-    if (!Number.isFinite(t) || t <= 0) {
+    const t = tarifaJornalRaw ? Number(tarifaJornalRaw.replace(/\./g, '')) : 0;
+    if (!Number.isFinite(t) || t < minimoMonto) {
       return { ...ESTADO_INICIAL, error: 'Tarifa por jornal debe ser un número positivo.' };
     }
     tarifa_jornal = t;
@@ -237,7 +242,7 @@ export async function crearMiembro(
     console.error('[jefe/equipo/auth-create]', authError?.message);
     return {
       ...ESTADO_INICIAL,
-      error: 'Ocurrió un error inesperado al crear el acceso. Intentá de nuevo.',
+      error: 'Ocurrió un error inesperado al crear el acceso. Intenta de nuevo.',
     };
   }
 

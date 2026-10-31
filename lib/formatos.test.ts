@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatearCantidad, formatearDecimal, parsearDecimal } from './formatos';
+import {
+  formatearCantidad,
+  formatearDecimal,
+  formatearEntradaDecimal,
+  normalizarEntradaDecimal,
+  parsearDecimal,
+} from './formatos';
 
 describe('parsearDecimal', () => {
   it('acepta la coma que manda el teclado en español', () => {
@@ -74,5 +80,27 @@ describe('formatearDecimal', () => {
   it('no rompe con valores inválidos', () => {
     expect(formatearDecimal(null)).toBe('0');
     expect(formatearDecimal('abc')).toBe('0');
+  });
+});
+
+describe('normalizarEntradaDecimal', () => {
+  it('conserva la coma decimal: 2,5 litros no se vuelve 25', () => {
+    expect(parsearDecimal(normalizarEntradaDecimal('2,5'))).toBe(2.5);
+  });
+  it('el punto es de miles y se descarta', () => {
+    expect(parsearDecimal(normalizarEntradaDecimal('1.250'))).toBe(1250);
+    expect(parsearDecimal(normalizarEntradaDecimal('1.250,75'))).toBe(1250.75);
+  });
+  it('deja una sola coma y saca letras', () => {
+    expect(normalizarEntradaDecimal('1,2,3kg')).toBe('1,23');
+  });
+});
+
+describe('formatearEntradaDecimal', () => {
+  it('pone miles y respeta la coma mientras se escribe', () => {
+    expect(formatearEntradaDecimal('1250')).toBe('1.250');
+    expect(formatearEntradaDecimal('1250,')).toBe('1.250,');
+    expect(formatearEntradaDecimal(',5')).toBe('0,5');
+    expect(formatearEntradaDecimal('')).toBe('');
   });
 });

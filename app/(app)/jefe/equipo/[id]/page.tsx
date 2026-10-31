@@ -18,6 +18,7 @@ import { AvatarIniciales } from '@/components/shared/AvatarIniciales';
 import { BadgeRol, BadgeBase } from '@/components/shared/BadgeRol';
 import { ETIQUETA_TIPO_VINCULACION } from '@/lib/constantes';
 import { formatearFechaCorta } from '@/lib/utils';
+import { MODULO_NOMINA } from '@/lib/modulos';
 import type { RolUsuario, TipoVinculacion } from '@/types';
 
 function parsearId(raw: string): bigint | null {
@@ -230,7 +231,7 @@ export default async function DetalleMiembro({ params }: { params: Promise<{ id:
                 {formatearFechaCorta(vincActiva.fecha_inicio)}
               </dd>
             </div>
-            {vincActiva.salario_base ? (
+            {MODULO_NOMINA && vincActiva.salario_base ? (
               <div>
                 <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Salario base ({vincActiva.periodo_pago?.toLowerCase()})
@@ -240,7 +241,7 @@ export default async function DetalleMiembro({ params }: { params: Promise<{ id:
                 </dd>
               </div>
             ) : null}
-            {vincActiva.tarifa_jornal ? (
+            {MODULO_NOMINA && vincActiva.tarifa_jornal ? (
               <div>
                 <dt className="text-[10.5px] uppercase tracking-[0.12em] text-zelanda-verde-700">
                   Tarifa por jornal

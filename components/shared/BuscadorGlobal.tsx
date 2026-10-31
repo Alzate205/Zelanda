@@ -165,7 +165,7 @@ export function BuscadorGlobal({ variante = 'icono' }: { variante?: 'icono' | 'a
             <div className="flex-1 overflow-y-auto p-3">
               {estado === 'inicial' ? (
                 <p className="px-2 py-4 text-sm text-zelanda-verde-700/70">
-                  Escribí un nombre, cédula o número (2+ caracteres).
+                  Escribe un nombre, cédula o número (2+ caracteres).
                 </p>
               ) : null}
 

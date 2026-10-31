@@ -129,7 +129,7 @@ export function SubirFoto({ name }: { name: string }) {
       reader.readAsDataURL(comprimida);
     } catch (err) {
       console.warn('Error procesando imagen:', err);
-      setError('No se pudo procesar la imagen. Probá con otra.');
+      setError('No se pudo procesar la imagen. Prueba con otra.');
       if (inputRef.current) inputRef.current.value = '';
     } finally {
       setProcesando(false);

@@ -176,9 +176,9 @@ export function PushToggle() {
   if (estado === 'denegado') {
     return (
       <p className="text-sm text-estado-vencida">
-        Bloqueaste los avisos para esta app. Hay que volver a permitirlos desde el navegador: tocá
-        el candado o los tres puntos junto a la dirección, entrá en Ajustes del sitio y poné
-        Notificaciones en “Permitir”. Después volvé acá y activalos.
+        Bloqueaste los avisos para esta app. Hay que volver a permitirlos desde el navegador: toca
+        el candado o los tres puntos junto a la dirección, entrá en Ajustes del sitio y pon
+        Notificaciones en “Permitir”. Después vuelve acá y actívalos.
       </p>
     );
   }
@@ -236,13 +236,13 @@ export function PushToggle() {
       </div>
       {faltaSegundoToque ? (
         <p className="mt-2 text-xs text-zelanda-verde-700/80">
-          Permiso concedido. Tocá una vez más para terminar de activarlos.
+          Permiso concedido. Toca una vez más para terminar de activarlos.
         </p>
       ) : null}
       {faltaInstalar ? (
         <p className="mt-2 text-xs text-zelanda-verde-700/80">
-          En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio: tocá
-          Compartir y luego “Agregar a inicio”. Después abrila desde el icono y activalos acá.
+          En iPhone los avisos solo funcionan con la app instalada en la pantalla de inicio: toca
+          Compartir y luego “Agregar a inicio”. Después ábrela desde el icono y actívalos acá.
         </p>
       ) : null}
       {problema}

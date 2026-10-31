@@ -48,7 +48,7 @@ export default async function PaginaTareasTrabajador({
           <h1 className="font-serif text-2xl text-zelanda-verde-900">Mis tareas</h1>
         </header>
         <p className="rounded-xl border border-dashed border-zelanda-beige-300 bg-white px-6 py-10 text-center text-sm text-zelanda-verde-700">
-          Tu usuario no tiene persona vinculada. Pedile al jefe que la asigne.
+          Tu usuario no tiene persona vinculada. Pídele al jefe que la asigne.
         </p>
       </div>
     );
@@ -125,7 +125,7 @@ export default async function PaginaTareasTrabajador({
           {filtro === 'completadas'
             ? 'Aún no hay tareas completadas.'
             : filtro === 'activas'
-            ? 'No tenés tareas activas en este momento.'
+            ? 'No tienes tareas activas en este momento.'
             : 'No hay tareas registradas.'}
         </p>
       ) : (

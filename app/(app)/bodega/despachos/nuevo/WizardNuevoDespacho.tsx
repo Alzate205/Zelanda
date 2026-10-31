@@ -295,7 +295,7 @@ function Paso1({
   return (
     <div>
       <p className="m-0 mb-3 text-[12.5px] text-zelanda-verde-700">
-        Elegí el trabajador para este despacho.
+        Elige el trabajador para este despacho.
       </p>
       <div className="relative mb-3">
         <input

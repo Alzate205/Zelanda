@@ -1,19 +1,19 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { EditorPoligonoCargador } from "./_editor";
-import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { EditorPoligonoCargador } from './_editor';
+import { cargarReferenciasMapa } from '@/lib/referencias-mapa';
 
-export const metadata = { title: "Polígono del lote" };
+export const metadata = { title: 'Polígono del lote' };
 
 export default async function PaginaEditorPoligono({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
 
@@ -41,15 +41,10 @@ export default async function PaginaEditorPoligono({
         <ArrowLeft className="h-4 w-4" /> Volver al lote
       </Link>
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Polígono
-        </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          {lote.nombre}
-        </h1>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Polígono</p>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{lote.nombre}</h1>
         <p className="mt-2 text-sm text-zelanda-verde-700">
-          Tocá cada esquina del lote. Cuando termines, &ldquo;Cerrar y
-          guardar&rdquo;.
+          Toca cada esquina del lote. Cuando termines, &ldquo;Cerrar y guardar&rdquo;.
         </p>
       </header>
       <EditorPoligonoCargador

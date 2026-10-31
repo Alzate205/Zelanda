@@ -76,7 +76,7 @@ export function FormularioEditarCompra({
       <div className="flex items-start gap-2.5 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-100 px-3 py-2.5">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-zelanda-verde-700" />
         <p className="text-[12.5px] text-zelanda-verde-800">
-          Para cambiar los insumos de la compra, anulá esta compra y creá una nueva.
+          Para cambiar lo que se compró, anula esta compra y crea una nueva.
         </p>
       </div>
 

@@ -75,7 +75,7 @@
     {
       "name": "Saldos",
       "short_name": "Saldos",
-      "description": "Cuánto se debe a cada persona",
+      "description": "Ventas de aguacate menos compras",
       "url": "/jefe/saldos"
     }
   ]
