@@ -1,20 +1,17 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, Check } from "lucide-react";
-import {
-  crearRecordatorio,
-  type EstadoRecordatorio,
-} from "../acciones";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Check } from 'lucide-react';
+import { crearRecordatorio, type EstadoRecordatorio } from '../acciones';
 
 const ESTADO_INICIAL: EstadoRecordatorio = { error: null, exito: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
 const labelBase =
-  "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
 type Persona = { id: string; nombre_completo: string };
 
@@ -29,17 +26,12 @@ export function FormularioRecordatorio({
   personaPropiaNombre: string;
   personas: Persona[];
 }) {
-  const [estado, accion, pendiente] = useActionState(
-    crearRecordatorio,
-    ESTADO_INICIAL,
-  );
+  const [estado, accion, pendiente] = useActionState(crearRecordatorio, ESTADO_INICIAL);
   const [paraOtro, setParaOtro] = useState(false);
 
   const hoy = new Date();
   const hoyIso = hoy.toISOString().slice(0, 10);
-  const max = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const max = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   return (
     <form action={accion} className="space-y-5 pb-24" noValidate>
@@ -52,12 +44,8 @@ export function FormularioRecordatorio({
       </Link>
 
       <header>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          Crear
-        </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          Nuevo recordatorio
-        </h1>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">Crear</p>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nuevo recordatorio</h1>
       </header>
 
       <section className="space-y-4 rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
@@ -104,7 +92,7 @@ export function FormularioRecordatorio({
             className={inputBase}
           />
           <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
-            El día indicado vas a recibir un push si tenés notificaciones activas.
+            El día indicado vas a recibir un push si tienes notificaciones activas.
           </p>
         </div>
 
@@ -117,8 +105,8 @@ export function FormularioRecordatorio({
                 onClick={() => setParaOtro(false)}
                 className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
                   !paraOtro
-                    ? "bg-white text-zelanda-verde-900 shadow-suave"
-                    : "text-zelanda-verde-700"
+                    ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                    : 'text-zelanda-verde-700'
                 }`}
               >
                 Para mí
@@ -128,8 +116,8 @@ export function FormularioRecordatorio({
                 onClick={() => setParaOtro(true)}
                 className={`rounded-lg px-2 py-2 text-[13px] font-semibold transition ${
                   paraOtro
-                    ? "bg-white text-zelanda-verde-900 shadow-suave"
-                    : "text-zelanda-verde-700"
+                    ? 'bg-white text-zelanda-verde-900 shadow-suave'
+                    : 'text-zelanda-verde-700'
                 }`}
               >
                 Para alguien del equipo
@@ -150,11 +138,7 @@ export function FormularioRecordatorio({
                 ))}
               </select>
             ) : (
-              <input
-                type="hidden"
-                name="asignado_a_persona_id"
-                value={personaPropiaId ?? ""}
-              />
+              <input type="hidden" name="asignado_a_persona_id" value={personaPropiaId ?? ''} />
             )}
             {!paraOtro ? (
               <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
@@ -163,11 +147,7 @@ export function FormularioRecordatorio({
             ) : null}
           </div>
         ) : (
-          <input
-            type="hidden"
-            name="asignado_a_persona_id"
-            value={personaPropiaId ?? ""}
-          />
+          <input type="hidden" name="asignado_a_persona_id" value={personaPropiaId ?? ''} />
         )}
       </section>
 
@@ -182,7 +162,7 @@ export function FormularioRecordatorio({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <Link
@@ -197,7 +177,7 @@ export function FormularioRecordatorio({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente ? "Creando…" : "Crear recordatorio"}
+            {pendiente ? 'Creando…' : 'Crear recordatorio'}
           </button>
         </div>
       </div>

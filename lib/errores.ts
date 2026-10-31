@@ -1,5 +1,5 @@
 export function sanitizarError(e: unknown, contexto: string): string {
-  const msg = (e as Error)?.message ?? "desconocido";
+  const msg = (e as Error)?.message ?? 'desconocido';
   console.error(`[${contexto}]`, msg);
-  return "Ocurrió un error inesperado. Intentá de nuevo.";
+  return 'Ocurrió un error inesperado. Intenta de nuevo.';
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { MODULO_NOMINA } from './modulos';
 
 /**
  * Ninguna pantalla debe quedar sin forma de llegar.
@@ -31,6 +32,17 @@ function archivos(dir: string, ext: string[], out: string[] = []): string[] {
  */
 const SIN_ACCESO_A_PROPOSITO: Record<string, string> = {
   '/jefe/asistente': 'oculta hasta que se apruebe contratar la IA (consume la API y factura)',
+  ...(MODULO_NOMINA
+    ? {}
+    : Object.fromEntries(
+        [
+          '/jefe/pagos',
+          '/jefe/tarifas',
+          '/jefe/jornales',
+          '/jefe/servicios',
+          '/jefe/ausencias',
+        ].map((r) => [r, 'módulo de nómina apagado (lib/modulos.ts): responde 404'])
+      )),
 };
 
 describe('rutas de la app', () => {

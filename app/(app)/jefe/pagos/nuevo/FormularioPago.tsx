@@ -151,7 +151,7 @@ export function FormularioPago({
         </p>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Nuevo pago</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          Anotá una salida de plata hacia una persona. Queda en el histórico.
+          Anota una salida de plata hacia una persona. Queda en el histórico.
         </p>
       </header>
 
@@ -202,7 +202,7 @@ export function FormularioPago({
                 {serviciosDeLaPersona.length === 0
                   ? personaId
                     ? 'No hay contratos abiertos para esta persona'
-                    : 'Elegí primero la persona'
+                    : 'Elige primero la persona'
                   : 'Selecciona contrato…'}
               </option>
               {serviciosDeLaPersona.map((s) => (
@@ -277,9 +277,9 @@ export function FormularioPago({
             </div>
             <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
               {!persona
-                ? 'Elegí la persona y se carga su salario.'
+                ? 'Elige la persona y se carga su salario.'
                 : persona.salarioBase == null
-                ? 'Esta persona no tiene salario en su vinculación: escribí el monto a mano.'
+                ? 'Esta persona no tiene salario en su vinculación: escribe el monto a mano.'
                 : `Salario pactado: ${persona.salarioBase.toLocaleString('es-CO', {
                     style: 'currency',
                     currency: 'COP',

@@ -79,7 +79,7 @@ describe('construirAvisoTareas', () => {
     );
     expect(aviso.titulo).toBe('2 tareas sin empezar');
     expect(aviso.cuerpo).not.toContain('2 sin empezar');
-    expect(aviso.cuerpo).toBe('Tocá para ver cuáles.');
+    expect(aviso.cuerpo).toBe('Toca para ver cuáles.');
   });
 
   it('cuando no hay nada, no hay aviso', () => {

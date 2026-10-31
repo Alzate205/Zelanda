@@ -1,21 +1,17 @@
-"use client";
+'use client';
 
-import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, Check } from "lucide-react";
-import {
-  crearCliente,
-  actualizarCliente,
-  type EstadoCliente,
-} from "./acciones";
+import { useActionState, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Check } from 'lucide-react';
+import { crearCliente, actualizarCliente, type EstadoCliente } from './acciones';
 
 const ESTADO_INICIAL: EstadoCliente = { error: null };
 
 const inputBase =
-  "mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400";
+  'mt-1.5 block min-h-touch w-full rounded-[10px] border border-zelanda-beige-300 bg-white px-3 text-[15px] text-zelanda-verde-900 outline-none focus:outline focus:outline-2 focus:outline-zelanda-verde-400';
 
 const labelBase =
-  "block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700";
+  'block text-[12px] font-semibold uppercase tracking-[0.04em] text-zelanda-verde-700';
 
 type Cliente = {
   id: string;
@@ -30,27 +26,22 @@ export function FormularioCliente({
   modo,
   cliente,
 }: {
-  modo: "crear" | "editar";
+  modo: 'crear' | 'editar';
   cliente?: Cliente;
 }) {
-  const accionElegida = modo === "crear" ? crearCliente : actualizarCliente;
-  const [estado, accion, pendiente] = useActionState(
-    accionElegida,
-    ESTADO_INICIAL,
-  );
+  const accionElegida = modo === 'crear' ? crearCliente : actualizarCliente;
+  const [estado, accion, pendiente] = useActionState(accionElegida, ESTADO_INICIAL);
   const [activo, setActivo] = useState(cliente?.activo ?? true);
 
-  const titulo = modo === "crear" ? "Nuevo cliente" : "Editar cliente";
+  const titulo = modo === 'crear' ? 'Nuevo cliente' : 'Editar cliente';
   const subtitulo =
-    modo === "crear"
-      ? "Registrá un comprador para asociar a las ventas."
-      : "Actualizá los datos o desactivá si ya no es cliente.";
+    modo === 'crear'
+      ? 'Registra un comprador para asociar a las ventas.'
+      : 'Actualiza los datos o desactiva si ya no es cliente.';
 
   return (
     <form action={accion} className="space-y-5 pb-24" noValidate>
-      {cliente ? (
-        <input type="hidden" name="id" value={cliente.id} />
-      ) : null}
+      {cliente ? <input type="hidden" name="id" value={cliente.id} /> : null}
 
       <Link
         href="/jefe/clientes"
@@ -62,11 +53,9 @@ export function FormularioCliente({
 
       <header>
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
-          {modo === "crear" ? "Registrar" : "Editar"}
+          {modo === 'crear' ? 'Registrar' : 'Editar'}
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          {titulo}
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{titulo}</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">{subtitulo}</p>
       </header>
 
@@ -80,7 +69,7 @@ export function FormularioCliente({
             name="nombre"
             type="text"
             required
-            defaultValue={cliente?.nombre ?? ""}
+            defaultValue={cliente?.nombre ?? ''}
             placeholder="Ej. Frutas del Quindío SAS"
             className={inputBase}
           />
@@ -94,7 +83,7 @@ export function FormularioCliente({
             id="contacto"
             name="contacto"
             type="text"
-            defaultValue={cliente?.contacto ?? ""}
+            defaultValue={cliente?.contacto ?? ''}
             placeholder="Nombre de la persona de contacto"
             className={inputBase}
           />
@@ -109,7 +98,7 @@ export function FormularioCliente({
             name="telefono"
             type="tel"
             inputMode="tel"
-            defaultValue={cliente?.telefono ?? ""}
+            defaultValue={cliente?.telefono ?? ''}
             className={inputBase}
           />
         </div>
@@ -122,13 +111,13 @@ export function FormularioCliente({
             id="notas"
             name="notas"
             rows={3}
-            defaultValue={cliente?.notas ?? ""}
+            defaultValue={cliente?.notas ?? ''}
             placeholder="Acuerdos de pago, dirección, observaciones, etc."
             className={`${inputBase} min-h-[80px] resize-y py-2.5`}
           />
         </div>
 
-        {modo === "editar" ? (
+        {modo === 'editar' ? (
           <label className="flex items-start gap-3 rounded-[10px] border border-zelanda-beige-300 bg-zelanda-beige-50 p-3">
             <input
               type="checkbox"
@@ -138,12 +127,9 @@ export function FormularioCliente({
               className="mt-0.5 h-4 w-4 rounded border-zelanda-beige-300 text-zelanda-verde-700 focus:ring-zelanda-verde-600/20"
             />
             <span className="text-sm">
-              <span className="block font-medium text-zelanda-verde-900">
-                Cliente activo
-              </span>
+              <span className="block font-medium text-zelanda-verde-900">Cliente activo</span>
               <span className="mt-0.5 block text-[11.5px] text-zelanda-verde-700">
-                Desmarcá si ya no se le vende. Las ventas anteriores se
-                preservan.
+                Desmarca si ya no se le vende. Las ventas anteriores se preservan.
               </span>
             </span>
           </label>
@@ -161,7 +147,7 @@ export function FormularioCliente({
 
       <div
         className="fixed inset-x-0 bottom-16 z-10 border-t border-zelanda-beige-300 bg-white/95 px-4 py-2.5 backdrop-blur"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <Link
@@ -176,11 +162,7 @@ export function FormularioCliente({
             className="flex min-h-touch flex-1 items-center justify-center gap-2 rounded-xl bg-zelanda-verde-700 px-4 font-semibold text-zelanda-beige-50 transition hover:bg-zelanda-verde-800 disabled:opacity-60 [box-shadow:0_2px_0_theme(colors.zelanda.verde.900),0_1px_3px_rgba(20,44,26,0.06)]"
           >
             <Check className="h-[18px] w-[18px]" />
-            {pendiente
-              ? "Guardando…"
-              : modo === "crear"
-                ? "Crear cliente"
-                : "Guardar cambios"}
+            {pendiente ? 'Guardando…' : modo === 'crear' ? 'Crear cliente' : 'Guardar cambios'}
           </button>
         </div>
       </div>

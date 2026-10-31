@@ -233,7 +233,7 @@ export function FormularioEditarPago({
               className={inputBase}
               value={motivoDiferencia}
               onChange={(e) => setMotivoDiferencia(e.target.value)}
-              placeholder="Explicá por qué hay un ajuste"
+              placeholder="Explica por qué hay un ajuste"
             />
           </div>
         ) : null}

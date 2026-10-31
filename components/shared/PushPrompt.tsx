@@ -120,9 +120,9 @@ export function PushPrompt() {
             <p className="font-medium text-zelanda-verde-900">Activar notificaciones</p>
             <p className="mt-1 text-xs text-zelanda-verde-700/80">
               {faltaInstalar
-                ? 'En iPhone hace falta instalar la app primero: tocá Compartir y luego “Agregar a inicio”. Después abrila desde el icono y activá los avisos ahí.'
+                ? 'En iPhone hace falta instalar la app primero: toca Compartir y luego “Agregar a inicio”. Después ábrela desde el icono y activa los avisos ahí.'
                 : faltaSegundoToque
-                ? 'Permiso concedido. Tocá una vez más para terminar de activarlos.'
+                ? 'Permiso concedido. Toca una vez más para terminar de activarlos.'
                 : 'Enterate de asignaciones, novedades y vencidas aunque no tengas la app abierta.'}
             </p>
             {aviso ? (
@@ -137,7 +137,7 @@ export function PushPrompt() {
             ) : null}
             {aviso ? (
               <p className="mt-1 text-[11px] text-zelanda-verde-700/70">
-                También podés volver a intentarlo desde Mi Perfil.
+                También puedes volver a intentarlo desde Mi Perfil.
               </p>
             ) : null}
             <div className="mt-3 flex gap-2">

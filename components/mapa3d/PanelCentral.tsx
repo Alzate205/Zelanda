@@ -11,10 +11,6 @@ import {
   Users,
   Hexagon,
   Bell,
-  DollarSign,
-  Briefcase,
-  CalendarCheck,
-  UserMinus,
   Wallet,
   TrendingUp,
   ShoppingCart,
@@ -235,37 +231,7 @@ export function PanelCentral({
           <h3 className="mb-2 font-serif text-base text-zelanda-verde-900">Más</h3>
           <div className="grid grid-cols-2 gap-2.5">
             <BuscadorGlobal variante="atajo" />
-            <Atajo
-              href="/jefe/tarifas"
-              icono={DollarSign}
-              titulo="Tarifas"
-              sub="Catálogo de pagos"
-            />
-            <Atajo
-              href="/jefe/pagos"
-              icono={DollarSign}
-              titulo="Pagos"
-              sub="Histórico de salidas"
-            />
-            <Atajo
-              href="/jefe/servicios"
-              icono={Briefcase}
-              titulo="Servicios"
-              sub="Contratos puntuales"
-            />
-            <Atajo
-              href="/jefe/jornales"
-              icono={CalendarCheck}
-              titulo="Jornales"
-              sub="Días trabajados"
-            />
-            <Atajo
-              href="/jefe/ausencias"
-              icono={UserMinus}
-              titulo="Ausencias"
-              sub="Faltas y permisos"
-            />
-            <Atajo href="/jefe/saldos" icono={Wallet} titulo="Saldos" sub="Cuánto se debe" />
+            <Atajo href="/jefe/saldos" icono={Wallet} titulo="Saldos" sub="Ventas menos compras" />
             <Atajo
               href="/jefe/ventas"
               icono={TrendingUp}
@@ -277,7 +243,7 @@ export function PanelCentral({
               href="/jefe/compras"
               icono={ShoppingCart}
               titulo="Compras"
-              sub="Costos de insumos"
+              sub="Insumos y herramientas"
             />
             <Atajo
               href="/jefe/aplicaciones"

@@ -1,71 +1,78 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requerirUsuario } from "@/lib/auth";
-import type {
-  TipoVinculacion,
-  TipoPeriodoPago,
-  EsquemaPagoDestajo,
-} from "@/types";
+import { MODULO_NOMINA } from '@/lib/modulos';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { requerirUsuario } from '@/lib/auth';
+import type { TipoVinculacion, TipoPeriodoPago, EsquemaPagoDestajo } from '@/types';
 
 export type EstadoEdicion = { error: string | null };
 
 function esTipoValido(v: string): v is TipoVinculacion {
-  return v === "FIJO" || v === "JORNALERO" || v === "CONTRATISTA" || v === "FAMILIAR";
+  return v === 'FIJO' || v === 'JORNALERO' || v === 'CONTRATISTA' || v === 'FAMILIAR';
 }
 function esPeriodoValido(v: string): v is TipoPeriodoPago {
-  return v === "MENSUAL" || v === "QUINCENAL" || v === "SEMANAL";
+  return v === 'MENSUAL' || v === 'QUINCENAL' || v === 'SEMANAL';
 }
+// Con la nómina apagada el formulario no muestra salario ni tarifa: vacío vale
+// 0 (la base exige el campo según el tipo, no que sea positivo). Prendida, un
+// vacío da NaN y cae en el error de siempre.
+const NOMINA_VACIO = MODULO_NOMINA ? NaN : 0;
+const MINIMO_MONTO = MODULO_NOMINA ? 1 : 0;
+
 function parsearDestajo(v: string): EsquemaPagoDestajo {
-  return v === "ADICIONAL" || v === "REEMPLAZA_DIA" || v === "SOLO_DESTAJO"
+  return v === 'ADICIONAL' || v === 'REEMPLAZA_DIA' || v === 'SOLO_DESTAJO'
     ? (v as EsquemaPagoDestajo)
-    : "NUNCA";
+    : 'NUNCA';
 }
-function esModoValido(v: string): v is "dejar" | "cambiar" | "cerrar" | "editar" {
-  return v === "dejar" || v === "cambiar" || v === "cerrar" || v === "editar";
+function esModoValido(v: string): v is 'dejar' | 'cambiar' | 'cerrar' | 'editar' {
+  return v === 'dejar' || v === 'cambiar' || v === 'cerrar' || v === 'editar';
 }
 
 function parsearId(raw: string | null): bigint | null {
   if (!raw || !/^\d+$/.test(raw)) return null;
-  try { return BigInt(raw); } catch { return null; }
+  try {
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
 }
 
 export async function actualizarPersonaYVinculacion(
   _prev: EstadoEdicion,
-  formData: FormData,
+  formData: FormData
 ): Promise<EstadoEdicion> {
-  await requerirUsuario("JEFE");
+  await requerirUsuario('JEFE');
 
-  const personaId = parsearId(String(formData.get("persona_id") ?? ""));
-  if (!personaId) return { error: "ID de persona inválido." };
+  const personaId = parsearId(String(formData.get('persona_id') ?? ''));
+  if (!personaId) return { error: 'ID de persona inválido.' };
 
-  const nombre_completo = String(formData.get("nombre_completo") ?? "").trim();
-  const cedula = String(formData.get("cedula") ?? "").trim() || null;
-  const telefono = String(formData.get("telefono") ?? "").trim() || null;
-  const notas = String(formData.get("notas") ?? "").trim() || null;
+  const nombre_completo = String(formData.get('nombre_completo') ?? '').trim();
+  const cedula = String(formData.get('cedula') ?? '').trim() || null;
+  const telefono = String(formData.get('telefono') ?? '').trim() || null;
+  const notas = String(formData.get('notas') ?? '').trim() || null;
 
-  if (!nombre_completo) return { error: "Nombre completo obligatorio." };
+  if (!nombre_completo) return { error: 'Nombre completo obligatorio.' };
 
-  const fechaNacRaw = String(formData.get("fecha_nacimiento") ?? "").trim();
+  const fechaNacRaw = String(formData.get('fecha_nacimiento') ?? '').trim();
   let fecha_nacimiento: Date | null = null;
   if (fechaNacRaw) {
     const d = new Date(fechaNacRaw);
     if (Number.isNaN(d.getTime())) {
-      return { error: "Fecha de nacimiento inválida." };
+      return { error: 'Fecha de nacimiento inválida.' };
     }
     const hoy = new Date();
     hoy.setHours(23, 59, 59, 999);
     if (d > hoy) {
-      return { error: "La fecha de nacimiento no puede ser futura." };
+      return { error: 'La fecha de nacimiento no puede ser futura.' };
     }
     fecha_nacimiento = d;
   }
 
-  const modoRaw = String(formData.get("modo_vinculacion") ?? "dejar");
+  const modoRaw = String(formData.get('modo_vinculacion') ?? 'dejar');
   if (!esModoValido(modoRaw)) {
-    return { error: "Modo de vinculación inválido." };
+    return { error: 'Modo de vinculación inválido.' };
   }
   const modo = modoRaw;
 
@@ -74,33 +81,33 @@ export async function actualizarPersonaYVinculacion(
     data: { nombre_completo, cedula, telefono, fecha_nacimiento, notas },
   });
 
-  if (modo === "dejar") {
+  if (modo === 'dejar') {
     revalidatePath(`/jefe/equipo/${personaId}`);
-    revalidatePath("/jefe/equipo");
+    revalidatePath('/jefe/equipo');
     redirect(`/jefe/equipo/${personaId}`);
   }
 
-  if (modo === "cerrar") {
+  if (modo === 'cerrar') {
     await prisma.vinculaciones.updateMany({
       where: { persona_id: personaId, fecha_fin: null },
       data: { fecha_fin: new Date() },
     });
     revalidatePath(`/jefe/equipo/${personaId}`);
-    revalidatePath("/jefe/equipo");
+    revalidatePath('/jefe/equipo');
     redirect(`/jefe/equipo/${personaId}`);
   }
 
-  if (modo === "editar") {
+  if (modo === 'editar') {
     const activas = await prisma.vinculaciones.count({
       where: { persona_id: personaId, fecha_fin: null },
     });
     if (activas === 0) {
-      return { error: "No hay vinculación activa para editar." };
+      return { error: 'No hay vinculación activa para editar.' };
     }
     if (activas > 1) {
       return {
         error:
-          "Hay más de una vinculación activa para esta persona. Pídele al admin que revise la base de datos.",
+          'Hay más de una vinculación activa para esta persona. Pídele al admin que revise la base de datos.',
       };
     }
 
@@ -109,38 +116,36 @@ export async function actualizarPersonaYVinculacion(
       select: { tipo: true },
     });
     if (!vincActual) {
-      return { error: "Vinculación activa no encontrada." };
+      return { error: 'Vinculación activa no encontrada.' };
     }
     const tipoActual = vincActual.tipo as TipoVinculacion;
 
-    const rol_finca = String(formData.get("edit_rol_finca") ?? "").trim() || null;
-    const salarioRaw = String(formData.get("edit_salario_base") ?? "").trim();
-    const periodoRaw = String(formData.get("edit_periodo_pago") ?? "");
-    const tarifaRaw = String(formData.get("edit_tarifa_jornal") ?? "").trim();
-    const destajoRaw = String(formData.get("edit_esquema_pago_destajo") ?? "");
+    const rol_finca = String(formData.get('edit_rol_finca') ?? '').trim() || null;
+    const salarioRaw = String(formData.get('edit_salario_base') ?? '').trim();
+    const periodoRaw = String(formData.get('edit_periodo_pago') ?? '');
+    const tarifaRaw = String(formData.get('edit_tarifa_jornal') ?? '').trim();
+    const destajoRaw = String(formData.get('edit_esquema_pago_destajo') ?? '');
 
     let salario_base: number | null = null;
     let periodo_pago: TipoPeriodoPago | null = null;
     let tarifa_jornal: number | null = null;
     const esquema_pago_destajo: EsquemaPagoDestajo | null =
-      tipoActual === "FIJO" || tipoActual === "JORNALERO"
-        ? parsearDestajo(destajoRaw)
-        : null;
+      tipoActual === 'FIJO' || tipoActual === 'JORNALERO' ? parsearDestajo(destajoRaw) : null;
 
-    if (tipoActual === "FIJO") {
-      const s = Number(salarioRaw.replace(/\./g, ""));
-      if (!Number.isFinite(s) || s <= 0) {
-        return { error: "Salario base inválido para FIJO." };
+    if (tipoActual === 'FIJO') {
+      const s = salarioRaw ? Number(salarioRaw.replace(/\./g, '')) : NOMINA_VACIO;
+      if (!Number.isFinite(s) || s < MINIMO_MONTO) {
+        return { error: 'Salario base inválido para FIJO.' };
       }
       salario_base = s;
       if (!esPeriodoValido(periodoRaw)) {
-        return { error: "Período de pago inválido para FIJO." };
+        return { error: 'Período de pago inválido para FIJO.' };
       }
       periodo_pago = periodoRaw;
-    } else if (tipoActual === "JORNALERO") {
-      const t = Number(tarifaRaw.replace(/\./g, ""));
-      if (!Number.isFinite(t) || t <= 0) {
-        return { error: "Tarifa por jornal inválida para JORNALERO." };
+    } else if (tipoActual === 'JORNALERO') {
+      const t = tarifaRaw ? Number(tarifaRaw.replace(/\./g, '')) : NOMINA_VACIO;
+      if (!Number.isFinite(t) || t < MINIMO_MONTO) {
+        return { error: 'Tarifa por jornal inválida para JORNALERO.' };
       }
       tarifa_jornal = t;
     }
@@ -157,20 +162,20 @@ export async function actualizarPersonaYVinculacion(
     });
 
     revalidatePath(`/jefe/equipo/${personaId}`);
-    revalidatePath("/jefe/equipo");
+    revalidatePath('/jefe/equipo');
     redirect(`/jefe/equipo/${personaId}`);
   }
 
   // modo === "cambiar"
-  const tipoRaw = String(formData.get("nueva_tipo_vinculacion") ?? "");
-  const rol_finca = String(formData.get("nueva_rol_finca") ?? "").trim() || null;
-  const salarioRaw = String(formData.get("nueva_salario_base") ?? "").trim();
-  const periodoRaw = String(formData.get("nueva_periodo_pago") ?? "");
-  const tarifaRaw = String(formData.get("nueva_tarifa_jornal") ?? "").trim();
-  const destajoRaw = String(formData.get("nueva_esquema_pago_destajo") ?? "");
+  const tipoRaw = String(formData.get('nueva_tipo_vinculacion') ?? '');
+  const rol_finca = String(formData.get('nueva_rol_finca') ?? '').trim() || null;
+  const salarioRaw = String(formData.get('nueva_salario_base') ?? '').trim();
+  const periodoRaw = String(formData.get('nueva_periodo_pago') ?? '');
+  const tarifaRaw = String(formData.get('nueva_tarifa_jornal') ?? '').trim();
+  const destajoRaw = String(formData.get('nueva_esquema_pago_destajo') ?? '');
 
   if (!esTipoValido(tipoRaw)) {
-    return { error: "Tipo de vinculación inválido." };
+    return { error: 'Tipo de vinculación inválido.' };
   }
   const tipo = tipoRaw;
 
@@ -178,22 +183,22 @@ export async function actualizarPersonaYVinculacion(
   let periodo_pago: TipoPeriodoPago | null = null;
   let tarifa_jornal: number | null = null;
   const esquema_pago_destajo: EsquemaPagoDestajo | null =
-    tipo === "FIJO" || tipo === "JORNALERO" ? parsearDestajo(destajoRaw) : null;
+    tipo === 'FIJO' || tipo === 'JORNALERO' ? parsearDestajo(destajoRaw) : null;
 
-  if (tipo === "FIJO") {
-    const s = Number(salarioRaw.replace(/\./g, ""));
-    if (!Number.isFinite(s) || s <= 0) {
-      return { error: "Salario base inválido para FIJO." };
+  if (tipo === 'FIJO') {
+    const s = salarioRaw ? Number(salarioRaw.replace(/\./g, '')) : NOMINA_VACIO;
+    if (!Number.isFinite(s) || s < MINIMO_MONTO) {
+      return { error: 'Salario base inválido para FIJO.' };
     }
     salario_base = s;
     if (!esPeriodoValido(periodoRaw)) {
-      return { error: "Período de pago inválido para FIJO." };
+      return { error: 'Período de pago inválido para FIJO.' };
     }
     periodo_pago = periodoRaw;
-  } else if (tipo === "JORNALERO") {
-    const t = Number(tarifaRaw.replace(/\./g, ""));
-    if (!Number.isFinite(t) || t <= 0) {
-      return { error: "Tarifa por jornal inválida para JORNALERO." };
+  } else if (tipo === 'JORNALERO') {
+    const t = tarifaRaw ? Number(tarifaRaw.replace(/\./g, '')) : NOMINA_VACIO;
+    if (!Number.isFinite(t) || t < MINIMO_MONTO) {
+      return { error: 'Tarifa por jornal inválida para JORNALERO.' };
     }
     tarifa_jornal = t;
   }
@@ -217,6 +222,6 @@ export async function actualizarPersonaYVinculacion(
   });
 
   revalidatePath(`/jefe/equipo/${personaId}`);
-  revalidatePath("/jefe/equipo");
+  revalidatePath('/jefe/equipo');
   redirect(`/jefe/equipo/${personaId}`);
 }

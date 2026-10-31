@@ -142,7 +142,7 @@ export function ChatAsistente() {
       {turnos.length === 0 ? (
         <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-5 shadow-suave">
           <p className="text-[13px] text-zelanda-verde-800">
-            Preguntá sobre los datos de la finca en tus palabras. También responde dudas agronómicas
+            Pregunta sobre los datos de la finca en tus palabras. También responde dudas agronómicas
             sobre el Hass.
           </p>
           <div className="mt-3 flex flex-col gap-2">
@@ -204,7 +204,7 @@ export function ChatAsistente() {
         <input
           value={entrada}
           onChange={(e) => setEntrada(e.target.value)}
-          placeholder="Preguntá algo…"
+          placeholder="Pregunta algo…"
           disabled={ocupado}
           className="min-w-0 flex-1 bg-transparent px-2 text-[15px] text-zelanda-verde-900 outline-none placeholder:text-zelanda-verde-700/50"
         />

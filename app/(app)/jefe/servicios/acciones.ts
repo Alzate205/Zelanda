@@ -45,16 +45,16 @@ export async function crearServicio(
   const notas = String(formData.get('notas') ?? '').trim();
 
   if (!personaIdExistente && !nuevoContratistaNombre) {
-    return { error: 'Elegí al contratista o escribí el nombre.' };
+    return { error: 'Elige al contratista o escribe el nombre.' };
   }
-  if (!descripcion) return { error: 'Describí el servicio.' };
+  if (!descripcion) return { error: 'Describe el servicio.' };
 
   const monto = Number(montoRaw.replace(/\./g, ''));
   if (!Number.isFinite(monto) || monto <= 0) {
     return { error: 'Monto pactado inválido.' };
   }
 
-  if (!fechaInicioRaw) return { error: 'Elegí la fecha de inicio.' };
+  if (!fechaInicioRaw) return { error: 'Elige la fecha de inicio.' };
   const fechaInicio = new Date(`${fechaInicioRaw}T00:00:00`);
   if (Number.isNaN(fechaInicio.getTime())) {
     return { error: 'Fecha de inicio inválida.' };
@@ -146,14 +146,14 @@ export async function editarServicio(
   const fechaFinRaw = String(formData.get('fecha_fin') ?? '').trim();
   const notas = String(formData.get('notas') ?? '').trim();
 
-  if (!descripcion) return { error: 'Describí el servicio.' };
+  if (!descripcion) return { error: 'Describe el servicio.' };
 
   const monto = Number(montoRaw.replace(/\./g, ''));
   if (!Number.isFinite(monto) || monto <= 0) {
     return { error: 'Monto pactado inválido.' };
   }
 
-  if (!fechaInicioRaw) return { error: 'Elegí la fecha de inicio.' };
+  if (!fechaInicioRaw) return { error: 'Elige la fecha de inicio.' };
   const fechaInicio = new Date(`${fechaInicioRaw}T00:00:00`);
   if (Number.isNaN(fechaInicio.getTime())) {
     return { error: 'Fecha de inicio inválida.' };

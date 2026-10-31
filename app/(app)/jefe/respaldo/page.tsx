@@ -2,15 +2,20 @@ import Link from 'next/link';
 import { ChevronLeft, Download, Database } from 'lucide-react';
 import { requerirUsuario } from '@/lib/auth';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { MODULO_NOMINA } from '@/lib/modulos';
 
 export const metadata = { title: 'Respaldo de datos' };
 
-const EXPORTS: { tabla: string; titulo: string; sub: string }[] = [
+const EXPORTS_NOMINA: { tabla: string; titulo: string; sub: string }[] = [
   { tabla: 'pagos', titulo: 'Pagos', sub: 'Salarios, jornales, adelantos, bonos, ajustes' },
   { tabla: 'jornales', titulo: 'Jornales', sub: 'Días trabajados con su tarifa' },
   { tabla: 'ausencias', titulo: 'Ausencias', sub: 'Faltas, incapacidades, permisos' },
   { tabla: 'servicios', titulo: 'Servicios contratados', sub: 'Contratos puntuales' },
-  { tabla: 'compras', titulo: 'Compras', sub: 'Compras de insumos a proveedores' },
+];
+
+const EXPORTS: { tabla: string; titulo: string; sub: string }[] = [
+  ...(MODULO_NOMINA ? EXPORTS_NOMINA : []),
+  { tabla: 'compras', titulo: 'Compras', sub: 'Compras de insumos y herramientas' },
   { tabla: 'ventas', titulo: 'Ventas y salidas', sub: 'Salidas de cosecha del almacén' },
   { tabla: 'cosechas', titulo: 'Cosechas', sub: 'Ingresos de aguacate al almacén' },
 ];
@@ -32,7 +37,7 @@ export default async function PaginaRespaldo() {
         <Eyebrow>Finca · Respaldo</Eyebrow>
         <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Respaldo de datos</h1>
         <p className="mt-0.5 text-[13px] text-zelanda-verde-700">
-          Descargá una copia de tus datos en CSV (se abre en Excel). Guardalos periódicamente como
+          Descarga una copia de tus datos en CSV (se abre en Excel). Guárdalos periódicamente como
           respaldo fuera de la app.
         </p>
       </header>

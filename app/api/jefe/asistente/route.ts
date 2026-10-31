@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
 
         emitir({
           tipo: 'error',
-          texto: 'No pude resolverlo en varios intentos. Probá con una pregunta más específica.',
+          texto: 'No pude resolverlo en varios intentos. Prueba con una pregunta más específica.',
         });
         emitir({ tipo: 'fin' });
         controlador.close();

@@ -30,7 +30,7 @@ export async function crearJornal(_prev: EstadoJornal, formData: FormData): Prom
 
   if (!personaId) return { error: 'Selecciona la persona.' };
 
-  if (!fechaRaw) return { error: 'Elegí la fecha.' };
+  if (!fechaRaw) return { error: 'Elige la fecha.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
     return { error: 'Fecha inválida.' };
@@ -38,7 +38,7 @@ export async function crearJornal(_prev: EstadoJornal, formData: FormData): Prom
 
   const tarifa = parsearMontoCop(tarifaRaw);
   if (tarifa === null) {
-    return { error: 'Escribí cuánto se le paga por el día.' };
+    return { error: 'Escribe cuánto se le paga por el día.' };
   }
   if (tarifa <= 0) {
     return { error: 'La tarifa del jornal debe ser mayor a 0.' };
@@ -67,7 +67,7 @@ export async function crearJornal(_prev: EstadoJornal, formData: FormData): Prom
     if (/unique constraint.*persona_id.*fecha|jornales_persona_id_fecha_key/i.test(msg)) {
       return {
         error:
-          'Ya hay un jornal registrado para esta persona en esa fecha. Borralo primero si querés cambiarlo.',
+          'Ya hay un jornal registrado para esta persona en esa fecha. Borralo primero si quieres cambiarlo.',
       };
     }
     return { error: sanitizarError(e, 'jornales/crear') };
@@ -90,7 +90,7 @@ export async function editarJornal(_prev: EstadoJornal, formData: FormData): Pro
 
   const tarifa = parsearMontoCop(tarifaRaw);
   if (tarifa === null) {
-    return { error: 'Escribí cuánto se le paga por el día.' };
+    return { error: 'Escribe cuánto se le paga por el día.' };
   }
   if (tarifa <= 0) {
     return { error: 'La tarifa del jornal debe ser mayor a 0.' };

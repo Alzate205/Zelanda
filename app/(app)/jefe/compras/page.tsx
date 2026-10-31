@@ -115,7 +115,7 @@ export default async function PaginaCompras({
       <header className="flex items-start justify-between gap-3">
         <div>
           <Eyebrow>Negocio · Compras</Eyebrow>
-          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Costos de insumos</h1>
+          <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">Compras</h1>
         </div>
         <Link
           href="/jefe/compras/nueva"
@@ -155,7 +155,7 @@ export default async function PaginaCompras({
           pie={`${compras.length} compras`}
           acento="ocre"
         />
-        <KPI etiqueta="Items" valor={itemsTotales} pie={`insumos distintos`} />
+        <KPI etiqueta="Items" valor={itemsTotales} pie={`insumos y herramientas`} />
         <KPI etiqueta="Proveedores" valor={rankingProveedores.length} pie="distintos en el mes" />
         <KPI
           etiqueta="Ticket promedio"
@@ -194,7 +194,8 @@ export default async function PaginaCompras({
             <ShoppingCart className="mx-auto h-8 w-8 text-zelanda-verde-700/40" />
             <p className="mt-3 font-serif text-base text-zelanda-verde-900">Sin compras este mes</p>
             <p className="mt-1 text-sm text-zelanda-verde-700">
-              Registrá las compras de insumos para llevar costos y actualizar stock automáticamente.
+              Registra las compras de insumos y herramientas para llevar costos y actualizar el
+              inventario automáticamente.
             </p>
             <Link
               href="/jefe/compras/nueva"

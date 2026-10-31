@@ -313,7 +313,7 @@ export async function editarAsignacion(
   if (!id) return { error: 'Asignación no válida.' };
 
   const personaId = parsearId(String(formData.get('persona_id') ?? ''));
-  if (!personaId) return { error: 'Seleccioná una persona.' };
+  if (!personaId) return { error: 'Selecciona una persona.' };
 
   const fechaInicioRaw = String(formData.get('fecha_inicio') ?? '').trim();
 
@@ -336,7 +336,7 @@ export async function editarAsignacion(
     if (cantidadAvances > 0) {
       return {
         error:
-          'No se puede reasignar: ya hay avances registrados. Cancelá y creá una nueva si es necesario.',
+          'No se puede reasignar: ya hay avances registrados. Cancela y crea una nueva si es necesario.',
       };
     }
   }

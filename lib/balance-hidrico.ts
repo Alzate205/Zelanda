@@ -78,7 +78,7 @@ function frase(estado: EstadoAgua, acumulado: number): string {
   }
   if (estado === 'exceso') {
     // Con esta agua encima el riesgo ya no es la sequía sino la raíz.
-    return `Sobran ${mm} mm de agua. No riegues y revisá que los drenajes corran.`;
+    return `Sobran ${mm} mm de agua. No riegues y revisa que los drenajes corran.`;
   }
   return acumulado >= 0
     ? `El lote está al día: le sobran ${mm} mm. No hace falta regar.`

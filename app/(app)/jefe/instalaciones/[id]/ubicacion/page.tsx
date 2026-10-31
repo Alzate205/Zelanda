@@ -1,19 +1,15 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { requerirUsuario } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { FormularioUbicacionInstalacion } from "./_formulario";
-import { cargarReferenciasMapa } from "@/lib/referencias-mapa";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { requerirUsuario } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { FormularioUbicacionInstalacion } from './_formulario';
+import { cargarReferenciasMapa } from '@/lib/referencias-mapa';
 
-export const metadata = { title: "Ubicación" };
+export const metadata = { title: 'Ubicación' };
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  await requerirUsuario("JEFE");
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  await requerirUsuario('JEFE');
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
   const inst = await prisma.instalaciones.findUnique({
@@ -32,7 +28,7 @@ export default async function Page({
   if (rows[0]?.pto) {
     try {
       const obj = JSON.parse(rows[0].pto);
-      if (obj?.type === "Point" && Array.isArray(obj.coordinates)) {
+      if (obj?.type === 'Point' && Array.isArray(obj.coordinates)) {
         inicial = [obj.coordinates[0], obj.coordinates[1]];
       }
     } catch {
@@ -52,12 +48,10 @@ export default async function Page({
         <p className="text-[10.5px] uppercase tracking-[0.18em] text-zelanda-verde-700">
           Ubicación
         </p>
-        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">
-          {inst.nombre}
-        </h1>
+        <h1 className="mt-1 font-serif text-2xl text-zelanda-verde-900">{inst.nombre}</h1>
         <p className="mt-2 text-sm text-zelanda-verde-700">
-          Tocá en el mapa donde está {inst.nombre.toLowerCase()}. Podés
-          reposicionar tocando otra vez.
+          Toca en el mapa donde está {inst.nombre.toLowerCase()}. Puedes reposicionar tocando otra
+          vez.
         </p>
       </header>
       <FormularioUbicacionInstalacion

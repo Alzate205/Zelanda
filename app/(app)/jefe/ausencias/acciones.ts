@@ -44,7 +44,7 @@ export async function crearAusencia(
   }
   const tipo = tipoRaw as tipo_ausencia;
 
-  if (!fechaRaw) return { error: 'Elegí la fecha.' };
+  if (!fechaRaw) return { error: 'Elige la fecha.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
     return { error: 'Fecha inválida.' };
@@ -66,7 +66,7 @@ export async function crearAusencia(
     if (/unique constraint.*persona_id.*fecha|ausencias_persona_id_fecha_key/i.test(msg)) {
       return {
         error:
-          'Ya hay una ausencia registrada para esta persona en esa fecha. Borrala primero si querés cambiarla.',
+          'Ya hay una ausencia registrada para esta persona en esa fecha. Borrala primero si quieres cambiarla.',
       };
     }
     return { error: sanitizarError(e, 'ausencias/crear') };
@@ -95,7 +95,7 @@ export async function editarAusencia(
   }
   const tipo = tipoRaw as tipo_ausencia;
 
-  if (!fechaRaw) return { error: 'Elegí la fecha.' };
+  if (!fechaRaw) return { error: 'Elige la fecha.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) return { error: 'Fecha inválida.' };
 

@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { guardarConfiguracion, type EstadoConfig } from './acciones';
 import { formatearMiles } from '@/lib/formatos';
+import { MODULO_NOMINA } from '@/lib/modulos';
 import type { TipoPeriodoPago } from '@prisma/client';
 
 type Props = {
@@ -161,8 +162,13 @@ export function FormularioConfiguracion({ config }: Props) {
         </div>
       </section>
 
-      {/* Sección: Financiero */}
-      <section className="rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave space-y-4">
+      {/* Sección: Financiero. Con la nómina apagada no se ve, pero sigue en el
+          formulario para que guardar no borre los valores. */}
+      <section
+        className={`${
+          MODULO_NOMINA ? '' : 'hidden '
+        }rounded-2xl border border-zelanda-beige-200 bg-white p-4 shadow-suave space-y-4`}
+      >
         <h2 className="font-serif text-base text-zelanda-verde-900">Financiero</h2>
         <p className="text-[11.5px] text-zelanda-verde-700">
           Estos valores pre-rellenan los campos al crear trabajadores nuevos. No son obligatorios.

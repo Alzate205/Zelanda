@@ -21,8 +21,10 @@ export default async function PaginaProveedores() {
   const proveedores = await prisma.proveedores.findMany({
     orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
     include: {
+      // _count incluye las borradas (siguen apuntando al proveedor y frenan el
+      // borrado); los totales no: una compra borrada ya revirtió el stock.
       _count: { select: { compras: true } },
-      compras: { select: { total: true } },
+      compras: { where: { borrado_en: null }, select: { total: true } },
     },
   });
 
@@ -124,7 +126,7 @@ export default async function PaginaProveedores() {
             Sin proveedores registrados
           </p>
           <p className="mt-1 text-sm text-zelanda-verde-700">
-            Registrá a quién le comprás insumos. Cada compra queda asociada a su proveedor y permite
+            Registra a quién le compras insumos. Cada compra queda asociada a su proveedor y permite
             ver costos por origen.
           </p>
           <Link

@@ -8,6 +8,6 @@ export async function obtenerConfiguracion() {
       updated_by_u: { select: { nombre_completo: true } },
     },
   });
-  if (!config) throw new Error('Fila configuracion_finca no encontrada. Corré la migración.');
+  if (!config) throw new Error('Fila configuracion_finca no encontrada. Corre la migración.');
   return config;
 }

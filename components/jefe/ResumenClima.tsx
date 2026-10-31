@@ -33,8 +33,8 @@ export function ResumenClima({ clima }: { clima: ClimaFinca }) {
         <p className="m-0 mt-2 rounded-xl bg-estado-vencida/10 px-3 py-2 text-[13px] text-estado-vencida">
           <strong className="font-semibold">Sanidad:</strong>{' '}
           {clima.hongos.pudricion_raiz
-            ? 'suelo encharcado, riesgo de pudrición de raíz. Revisá drenajes antes de volver a regar.'
-            : 'follaje mojado y humedad alta, riesgo de antracnosis. Revisá la fruta próxima a cosecha.'}
+            ? 'suelo encharcado, riesgo de pudrición de raíz. Revisa drenajes antes de volver a regar.'
+            : 'follaje mojado y humedad alta, riesgo de antracnosis. Revisa la fruta próxima a cosecha.'}
         </p>
       ) : null}
 

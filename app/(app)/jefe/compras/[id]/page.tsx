@@ -39,7 +39,10 @@ export default async function PaginaDetalleCompra({ params }: { params: Promise<
     include: {
       proveedor: { select: { id: true, nombre: true, nit: true } },
       items: {
-        include: { insumo: { select: { nombre: true, unidad: true } } },
+        include: {
+          insumo: { select: { nombre: true, unidad: true } },
+          herramienta: { select: { nombre: true } },
+        },
         orderBy: { id: 'asc' },
       },
     },
@@ -92,14 +95,15 @@ export default async function PaginaDetalleCompra({ params }: { params: Promise<
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="m-0 font-serif text-[14.5px] text-zelanda-verde-900">
-                    {it.insumo.nombre}
+                    {it.insumo?.nombre ?? it.herramienta?.nombre ?? 'Item'}
                   </p>
                   <p className="m-0 mt-0.5 flex items-center gap-1 text-[11.5px] text-zelanda-verde-700">
                     <Package className="h-3 w-3" />
                     {Number(it.cantidad).toLocaleString('es-CO', {
                       maximumFractionDigits: 2,
                     })}{' '}
-                    {it.insumo.unidad} × {fmtMonto(Number(it.costo_unitario))}
+                    {it.insumo?.unidad ?? (Number(it.cantidad) === 1 ? 'unidad' : 'unidades')} ×{' '}
+                    {fmtMonto(Number(it.costo_unitario))}
                   </p>
                 </div>
                 <span className="font-serif text-[15px] text-zelanda-verde-900">

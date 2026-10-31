@@ -8,8 +8,10 @@ import { sanitizarError } from '@/lib/errores';
 
 export type EstadoCompra = { error: string | null };
 
+/** Cada item es un insumo O una herramienta (CHECK chk_compras_items_un_objeto). */
 type ItemEntrada = {
-  insumo_id: string;
+  insumo_id?: string;
+  herramienta_id?: string;
   cantidad: number;
   costo_unitario: number;
   notas?: string;
@@ -36,10 +38,10 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
 
   let proveedorId = proveedorIdRaw ? parsearId(proveedorIdRaw) : null;
   if (!proveedorId && !proveedorNuevoNombre) {
-    return { error: 'Elegí un proveedor o escribí el nombre.' };
+    return { error: 'Elige un proveedor o escribe el nombre.' };
   }
 
-  if (!fechaRaw) return { error: 'Elegí la fecha de la compra.' };
+  if (!fechaRaw) return { error: 'Elige la fecha de la compra.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
     return { error: 'Fecha inválida.' };
@@ -53,16 +55,21 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
   }
 
   if (!Array.isArray(items) || items.length === 0) {
-    return { error: 'Agregá al menos un insumo a la compra.' };
+    return { error: 'Agrega al menos un item a la compra.' };
   }
 
   // Validar cada item
   for (const [i, it] of items.entries()) {
-    if (!parsearId(it.insumo_id)) {
-      return { error: `Item ${i + 1}: insumo inválido.` };
+    const esInsumo = parsearId(it.insumo_id ?? null) !== null;
+    const esHerramienta = parsearId(it.herramienta_id ?? null) !== null;
+    if (esInsumo === esHerramienta) {
+      return { error: `Item ${i + 1}: elige un insumo o una herramienta.` };
     }
     if (!Number.isFinite(it.cantidad) || it.cantidad <= 0) {
       return { error: `Item ${i + 1}: cantidad inválida.` };
+    }
+    if (esHerramienta && !Number.isInteger(it.cantidad)) {
+      return { error: `Item ${i + 1}: las herramientas se compran por unidad.` };
     }
     if (!Number.isFinite(it.costo_unitario) || it.costo_unitario < 0) {
       return { error: `Item ${i + 1}: costo unitario inválido.` };
@@ -99,7 +106,8 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
         await tx.compras_items.create({
           data: {
             compra_id: compra.id,
-            insumo_id: parsearId(it.insumo_id)!,
+            insumo_id: parsearId(it.insumo_id ?? null),
+            herramienta_id: parsearId(it.herramienta_id ?? null),
             cantidad: it.cantidad,
             costo_unitario: it.costo_unitario,
             notas: it.notas?.trim() || null,
@@ -113,6 +121,7 @@ export async function crearCompra(_prev: EstadoCompra, formData: FormData): Prom
 
   revalidatePath('/jefe/compras');
   revalidatePath('/jefe/inventario');
+  revalidatePath('/jefe/saldos');
   redirect('/jefe/compras');
 }
 
@@ -131,10 +140,10 @@ export async function editarCompra(_prev: EstadoCompra, formData: FormData): Pro
 
   let proveedorId = proveedorIdRaw ? parsearId(proveedorIdRaw) : null;
   if (!proveedorId && !proveedorNuevoNombre) {
-    return { error: 'Elegí un proveedor o escribí el nombre.' };
+    return { error: 'Elige un proveedor o escribe el nombre.' };
   }
 
-  if (!fechaRaw) return { error: 'Elegí la fecha de la compra.' };
+  if (!fechaRaw) return { error: 'Elige la fecha de la compra.' };
   const fecha = new Date(`${fechaRaw}T00:00:00`);
   if (Number.isNaN(fecha.getTime())) {
     return { error: 'Fecha inválida.' };
@@ -186,6 +195,18 @@ export async function borrarCompra(formData: FormData) {
 
       // Revertir stock por cada item antes de soft-delete
       for (const item of compra.items) {
+        if (item.herramienta_id !== null) {
+          const h = await tx.herramientas.findUnique({
+            where: { id: item.herramienta_id },
+            select: { total: true },
+          });
+          await tx.herramientas.update({
+            where: { id: item.herramienta_id },
+            data: { total: Math.max(0, (h?.total ?? 0) - Number(item.cantidad)) },
+          });
+          continue;
+        }
+        if (item.insumo_id === null) continue;
         await tx.insumos.update({
           where: { id: item.insumo_id },
           data: {
@@ -216,4 +237,5 @@ export async function borrarCompra(formData: FormData) {
   }
   revalidatePath('/jefe/compras');
   revalidatePath('/jefe/inventario');
+  revalidatePath('/jefe/saldos');
 }

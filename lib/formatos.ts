@@ -91,3 +91,26 @@ export function formatearDecimal(valor: number | string | null | undefined, deci
     maximumFractionDigits: decimales,
   });
 }
+
+/**
+ * Normaliza una cantidad con decimales mientras se escribe (es-CO): el punto
+ * es separador de miles y se descarta; la coma es el decimal y se deja una
+ * sola. Pensado para `onChange`; se lee con `parsearDecimal`.
+ *
+ * Existe porque la cantidad de una compra usaba `normalizarEntradaNumerica`,
+ * que borra todo lo que no es dígito: "2,5" litros se guardaba como 25.
+ */
+export function normalizarEntradaDecimal(valor: string): string {
+  const limpio = valor.replace(/\./g, '').replace(/[^\d,]/g, '');
+  const i = limpio.indexOf(',');
+  if (i === -1) return limpio;
+  return limpio.slice(0, i + 1) + limpio.slice(i + 1).replace(/,/g, '');
+}
+
+/** Muestra una cantidad en edición: miles con punto y la coma decimal tal cual. */
+export function formatearEntradaDecimal(valor: string): string {
+  if (!valor) return '';
+  const [entero, decimales] = valor.split(',');
+  const miles = formatearMiles(entero) || (decimales !== undefined ? '0' : '');
+  return decimales !== undefined ? `${miles},${decimales}` : miles;
+}

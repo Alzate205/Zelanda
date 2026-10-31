@@ -98,7 +98,7 @@ export async function actualizarMiUsername(
     if (/unique/i.test(msg)) {
       return {
         ...ESTADO_INICIAL,
-        error: 'Ese nombre de usuario ya está en uso. Probá otro.',
+        error: 'Ese nombre de usuario ya está en uso. Prueba otro.',
       };
     }
     return { ...ESTADO_INICIAL, error: sanitizarError(e, 'mi-perfil/actualizar-username') };
@@ -108,7 +108,7 @@ export async function actualizarMiUsername(
   return {
     error: null,
     exito: username
-      ? `Ahora podés entrar con el usuario "${username}".`
+      ? `Ahora puedes entrar con el usuario "${username}".`
       : 'Usuario eliminado. Solo podrás entrar con tu correo.',
   };
 }
